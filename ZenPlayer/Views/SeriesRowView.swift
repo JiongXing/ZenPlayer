@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Kingfisher
 
 /// 二级类目列表行视图
 struct SeriesRowView: View {
@@ -16,31 +17,20 @@ struct SeriesRowView: View {
     var body: some View {
         HStack(spacing: 14) {
             // 封面缩略图
-            AsyncImage(url: URL(string: series.coverUrl)) { phase in
-                switch phase {
-                case .empty:
+            KFImage(URL(string: series.coverUrl))
+                .placeholder {
                     ZStack {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .fill(Color.gray.opacity(0.15))
                         ProgressView()
                             .scaleEffect(0.6)
                     }
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                case .failure:
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(Color.gray.opacity(0.15))
-                        Image(systemName: "photo")
-                            .foregroundStyle(.secondary)
-                    }
-                @unknown default:
-                    EmptyView()
                 }
-            }
+                .onFailureImage(KFCrossPlatformImage(systemSymbolName: "photo", accessibilityDescription: nil))
+                .fade(duration: 0.25)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .frame(width: 100, height: 70)
             .clipped()
 

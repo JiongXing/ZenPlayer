@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Kingfisher
 
 /// 播放列表中的单集行视图
 struct EpisodeRowView: View {
@@ -25,31 +26,20 @@ struct EpisodeRowView: View {
                 .frame(width: 36, alignment: .center)
 
             // 封面缩略图
-            AsyncImage(url: URL(string: episode.coverUrl)) { phase in
-                switch phase {
-                case .empty:
+            KFImage(URL(string: episode.coverUrl))
+                .placeholder {
                     ZStack {
                         RoundedRectangle(cornerRadius: 6, style: .continuous)
                             .fill(Color.gray.opacity(0.12))
                         ProgressView()
                             .scaleEffect(0.5)
                     }
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                case .failure:
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .fill(Color.gray.opacity(0.12))
-                        Image(systemName: "play.rectangle")
-                            .foregroundStyle(.tertiary)
-                    }
-                @unknown default:
-                    EmptyView()
                 }
-            }
+                .onFailureImage(KFCrossPlatformImage(systemSymbolName: "play.rectangle", accessibilityDescription: nil))
+                .fade(duration: 0.25)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
             .frame(width: 80, height: 50)
             .clipped()
 

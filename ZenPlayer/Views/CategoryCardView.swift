@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Kingfisher
 
 /// 一级类目卡片视图
 struct CategoryCardView: View {
@@ -16,31 +17,19 @@ struct CategoryCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // 封面图片
-            AsyncImage(url: URL(string: category.coverUrl)) { phase in
-                switch phase {
-                case .empty:
+            KFImage(URL(string: category.coverUrl))
+                .placeholder {
                     ZStack {
                         Rectangle()
                             .fill(Color.gray.opacity(0.15))
                         ProgressView()
                             .scaleEffect(0.8)
                     }
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                case .failure:
-                    ZStack {
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.15))
-                        Image(systemName: "photo")
-                            .font(.largeTitle)
-                            .foregroundStyle(.secondary)
-                    }
-                @unknown default:
-                    EmptyView()
                 }
-            }
+                .onFailureImage(KFCrossPlatformImage(systemSymbolName: "photo", accessibilityDescription: nil))
+                .fade(duration: 0.25)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
             .frame(height: 200)
             .clipped()
 

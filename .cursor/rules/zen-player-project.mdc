@@ -1,0 +1,49 @@
+---
+description: ZenPlayer 项目上下文与开发规范
+alwaysApply: true
+---
+
+# ZenPlayer 项目概览
+
+ZenPlayer 是一款 **macOS 原生应用**，用于浏览、下载和播放佛学视频讲座。使用 **SwiftUI** 构建，目标平台为 macOS。
+
+## 技术栈
+
+- **语言**: Swift
+- **UI 框架**: SwiftUI（纯 SwiftUI，不混用 AppKit）
+- **架构**: MVVM（Models / ViewModels / Views / Services）
+- **并发**: async/await
+- **网络**: URLSession
+- **最低版本**: macOS 13+
+
+## 项目结构
+
+```
+ZenPlayer/
+├── ZenPlayerApp.swift          # App 入口
+├── ContentView.swift           # 根导航（NavigationStack）
+├── Models/                     # 数据模型（Codable）
+│   ├── APIResponse.swift
+│   ├── Category.swift          # 一级类目
+│   ├── Series.swift            # 二级类目（系列讲座）
+│   └── Episode.swift           # 单集（含播放地址）
+├── ViewModels/                 # 视图模型（@Observable / ObservableObject）
+├── Views/                      # SwiftUI 视图
+└── Services/
+    └── APIService.swift        # 网络请求（单例）
+```
+
+## 业务领域
+
+- **一级类目 (Category)**: 顶层分类，如"學佛基礎"
+- **二级类目 / 系列 (Series)**: 某一主题的讲座系列
+- **单集 (Episode)**: 具体一集视频/音频，包含 mp4/mp3/vod 地址
+- 数据来自 `api.jingzong.net` 的 RESTful 接口，响应格式统一为 `APIResponse<T>`
+
+## 编码约定
+
+- Model 遵循 `Codable`，用 `Identifiable` 和 `Hashable` 支持列表/导航
+- ViewModel 使用 `@MainActor`，暴露 `@Published` 状态
+- 中文注释说明业务逻辑，代码标识符使用英文
+- 网络错误通过 `APIError` 枚举统一处理
+- 使用 `MARK:` 注释分隔代码区域

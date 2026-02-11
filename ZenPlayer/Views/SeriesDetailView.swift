@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Kingfisher
 
 /// 讲集详情页 - 展示讲集信息和播放列表
 struct SeriesDetailView: View {
@@ -67,31 +68,19 @@ struct SeriesDetailView: View {
     private func headerView(detail: SpeechDetailData) -> some View {
         HStack(alignment: .top, spacing: 20) {
             // 封面
-            AsyncImage(url: URL(string: detail.cateCoverUrl)) { phase in
-                switch phase {
-                case .empty:
+            KFImage(URL(string: detail.cateCoverUrl))
+                .placeholder {
                     ZStack {
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
                             .fill(Color.gray.opacity(0.12))
                         ProgressView()
                     }
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                case .failure:
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Color.gray.opacity(0.12))
-                        Image(systemName: "photo")
-                            .font(.title)
-                            .foregroundStyle(.secondary)
-                    }
-                @unknown default:
-                    EmptyView()
                 }
-            }
+                .onFailureImage(KFCrossPlatformImage(systemSymbolName: "photo", accessibilityDescription: nil))
+                .fade(duration: 0.25)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             .frame(width: 180, height: 120)
             .clipped()
             .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 3)
