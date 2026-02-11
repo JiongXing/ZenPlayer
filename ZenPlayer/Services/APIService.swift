@@ -34,7 +34,7 @@ final class APIService {
 
     private let session: URLSession
     private let decoder: JSONDecoder
-    private let baseURL = "https://api.jingzong.net/jiangyan/v3/hz_video"
+    private let categoryURL = "https://api.jingzong.net/jiangyan/v3/hz_video/category1?client=ios&v=3"
     private let userKey = "52A63248312E107776792D30235C85B0"
 
     private init() {
@@ -51,28 +51,23 @@ final class APIService {
 
     /// 获取一级类目列表
     func fetchCategories() async throws -> CategoryData {
-        let urlString = "\(baseURL)/category1?client=ios&v=3"
-        return try await request(urlString: urlString)
+        return try await request(urlString: categoryURL)
     }
 
     // MARK: - 二级类目
 
     /// 获取二级类目列表
-    /// - Parameter cateId: 一级类目 ID
-    func fetchSeries(cateId: Int) async throws -> SeriesData {
-        let urlString = "\(baseURL)/category2?cate_id=\(cateId)&client=ios&v=3"
-        return try await request(urlString: urlString)
+    /// - Parameter url: 由一级类目数据中 `CategoryItem.url` 提供的完整请求地址
+    func fetchSeries(url: String) async throws -> SeriesData {
+        return try await request(urlString: url)
     }
 
     // MARK: - 播放列表
 
     /// 获取讲集详情与播放列表
-    /// - Parameters:
-    ///   - num: 专辑编号，如 "13-009"
-    ///   - type: 媒体类型，"mp4" 或 "mp3"
-    func fetchSpeechDetail(num: String, type: String) async throws -> SpeechDetailData {
-        let urlString = "\(baseURL)/infolist?client=ios&num=\(num)&type=\(type)&v=3"
-        return try await request(urlString: urlString)
+    /// - Parameter url: 由二级类目数据中 `SeriesItem.url` 提供的完整请求地址
+    func fetchSpeechDetail(url: String) async throws -> SpeechDetailData {
+        return try await request(urlString: url)
     }
 
     // MARK: - 通用请求

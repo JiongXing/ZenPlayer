@@ -18,13 +18,13 @@ final class CategoryDetailViewModel {
     private let apiService = APIService.shared
 
     /// 加载二级类目数据
-    /// - Parameter cateId: 一级类目 ID
-    func loadSeries(cateId: Int) async {
+    /// - Parameter url: 由一级类目数据中 `CategoryItem.url` 提供的完整请求地址
+    func loadSeries(url: String) async {
         isLoading = true
         errorMessage = nil
 
         do {
-            let data = try await apiService.fetchSeries(cateId: cateId)
+            let data = try await apiService.fetchSeries(url: url)
             seriesList = data.rows
         } catch {
             errorMessage = error.localizedDescription

@@ -27,7 +27,7 @@ struct CategoryDetailView: View {
         .animation(.easeInOut(duration: 0.3), value: viewModel.seriesList.isEmpty)
         .task {
             if viewModel.seriesList.isEmpty {
-                await viewModel.loadSeries(cateId: category.cateId)
+                await viewModel.loadSeries(url: category.url)
             }
         }
     }
@@ -106,7 +106,7 @@ struct CategoryDetailView: View {
 
             Button {
                 Task {
-                    await viewModel.loadSeries(cateId: category.cateId)
+                    await viewModel.loadSeries(url: category.url)
                 }
             } label: {
                 Label("重新加载", systemImage: "arrow.clockwise")

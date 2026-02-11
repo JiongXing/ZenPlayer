@@ -19,15 +19,13 @@ final class SeriesDetailViewModel {
     private let apiService = APIService.shared
 
     /// 加载播放列表
-    /// - Parameters:
-    ///   - num: 专辑编号
-    ///   - type: 媒体类型
-    func loadSpeechDetail(num: String, type: String) async {
+    /// - Parameter url: 由二级类目数据中 `SeriesItem.url` 提供的完整请求地址
+    func loadSpeechDetail(url: String) async {
         isLoading = true
         errorMessage = nil
 
         do {
-            let data = try await apiService.fetchSpeechDetail(num: num, type: type)
+            let data = try await apiService.fetchSpeechDetail(url: url)
             speechDetail = data
             episodes = data.rows
         } catch {

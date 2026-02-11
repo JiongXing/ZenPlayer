@@ -27,7 +27,7 @@ struct SeriesDetailView: View {
         .animation(.easeInOut(duration: 0.3), value: viewModel.speechDetail != nil)
         .task {
             if viewModel.speechDetail == nil {
-                await viewModel.loadSpeechDetail(num: series.num, type: series.type)
+                await viewModel.loadSpeechDetail(url: series.url)
             }
         }
     }
@@ -234,7 +234,7 @@ struct SeriesDetailView: View {
 
             Button {
                 Task {
-                    await viewModel.loadSpeechDetail(num: series.num, type: series.type)
+                    await viewModel.loadSpeechDetail(url: series.url)
                 }
             } label: {
                 Label("重新加载", systemImage: "arrow.clockwise")
