@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import os.log
 
 /// API 错误类型
 enum APIError: LocalizedError {
@@ -34,6 +35,7 @@ final class APIService {
 
     private let session: URLSession
     private let decoder: JSONDecoder
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "ZenPlayer", category: "API")
     private let categoryURL = "https://api.jingzong.net/jiangyan/v3/hz_video/category1?client=ios&v=3"
     private let userKey = "52A63248312E107776792D30235C85B0"
 
@@ -74,6 +76,7 @@ final class APIService {
 
     private func request<T: Codable>(urlString: String) async throws -> T {
         guard let url = URL(string: urlString) else {
+            logger.error("❌ 无效 URL: \(urlString)")
             throw APIError.invalidURL
         }
 
@@ -83,22 +86,35 @@ final class APIService {
         request.setValue("*/*", forHTTPHeaderField: "Accept")
         request.setValue("zh-Hans-CN;q=1, en-CN;q=0.9", forHTTPHeaderField: "Accept-Language")
 
+        logger.info("➡️ GET \(urlString)")
+        let startTime = CFAbsoluteTimeGetCurrent()
+
         let data: Data
+        let httpResponse: URLResponse
         do {
-            let (responseData, _) = try await session.data(for: request)
+            let (responseData, response) = try await session.data(for: request)
             data = responseData
+            httpResponse = response
         } catch {
+            let elapsed = String(format: "%.0fms", (CFAbsoluteTimeGetCurrent() - startTime) * 1000)
+            logger.error("❌ 网络错误 [\(elapsed)]: \(error.localizedDescription)")
             throw APIError.networkError(error)
         }
+
+        let statusCode = (httpResponse as? HTTPURLResponse)?.statusCode ?? -1
+        let elapsed = String(format: "%.0fms", (CFAbsoluteTimeGetCurrent() - startTime) * 1000)
+        logger.info("⬅️ \(statusCode) [\(elapsed)] \(data.count) bytes <- \(urlString)")
 
         let response: APIResponse<T>
         do {
             response = try decoder.decode(APIResponse<T>.self, from: data)
         } catch {
+            logger.error("❌ 解析失败: \(error.localizedDescription)")
             throw APIError.decodingError(error)
         }
 
         guard response.code == 1 else {
+            logger.warning("⚠️ 业务错误 code=\(response.code) msg=\(response.msg)")
             throw APIError.serverError(response.code, response.msg)
         }
 
