@@ -20,9 +20,9 @@ struct ZenPlayerApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .frame(minWidth: 700, minHeight: 500)
+                .frame(minWidth: 500, minHeight: 500)
         }
-        .defaultSize(width: 900, height: 680)
+        .defaultSize(width: 700, height: 700)
     }
 
     // MARK: - Kingfisher 全局配置
@@ -37,7 +37,7 @@ struct ZenPlayerApp: App {
         cache.memoryStorage.config.totalCostLimit = 300 * 1024 * 1024
         // 磁盘缓存最大容量：1 GB
         cache.diskStorage.config.sizeLimit = 1024 * 1024 * 1024
-        // 磁盘缓存过期时间：7 天
-        cache.diskStorage.config.expiration = .days(7)
+        // 磁盘缓存过期时间：100 天
+        cache.diskStorage.config.expiration = .days(100)
     }
 }

@@ -55,6 +55,7 @@ struct SeriesDetailView: View {
                             episode: episode,
                             index: index,
                             serverUrl: detail.serverUrl,
+                            isAudio: detail.type == "mp3",
                             downloadManager: downloadManager
                         )
                         .padding(.horizontal, 16)

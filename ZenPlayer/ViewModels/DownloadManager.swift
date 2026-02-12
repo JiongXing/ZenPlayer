@@ -56,8 +56,11 @@ final class DownloadManager {
     /// 正在执行的下载任务（key: episode.id）
     private var downloadTasks: [Int: Task<Void, Never>] = [:]
 
-    /// 下载服务
-    private let downloadService = M3U8DownloadService()
+    /// M3U8 (HLS) 下载服务
+    private let m3u8DownloadService = M3U8DownloadService()
+
+    /// MP3 直链下载服务
+    private let mp3DownloadService = MP3DownloadService()
 
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "ZenPlayer", category: "DownloadManager")
 
@@ -70,23 +73,26 @@ final class DownloadManager {
         downloadStates[episodeId] ?? .idle
     }
 
-    /// 开始下载单集视频
+    /// 开始下载单集（自动识别 MP3 直链或 M3U8 视频）
     /// 弹出 NSSavePanel 让用户选择保存位置，确认后开始下载
     /// - Parameter episode: 要下载的单集
     func startDownload(episode: EpisodeItem) {
         let vodUrl = episode.vodUrl
 
         guard !vodUrl.isEmpty else {
-            downloadStates[episode.id] = .failed("该集没有可下载的视频地址")
+            downloadStates[episode.id] = .failed("该集没有可下载的地址")
             return
         }
 
-        // 弹出保存面板
+        // 根据 URL 后缀判断下载类型
+        let isMP3 = vodUrl.lowercased().hasSuffix(".mp3")
+
+        // 弹出保存面板（根据格式设置文件名和类型）
         let panel = NSSavePanel()
         panel.title = "选择保存位置"
         panel.message = "将「\(episode.title)」保存到："
-        panel.nameFieldStringValue = "\(episode.title).ts"
-        panel.allowedContentTypes = [.mpeg2TransportStream]
+        panel.nameFieldStringValue = isMP3 ? "\(episode.title).mp3" : "\(episode.title).ts"
+        panel.allowedContentTypes = isMP3 ? [.mp3] : [.mpeg2TransportStream]
         panel.canCreateDirectories = true
         panel.isExtensionHidden = false
 
@@ -97,7 +103,7 @@ final class DownloadManager {
             return
         }
 
-        logger.info("📂 保存路径: \(saveURL.path)")
+        logger.info("📂 保存路径: \(saveURL.path)  类型: \(isMP3 ? "MP3" : "M3U8")")
 
         // 更新状态为下载中
         downloadStates[episode.id] = .downloading(progress: 0)
@@ -107,15 +113,31 @@ final class DownloadManager {
             guard let self else { return }
 
             do {
-                try await self.downloadService.download(
-                    m3u8URLString: vodUrl,
-                    to: saveURL,
-                    onProgress: { [weak self] progress in
-                        Task { @MainActor [weak self] in
-                            self?.downloadStates[episode.id] = .downloading(progress: progress)
-                        }
+                // 进度回调闭包（共用）
+                // 注意：仅在当前仍处于 .downloading 状态时才更新进度，
+                // 避免迟到的进度回调覆盖已完成/已失败的终态（竞态条件）
+                let progressHandler: @Sendable (Double) -> Void = { [weak self] progress in
+                    Task { @MainActor [weak self] in
+                        guard let self,
+                              case .downloading = self.downloadStates[episode.id] else { return }
+                        self.downloadStates[episode.id] = .downloading(progress: progress)
                     }
-                )
+                }
+
+                // 根据类型分派到对应的下载服务
+                if isMP3 {
+                    try await self.mp3DownloadService.download(
+                        urlString: vodUrl,
+                        to: saveURL,
+                        onProgress: progressHandler
+                    )
+                } else {
+                    try await self.m3u8DownloadService.download(
+                        m3u8URLString: vodUrl,
+                        to: saveURL,
+                        onProgress: progressHandler
+                    )
+                }
 
                 // 下载完成
                 self.downloadStates[episode.id] = .completed

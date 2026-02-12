@@ -13,6 +13,8 @@ struct EpisodeRowView: View {
     let episode: EpisodeItem
     let index: Int
     let serverUrl: String
+    /// 是否为音频类型（音频无封面，使用图标替代）
+    var isAudio: Bool = false
 
     /// 下载管理器（由父视图传入）
     var downloadManager: DownloadManager
@@ -33,23 +35,42 @@ struct EpisodeRowView: View {
                 .foregroundStyle(.secondary)
                 .frame(width: 36, alignment: .center)
 
-            // 封面缩略图
-            KFImage(URL(string: episode.coverUrl))
-                .placeholder {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .fill(Color.gray.opacity(0.12))
-                        ProgressView()
-                            .scaleEffect(0.5)
-                    }
+            // 封面缩略图 / 音频图标
+            if isAudio {
+                // 音频讲集：使用渐变背景 + 耳机图标
+                ZStack {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.orange.opacity(0.15), Color.orange.opacity(0.06)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                    Image(systemName: "headphones")
+                        .font(.title3)
+                        .foregroundStyle(Color.orange.opacity(0.7))
                 }
-                .onFailureImage(KFCrossPlatformImage(systemSymbolName: "play.rectangle", accessibilityDescription: nil))
-                .fade(duration: 0.25)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .frame(width: 80, height: 50)
-            .clipped()
+                .frame(width: 50, height: 50)
+            } else {
+                // 视频讲集：显示封面缩略图
+                KFImage(URL(string: episode.coverUrl))
+                    .placeholder {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .fill(Color.gray.opacity(0.12))
+                            ProgressView()
+                                .scaleEffect(0.5)
+                        }
+                    }
+                    .onFailureImage(KFCrossPlatformImage(systemSymbolName: "play.rectangle", accessibilityDescription: nil))
+                    .fade(duration: 0.25)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    .frame(width: 80, height: 50)
+                    .clipped()
+            }
 
             // 标题
             VStack(alignment: .leading, spacing: 3) {
@@ -78,6 +99,7 @@ struct EpisodeRowView: View {
             // 下载操作区域
             downloadActionView
                 .frame(width: 80)
+                .animation(.easeInOut(duration: 0.3), value: downloadState)
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 14)
@@ -107,7 +129,7 @@ struct EpisodeRowView: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
-            .help("下载视频")
+            .help("下载")
 
         case .downloading(let progress):
             // 下载中：显示进度环 + 百分比 + 停止按钮
@@ -143,10 +165,11 @@ struct EpisodeRowView: View {
             }
 
         case .completed:
-            // 完成状态：显示绿色对勾
+            // 完成状态：显示绿色对勾（带缩放弹入动画）
             Image(systemName: "checkmark.circle.fill")
                 .font(.title3)
                 .foregroundStyle(.green)
+                .transition(.scale.combined(with: .opacity))
                 .help("下载完成")
 
         case .failed(let message):
