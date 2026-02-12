@@ -8,15 +8,29 @@
 
 /* Begin PBXBuildFile section */
 		966DFB112F3CB1D400A90038 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 966DFB102F3CB1D400A90038 /* Kingfisher */; };
+		966DFB3F2F3D7E0000A90038 /* Atlantis in Frameworks */ = {isa = PBXBuildFile; productRef = 966DFB3E2F3D7E0000A90038 /* Atlantis */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		966DFAB32F3C7CF500A90038 /* ZenPlayer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ZenPlayer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		966DFB412F3D7E3300A90038 /* Exceptions for "ZenPlayer" folder in "ZenPlayer" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 966DFAB22F3C7CF500A90038 /* ZenPlayer */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		966DFAB52F3C7CF500A90038 /* ZenPlayer */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				966DFB412F3D7E3300A90038 /* Exceptions for "ZenPlayer" folder in "ZenPlayer" target */,
+			);
 			path = ZenPlayer;
 			sourceTree = "<group>";
 		};
@@ -27,6 +41,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				966DFB3F2F3D7E0000A90038 /* Atlantis in Frameworks */,
 				966DFB112F3CB1D400A90038 /* Kingfisher in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -71,6 +86,7 @@
 			name = ZenPlayer;
 			packageProductDependencies = (
 				966DFB102F3CB1D400A90038 /* Kingfisher */,
+				966DFB3E2F3D7E0000A90038 /* Atlantis */,
 			);
 			productName = ZenPlayer;
 			productReference = 966DFAB32F3C7CF500A90038 /* ZenPlayer.app */;
@@ -102,6 +118,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				966DFB0F2F3CB1D400A90038 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				966DFB3D2F3D7E0000A90038 /* XCRemoteSwiftPackageReference "atlantis" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 966DFAB42F3C7CF500A90038 /* Products */;
@@ -265,7 +282,9 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ZenPlayer/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Atlantis 使用 Bonjour 服务将您的记录流量发送到 Proxyman 应用。";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -296,7 +315,9 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ZenPlayer/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Atlantis 使用 Bonjour 服务将您的记录流量发送到 Proxyman 应用。";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -346,6 +367,14 @@
 				minimumVersion = 8.6.2;
 			};
 		};
+		966DFB3D2F3D7E0000A90038 /* XCRemoteSwiftPackageReference "atlantis" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ProxymanApp/atlantis";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.34.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -353,6 +382,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 966DFB0F2F3CB1D400A90038 /* XCRemoteSwiftPackageReference "Kingfisher" */;
 			productName = Kingfisher;
+		};
+		966DFB3E2F3D7E0000A90038 /* Atlantis */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 966DFB3D2F3D7E0000A90038 /* XCRemoteSwiftPackageReference "atlantis" */;
+			productName = Atlantis;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

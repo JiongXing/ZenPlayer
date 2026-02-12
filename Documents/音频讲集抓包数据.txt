@@ -1,0 +1,121 @@
+
+## 请求头
+
+Host: api.jingzong.net
+Accept-Language: zh-Hans-CN;q=1, en-CN;q=0.9
+userkey: 52A63248312E107776792D30235C85B0
+Accept: */*
+Accept-Encoding: gzip, deflate, br
+
+## 响应头
+Server: nginx
+Content-Type: text/html; charset=UTF-8
+X-Cache-Status: MISS
+Content-Encoding: gzip
+Transfer-Encoding: Identity
+Access-Control-Allow-Origin: *, *
+Date: Thu, 12 Feb 2026 03:14:10 GMT
+Access-Control-Allow-Headers: x-requested-with,content-type, X-Requested-With
+Access-Control-Allow-Methods: *, GET,POST,OPTIONS
+X-Powered-By: PHP/7.2.6
+Vary: Accept-Encoding, Accept-Encoding
+Connection: keep-alive
+
+## 响应体
+{
+  "code": 1,
+  "data": {
+    "album_num": "13-001",
+    "cate_cover": "image/13/13-001/13-001.jpg",
+    "cate_cover_url": "https://v.yyii.info/image/special/13-001.jpg",
+    "cate_id": "001",
+    "cate_json": "json/13/13-001/13-001.json",
+    "cate_url": "https://api.jingzong.net/jiangyan/v3/hz_video/infolist?client=ios&v=3&num=13-001&type=mp3",
+    "path_title": "講演全集 > 學佛基礎 > 如何了脫生死─當生成就之佛道",
+    "rows": [
+      {
+        "cover_url": "https://video.cibei.org/image/13/13-001/13-001-0001a.mp3",
+        "duration": 3632330,
+        "episode": "1a",
+        "filesize": 58117473,
+        "id": 20831,
+        "mp4_url": "mp3/13/13-001/13-001-0001a.mp3",
+        "num": "13-001-0001a",
+        "text_url": "https://i.jingzong.org/amtbtv/docs/13-001-0001a/txt/zh_TW",
+        "title": "如何了脫生死─當生成就之佛道-第1a集",
+        "vod_url": "https://video.cibei.org/mp3/13/13-001/13-001-0001a.mp3"
+      },
+      {
+        "cover_url": "https://video.cibei.org/image/13/13-001/13-001-0001b.mp3",
+        "duration": 3204000,
+        "episode": "1b",
+        "filesize": 51264195,
+        "id": 20832,
+        "mp4_url": "mp3/13/13-001/13-001-0001b.mp3",
+        "num": "13-001-0001b",
+        "text_url": "https://i.jingzong.org/amtbtv/docs/13-001-0001b/txt/zh_TW",
+        "title": "如何了脫生死─當生成就之佛道-第1b集",
+        "vod_url": "https://video.cibei.org/mp3/13/13-001/13-001-0001b.mp3"
+      },
+      {
+        "cover_url": "https://video.cibei.org/image/13/13-001/13-001-0002a.mp3",
+        "duration": 3665120,
+        "episode": "2a",
+        "filesize": 58642012,
+        "id": 20833,
+        "mp4_url": "mp3/13/13-001/13-001-0002a.mp3",
+        "num": "13-001-0002a",
+        "text_url": "https://i.jingzong.org/amtbtv/docs/13-001-0002a/txt/zh_TW",
+        "title": "如何了脫生死─當生成就之佛道-第2a集",
+        "vod_url": "https://video.cibei.org/mp3/13/13-001/13-001-0002a.mp3"
+      },
+      {
+        "cover_url": "https://video.cibei.org/image/13/13-001/13-001-0002b.mp3",
+        "duration": 3182270,
+        "episode": "2b",
+        "filesize": 50916454,
+        "id": 20834,
+        "mp4_url": "mp3/13/13-001/13-001-0002b.mp3",
+        "num": "13-001-0002b",
+        "text_url": "https://i.jingzong.org/amtbtv/docs/13-001-0002b/txt/zh_TW",
+        "title": "如何了脫生死─當生成就之佛道-第2b集",
+        "vod_url": "https://video.cibei.org/mp3/13/13-001/13-001-0002b.mp3"
+      },
+      {
+        "cover_url": "https://video.cibei.org/image/13/13-001/13-001-0003a.mp3",
+        "duration": 3648030,
+        "episode": "3a",
+        "filesize": 58368665,
+        "id": 20835,
+        "mp4_url": "mp3/13/13-001/13-001-0003a.mp3",
+        "num": "13-001-0003a",
+        "text_url": "https://i.jingzong.org/amtbtv/docs/13-001-0003a/txt/zh_TW",
+        "title": "如何了脫生死─當生成就之佛道-第3a集",
+        "vod_url": "https://video.cibei.org/mp3/13/13-001/13-001-0003a.mp3"
+      },
+      {
+        "cover_url": "https://video.cibei.org/image/13/13-001/13-001-0003b.mp3",
+        "duration": 3189300,
+        "episode": "3b",
+        "filesize": 51028885,
+        "id": 20836,
+        "mp4_url": "mp3/13/13-001/13-001-0003b.mp3",
+        "num": "13-001-0003b",
+        "text_url": "https://i.jingzong.org/amtbtv/docs/13-001-0003b/txt/zh_TW",
+        "title": "如何了脫生死─當生成就之佛道-第3b集",
+        "vod_url": "https://video.cibei.org/mp3/13/13-001/13-001-0003b.mp3"
+      }
+    ],
+    "series": "共6集",
+    "server_url": "https://video.cibei.org/",
+    "speech_address": "美國奧斯汀",
+    "speech_author": "淨空法師",
+    "speech_date": "1991.11",
+    "speech_desc": "還未添加",
+    "speech_title": "如何了脫生死─當生成就之佛道",
+    "total_count": 3,
+    "type": "mp3",
+    "update_time": 2147483648
+  },
+  "msg": "返回成功"
+}

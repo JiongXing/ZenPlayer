@@ -6,12 +6,14 @@
 //
 
 import SwiftUI
+import Atlantis
 import Kingfisher
 
 @main
 struct ZenPlayerApp: App {
 
     init() {
+        Atlantis.start()
         configureKingfisher()
     }
 

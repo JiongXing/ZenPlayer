@@ -34,7 +34,7 @@ struct EpisodeItem: Codable, Identifiable, Hashable {
     let episode: String
     let mp4Url: String
     let vodUrl: String
-    let mp3Url: String
+    let mp3Url: String?
     let coverUrl: String
     let textUrl: String
     let filesize: Int
