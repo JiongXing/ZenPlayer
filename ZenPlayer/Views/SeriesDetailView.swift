@@ -13,6 +13,7 @@ struct SeriesDetailView: View {
     let series: SeriesItem
 
     @State private var viewModel = SeriesDetailViewModel()
+    @State private var downloadManager = DownloadManager.shared
 
     var body: some View {
         Group {
@@ -53,7 +54,8 @@ struct SeriesDetailView: View {
                         EpisodeRowView(
                             episode: episode,
                             index: index,
-                            serverUrl: detail.serverUrl
+                            serverUrl: detail.serverUrl,
+                            downloadManager: downloadManager
                         )
                         .padding(.horizontal, 16)
                     }
