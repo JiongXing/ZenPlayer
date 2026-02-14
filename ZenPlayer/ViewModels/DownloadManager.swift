@@ -10,6 +10,14 @@ import AppKit
 import UniformTypeIdentifiers
 import os.log
 
+// MARK: - 下载类型
+
+/// 下载类型：音频 (mp3) 或视频 (mp4)
+enum DownloadType: String {
+    case mp3
+    case mp4
+}
+
 // MARK: - 下载状态
 
 /// 单集下载状态
@@ -48,19 +56,16 @@ final class DownloadManager {
 
     // MARK: - 可观察状态
 
-    /// 每个单集的下载状态（key: episode.id）
-    var downloadStates: [Int: DownloadState] = [:]
+    /// 每个单集的下载状态（key: "\(episodeId)_mp3" 或 "\(episodeId)_mp4"）
+    var downloadStates: [String: DownloadState] = [:]
 
     // MARK: - 私有属性
 
-    /// 正在执行的下载任务（key: episode.id）
-    private var downloadTasks: [Int: Task<Void, Never>] = [:]
+    /// 正在执行的下载任务（key 同 downloadStates）
+    private var downloadTasks: [String: Task<Void, Never>] = [:]
 
-    /// M3U8 (HLS) 下载服务
-    private let m3u8DownloadService = M3U8DownloadService()
-
-    /// MP3 直链下载服务
-    private let mp3DownloadService = MP3DownloadService()
+    /// 直链下载服务（用于 mp3 和 mp4）
+    private let directDownloadService = MP3DownloadService()
 
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "ZenPlayer", category: "DownloadManager")
 
@@ -68,31 +73,61 @@ final class DownloadManager {
 
     // MARK: - 公共接口
 
-    /// 获取指定单集的下载状态
-    func state(for episodeId: Int) -> DownloadState {
-        downloadStates[episodeId] ?? .idle
+    /// 生成下载状态的唯一 key
+    /// - Parameters:
+    ///   - episodeId: 单集 ID
+    ///   - type: 下载类型（mp3 / mp4）
+    static func downloadKey(episodeId: Int, type: DownloadType) -> String {
+        "\(episodeId)_\(type.rawValue)"
     }
 
-    /// 开始下载单集（自动识别 MP3 直链或 M3U8 视频）
+    /// 获取指定单集某种类型的下载状态
+    func state(for episodeId: Int, type: DownloadType) -> DownloadState {
+        let key = Self.downloadKey(episodeId: episodeId, type: type)
+        return downloadStates[key] ?? .idle
+    }
+
+    /// 开始下载单集的音频或视频
     /// 弹出 NSSavePanel 让用户选择保存位置，确认后开始下载
-    /// - Parameter episode: 要下载的单集
-    func startDownload(episode: EpisodeItem) {
-        let vodUrl = episode.vodUrl
+    /// - Parameters:
+    ///   - episode: 要下载的单集
+    ///   - type: 下载类型（.mp3 音频 / .mp4 视频）
+    ///   - serverUrl: 服务器根地址，用于拼接 mp4 的相对路径
+    func startDownload(episode: EpisodeItem, type: DownloadType, serverUrl: String) {
+        let key = Self.downloadKey(episodeId: episode.id, type: type)
 
-        guard !vodUrl.isEmpty else {
-            downloadStates[episode.id] = .failed("该集没有可下载的地址")
-            return
+        // 构建完整下载 URL
+        let downloadUrlString: String
+        switch type {
+        case .mp3:
+            guard let mp3Url = episode.mp3Url, !mp3Url.isEmpty else {
+                downloadStates[key] = .failed("该集没有可下载的音频地址")
+                return
+            }
+            downloadUrlString = mp3Url
+        case .mp4:
+            guard !episode.mp4Url.isEmpty else {
+                downloadStates[key] = .failed("该集没有可下载的视频地址")
+                return
+            }
+            // mp4Url 是相对路径，需要拼接 serverUrl
+            downloadUrlString = serverUrl + episode.mp4Url
         }
-
-        // 根据 URL 后缀判断下载类型
-        let isMP3 = vodUrl.lowercased().hasSuffix(".mp3")
 
         // 弹出保存面板（根据格式设置文件名和类型）
         let panel = NSSavePanel()
         panel.title = "选择保存位置"
         panel.message = "将「\(episode.title)」保存到："
-        panel.nameFieldStringValue = isMP3 ? "\(episode.title).mp3" : "\(episode.title).ts"
-        panel.allowedContentTypes = isMP3 ? [.mp3] : [.mpeg2TransportStream]
+
+        switch type {
+        case .mp3:
+            panel.nameFieldStringValue = "\(episode.title).mp3"
+            panel.allowedContentTypes = [.mp3]
+        case .mp4:
+            panel.nameFieldStringValue = "\(episode.title).mp4"
+            panel.allowedContentTypes = [.mpeg4Movie]
+        }
+
         panel.canCreateDirectories = true
         panel.isExtensionHidden = false
 
@@ -103,72 +138,67 @@ final class DownloadManager {
             return
         }
 
-        logger.info("📂 保存路径: \(saveURL.path)  类型: \(isMP3 ? "MP3" : "M3U8")")
+        logger.info("📂 保存路径: \(saveURL.path)  类型: \(type.rawValue)")
 
         // 更新状态为下载中
-        downloadStates[episode.id] = .downloading(progress: 0)
+        downloadStates[key] = .downloading(progress: 0)
 
         // 创建下载任务
         let task = Task { [weak self] in
             guard let self else { return }
 
             do {
-                // 进度回调闭包（共用）
+                // 进度回调闭包
                 // 注意：仅在当前仍处于 .downloading 状态时才更新进度，
                 // 避免迟到的进度回调覆盖已完成/已失败的终态（竞态条件）
                 let progressHandler: @Sendable (Double) -> Void = { [weak self] progress in
                     Task { @MainActor [weak self] in
                         guard let self,
-                              case .downloading = self.downloadStates[episode.id] else { return }
-                        self.downloadStates[episode.id] = .downloading(progress: progress)
+                              case .downloading = self.downloadStates[key] else { return }
+                        self.downloadStates[key] = .downloading(progress: progress)
                     }
                 }
 
-                // 根据类型分派到对应的下载服务
-                if isMP3 {
-                    try await self.mp3DownloadService.download(
-                        urlString: vodUrl,
-                        to: saveURL,
-                        onProgress: progressHandler
-                    )
-                } else {
-                    try await self.m3u8DownloadService.download(
-                        m3u8URLString: vodUrl,
-                        to: saveURL,
-                        onProgress: progressHandler
-                    )
-                }
+                // mp3 和 mp4 均使用直链下载服务
+                try await self.directDownloadService.download(
+                    urlString: downloadUrlString,
+                    to: saveURL,
+                    onProgress: progressHandler
+                )
 
                 // 下载完成
-                self.downloadStates[episode.id] = .completed
-                self.downloadTasks.removeValue(forKey: episode.id)
-                self.logger.info("✅ 下载完成: \(episode.title)")
+                self.downloadStates[key] = .completed
+                self.downloadTasks.removeValue(forKey: key)
+                self.logger.info("✅ 下载完成: \(episode.title) (\(type.rawValue))")
 
             } catch is CancellationError {
-                self.downloadStates[episode.id] = .idle
-                self.downloadTasks.removeValue(forKey: episode.id)
+                self.downloadStates[key] = .idle
+                self.downloadTasks.removeValue(forKey: key)
                 // 尝试清理不完整的文件
                 try? FileManager.default.removeItem(at: saveURL)
-                self.logger.info("🛑 下载已取消: \(episode.title)")
+                self.logger.info("🛑 下载已取消: \(episode.title) (\(type.rawValue))")
 
             } catch {
-                self.downloadStates[episode.id] = .failed(error.localizedDescription)
-                self.downloadTasks.removeValue(forKey: episode.id)
+                self.downloadStates[key] = .failed(error.localizedDescription)
+                self.downloadTasks.removeValue(forKey: key)
                 // 清理不完整的文件
                 try? FileManager.default.removeItem(at: saveURL)
-                self.logger.error("❌ 下载失败: \(episode.title) - \(error.localizedDescription)")
+                self.logger.error("❌ 下载失败: \(episode.title) (\(type.rawValue)) - \(error.localizedDescription)")
             }
         }
 
-        downloadTasks[episode.id] = task
+        downloadTasks[key] = task
     }
 
-    /// 取消指定单集的下载
-    /// - Parameter episodeId: 单集 ID
-    func cancelDownload(episodeId: Int) {
-        downloadTasks[episodeId]?.cancel()
-        downloadTasks.removeValue(forKey: episodeId)
-        downloadStates[episodeId] = .idle
-        logger.info("🛑 取消下载 episodeId=\(episodeId)")
+    /// 取消指定单集某种类型的下载
+    /// - Parameters:
+    ///   - episodeId: 单集 ID
+    ///   - type: 下载类型
+    func cancelDownload(episodeId: Int, type: DownloadType) {
+        let key = Self.downloadKey(episodeId: episodeId, type: type)
+        downloadTasks[key]?.cancel()
+        downloadTasks.removeValue(forKey: key)
+        downloadStates[key] = .idle
+        logger.info("🛑 取消下载 episodeId=\(episodeId) type=\(type.rawValue)")
     }
 }

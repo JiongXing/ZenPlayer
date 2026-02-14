@@ -1,0 +1,92 @@
+包括视频和音频的讲集详情.txt
+
+{
+  "code": 1,
+  "data": {
+    "album_num": "17-013",
+    "cate_cover": "image/17/17-013/17-013.jpg",
+    "cate_cover_url": "https://v.yyii.info/image/special/17-013.jpg",
+    "cate_id": "013",
+    "cate_json": "json/17/17-013/17-013.json",
+    "cate_url": "https://api.jingzong.net/jiangyan/v3/hz_video/infolist?client=ios&v=3&num=17-013&type=mp4",
+    "path_title": "講演全集 > 學佛基礎 > 認識佛教",
+    "rows": [
+      {
+        "cover_url": "https://video.cibei.org/image/17/17-013/17-013-0001.jpg",
+        "duration": 5379140,
+        "episode": "1",
+        "filesize": 179608598,
+        "id": 7666,
+        "mp3_url": "https://video.cibei.org/mp3/17/17-013/17-013-0001.mp3",
+        "mp4_url": "mp4/17/17-013/17-013-0001.mp4",
+        "num": "17-013-0001",
+        "text_url": "https://i.jingzong.org/amtbtv/docs/17-013-0001/txt/zh_TW",
+        "title": "認識佛教-第1集",
+        "vod_url": "https://video.cibei.org/360p/17/17-013/17-013-0001/17-013-0001.m3u8"
+      },
+      {
+        "cover_url": "https://video.cibei.org/image/17/17-013/17-013-0002.jpg",
+        "duration": 5446430,
+        "episode": "2",
+        "filesize": 180847089,
+        "id": 7667,
+        "mp3_url": "https://video.cibei.org/mp3/17/17-013/17-013-0002.mp3",
+        "mp4_url": "mp4/17/17-013/17-013-0002.mp4",
+        "num": "17-013-0002",
+        "text_url": "https://i.jingzong.org/amtbtv/docs/17-013-0002/txt/zh_TW",
+        "title": "認識佛教-第2集",
+        "vod_url": "https://video.cibei.org/360p/17/17-013/17-013-0002/17-013-0002.m3u8"
+      },
+      {
+        "cover_url": "https://video.cibei.org/image/17/17-013/17-013-0003.jpg",
+        "duration": 5325540,
+        "episode": "3",
+        "filesize": 178542304,
+        "id": 7668,
+        "mp3_url": "https://video.cibei.org/mp3/17/17-013/17-013-0003.mp3",
+        "mp4_url": "mp4/17/17-013/17-013-0003.mp4",
+        "num": "17-013-0003",
+        "text_url": "https://i.jingzong.org/amtbtv/docs/17-013-0003/txt/zh_TW",
+        "title": "認識佛教-第3集",
+        "vod_url": "https://video.cibei.org/360p/17/17-013/17-013-0003/17-013-0003.m3u8"
+      },
+      {
+        "cover_url": "https://video.cibei.org/image/17/17-013/17-013-0004.jpg",
+        "duration": 5524710,
+        "episode": "4",
+        "filesize": 188265922,
+        "id": 7669,
+        "mp3_url": "https://video.cibei.org/mp3/17/17-013/17-013-0004.mp3",
+        "mp4_url": "mp4/17/17-013/17-013-0004.mp4",
+        "num": "17-013-0004",
+        "text_url": "https://i.jingzong.org/amtbtv/docs/17-013-0004/txt/zh_TW",
+        "title": "認識佛教-第4集",
+        "vod_url": "https://video.cibei.org/360p/17/17-013/17-013-0004/17-013-0004.m3u8"
+      },
+      {
+        "cover_url": "https://video.cibei.org/image/17/17-013/17-013-0005.jpg",
+        "duration": 3452020,
+        "episode": "5",
+        "filesize": 115399905,
+        "id": 7670,
+        "mp3_url": "https://video.cibei.org/mp3/17/17-013/17-013-0005.mp3",
+        "mp4_url": "mp4/17/17-013/17-013-0005.mp4",
+        "num": "17-013-0005",
+        "text_url": "https://i.jingzong.org/amtbtv/docs/17-013-0005/txt/zh_TW",
+        "title": "認識佛教-第5集",
+        "vod_url": "https://video.cibei.org/360p/17/17-013/17-013-0005/17-013-0005.m3u8"
+      }
+    ],
+    "series": "共5集",
+    "server_url": "https://video.cibei.org/",
+    "speech_address": "澳洲布里斯本市",
+    "speech_author": "淨空法師",
+    "speech_date": "1996.1.6-10",
+    "speech_desc": "還未添加",
+    "speech_title": "認識佛教",
+    "total_count": 5,
+    "type": "mp4",
+    "update_time": 2147483648
+  },
+  "msg": "返回成功"
+}
