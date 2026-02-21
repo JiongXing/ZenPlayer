@@ -49,16 +49,15 @@ struct SeriesDetailView: View {
                 // 播放列表标题栏
                 playlistHeader(detail: detail)
 
-                // 播放列表
-                LazyVStack(spacing: 2) {
-                    ForEach(Array(viewModel.episodes.enumerated()), id: \.element.id) { index, episode in
+                // 播放列表（缩小两侧边距，留更多空间展示标题与元信息）
+                LazyVStack(spacing: 4) {
+                    ForEach(viewModel.episodes) { episode in
                         EpisodeRowView(
                             episode: episode,
-                            index: index,
                             serverUrl: detail.serverUrl,
                             downloadManager: downloadManager
                         )
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, 6)
                     }
                 }
                 .padding(.bottom, 24)

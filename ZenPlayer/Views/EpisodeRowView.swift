@@ -11,7 +11,6 @@ import Kingfisher
 /// 播放列表中的单集行视图
 struct EpisodeRowView: View {
     let episode: EpisodeItem
-    let index: Int
     let serverUrl: String
 
     /// 下载管理器（由父视图传入）
@@ -50,7 +49,7 @@ struct EpisodeRowView: View {
             }
         }
         .padding(.vertical, 8)
-        .padding(.horizontal, isCompact ? 10 : 14)
+        .padding(.horizontal, isCompact ? 6 : 8)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(isHovered ? Color.accentColor.opacity(0.06) : Color.clear)
@@ -68,14 +67,6 @@ struct EpisodeRowView: View {
 
     private var compactBody: some View {
         HStack(alignment: .center, spacing: 12) {
-            // 序号
-            Text("\(index + 1)")
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundStyle(.secondary)
-                .frame(width: 28, alignment: .center)
-
-            // 封面缩略图（较小）
             episodeThumbnail(width: 56, height: 38)
 
             // 右侧：上行标题，下行元信息+下载
@@ -112,12 +103,6 @@ struct EpisodeRowView: View {
 
     private var regularBody: some View {
         HStack(spacing: 14) {
-            Text("\(index + 1)")
-                .font(.title3)
-                .fontWeight(.medium)
-                .foregroundStyle(.secondary)
-                .frame(width: 36, alignment: .center)
-
             episodeThumbnail(width: episode.isVideo ? 80 : 50, height: 50)
 
             VStack(alignment: .leading, spacing: 3) {
