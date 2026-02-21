@@ -6,7 +6,11 @@
 //
 
 import SwiftUI
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import UniformTypeIdentifiers
 import os.log
 
@@ -58,6 +62,9 @@ final class DownloadManager {
 
     /// 每个单集的下载状态（key: "\(episodeId)_mp3" 或 "\(episodeId)_mp4"）
     var downloadStates: [String: DownloadState] = [:]
+
+    /// 已完成下载的本地文件 URL（key 同 downloadStates），用于 iOS 分享
+    var completedFileURLs: [String: URL] = [:]
 
     // MARK: - 私有属性
 
@@ -114,7 +121,10 @@ final class DownloadManager {
             downloadUrlString = serverUrl + episode.mp4Url
         }
 
-        // 弹出保存面板（根据格式设置文件名和类型）
+        // 获取保存路径
+        let saveURL: URL
+#if os(macOS)
+        // macOS：弹出保存面板让用户选择路径
         let panel = NSSavePanel()
         panel.title = "选择保存位置"
         panel.message = "将「\(episode.title)」保存到："
@@ -133,10 +143,17 @@ final class DownloadManager {
 
         let response = panel.runModal()
 
-        guard response == .OK, let saveURL = panel.url else {
+        guard response == .OK, let panelURL = panel.url else {
             logger.info("用户取消了保存面板")
             return
         }
+        saveURL = panelURL
+#else
+        // iOS：保存到 Documents 目录（在「文件」App 中可见）
+        let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let fileName = "\(episode.title).\(type.rawValue)"
+        saveURL = documentsDir.appendingPathComponent(fileName)
+#endif
 
         logger.info("📂 保存路径: \(saveURL.path)  类型: \(type.rawValue)")
 
@@ -168,6 +185,7 @@ final class DownloadManager {
 
                 // 下载完成
                 self.downloadStates[key] = .completed
+                self.completedFileURLs[key] = saveURL
                 self.downloadTasks.removeValue(forKey: key)
                 self.logger.info("✅ 下载完成: \(episode.title) (\(type.rawValue))")
 
@@ -188,6 +206,12 @@ final class DownloadManager {
         }
 
         downloadTasks[key] = task
+    }
+
+    /// 获取已完成下载的本地文件 URL
+    func completedFileURL(for episodeId: Int, type: DownloadType) -> URL? {
+        let key = Self.downloadKey(episodeId: episodeId, type: type)
+        return completedFileURLs[key]
     }
 
     /// 取消指定单集某种类型的下载

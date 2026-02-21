@@ -5,7 +5,7 @@ alwaysApply: true
 
 # ZenPlayer 项目概览
 
-ZenPlayer 是一款 **macOS 原生应用**，用于浏览、下载和播放佛学视频讲座。使用 **SwiftUI** 构建，目标平台为 macOS。
+ZenPlayer 是一款 **跨平台应用**，用于浏览、下载和播放佛学视频讲座。使用 **SwiftUI** 构建，支持 macOS、iPhone 和 iPad。
 
 ## 技术栈
 

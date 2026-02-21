@@ -14,6 +14,7 @@ struct SeriesDetailView: View {
 
     @State private var viewModel = SeriesDetailViewModel()
     @State private var downloadManager = DownloadManager.shared
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
         Group {
@@ -43,7 +44,7 @@ struct SeriesDetailView: View {
                 headerView(detail: detail)
 
                 Divider()
-                    .padding(.horizontal, 28)
+                    .padding(.horizontal, LayoutConstants.horizontalPadding(sizeClass: sizeClass))
 
                 // 播放列表标题栏
                 playlistHeader(detail: detail)
@@ -67,67 +68,99 @@ struct SeriesDetailView: View {
 
     // MARK: - 头部信息
 
+    @ViewBuilder
     private func headerView(detail: SpeechDetailData) -> some View {
-        HStack(alignment: .top, spacing: 20) {
-            // 封面
-            KFImage(URL(string: detail.cateCoverUrl))
-                .placeholder {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Color.gray.opacity(0.12))
-                        ProgressView()
-                    }
+        let isCompact = sizeClass == .compact
+
+        Group {
+            if isCompact {
+                VStack(alignment: .leading, spacing: 16) {
+                    coverImage(detail: detail, fixedWidth: nil, height: 160)
+                    infoBlock(detail: detail)
                 }
-                .onFailureImage(KFCrossPlatformImage(systemSymbolName: "photo", accessibilityDescription: nil))
-                .fade(duration: 0.25)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .frame(width: 180, height: 120)
-            .clipped()
-            .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 3)
-
-            // 讲集信息
-            VStack(alignment: .leading, spacing: 8) {
-                // 标题
-                Text(detail.speechTitle)
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .lineLimit(2)
-
-                // 面包屑路径
-                Text(detail.pathTitle)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(1)
-
-                Spacer().frame(height: 2)
-
-                // 详细信息
-                VStack(alignment: .leading, spacing: 5) {
-                    infoRow(icon: "person.fill", text: detail.speechAuthor)
-                    infoRow(icon: "calendar", text: detail.speechDate)
-                    if !detail.speechAddress.trimmingCharacters(in: .whitespaces).isEmpty {
-                        infoRow(icon: "mappin.and.ellipse",
-                                text: detail.speechAddress.trimmingCharacters(in: .whitespaces))
-                    }
-                }
-
-                Spacer().frame(height: 4)
-
-                // 标签行
-                HStack(spacing: 10) {
-                    // 集数标签
-                    tagView(text: detail.series, color: .green)
-
-                    // 类型标签
-                    typeTagView(type: detail.type)
+            } else {
+                HStack(alignment: .top, spacing: 20) {
+                    coverImage(detail: detail, fixedWidth: 180, height: 120)
+                    infoBlock(detail: detail)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, 28)
+        .padding(.horizontal, LayoutConstants.horizontalPadding(sizeClass: sizeClass))
         .padding(.vertical, 20)
+    }
+
+    private func coverImage(detail: SpeechDetailData, fixedWidth: CGFloat?, height: CGFloat) -> some View {
+        Group {
+            if let w = fixedWidth {
+                KFImage(URL(string: detail.cateCoverUrl))
+                    .placeholder {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(Color.gray.opacity(0.12))
+                            ProgressView()
+                        }
+                    }
+                    .onFailureImage(PlatformImage.systemImage("photo"))
+                    .fade(duration: 0.25)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: w, height: height)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .clipped()
+                    .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 3)
+            } else {
+                KFImage(URL(string: detail.cateCoverUrl))
+                    .placeholder {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(Color.gray.opacity(0.12))
+                            ProgressView()
+                        }
+                    }
+                    .onFailureImage(PlatformImage.systemImage("photo"))
+                    .fade(duration: 0.25)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(maxWidth: .infinity, maxHeight: height)
+                    .frame(height: height)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .clipped()
+                    .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 3)
+            }
+        }
+    }
+
+    private func infoBlock(detail: SpeechDetailData) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(detail.speechTitle)
+                .font(.title2)
+                .fontWeight(.bold)
+                .lineLimit(sizeClass == .compact ? 3 : 2)
+
+            Text(detail.pathTitle)
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+                .lineLimit(2)
+
+            Spacer().frame(height: 2)
+
+            VStack(alignment: .leading, spacing: 5) {
+                infoRow(icon: "person.fill", text: detail.speechAuthor)
+                infoRow(icon: "calendar", text: detail.speechDate)
+                if !detail.speechAddress.trimmingCharacters(in: .whitespaces).isEmpty {
+                    infoRow(icon: "mappin.and.ellipse",
+                            text: detail.speechAddress.trimmingCharacters(in: .whitespaces))
+                }
+            }
+
+            Spacer().frame(height: 4)
+
+            HStack(spacing: 10) {
+                tagView(text: detail.series, color: .green)
+                typeTagView(type: detail.type)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - 播放列表标题栏
@@ -144,7 +177,7 @@ struct SeriesDetailView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .padding(.horizontal, 28)
+        .padding(.horizontal, LayoutConstants.horizontalPadding(sizeClass: sizeClass))
         .padding(.vertical, 12)
     }
 

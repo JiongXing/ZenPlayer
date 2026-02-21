@@ -18,6 +18,9 @@ struct EpisodeRowView: View {
     var downloadManager: DownloadManager
 
     @State private var isHovered = false
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    #endif
 
     /// 是否有可用的 mp3 下载链接
     private var hasMp3: Bool {
@@ -30,58 +33,97 @@ struct EpisodeRowView: View {
         !episode.mp4Url.isEmpty
     }
 
+    private var isCompact: Bool {
+        #if os(iOS)
+        return sizeClass == .compact
+        #else
+        return false
+        #endif
+    }
+
     var body: some View {
+        Group {
+            if isCompact {
+                compactBody
+            } else {
+                regularBody
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, isCompact ? 10 : 14)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(isHovered ? Color.accentColor.opacity(0.06) : Color.clear)
+        )
+        .contentShape(Rectangle())
+        .animation(.easeInOut(duration: 0.15), value: isHovered)
+#if os(macOS)
+        .onHover { hovering in
+            isHovered = hovering
+        }
+#endif
+    }
+
+    // MARK: - iPhone 紧凑布局（两行）
+
+    private var compactBody: some View {
+        HStack(alignment: .center, spacing: 12) {
+            // 序号
+            Text("\(index + 1)")
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundStyle(.secondary)
+                .frame(width: 28, alignment: .center)
+
+            // 封面缩略图（较小）
+            episodeThumbnail(width: 56, height: 38)
+
+            // 右侧：上行标题，下行元信息+下载
+            VStack(alignment: .leading, spacing: 4) {
+                Text(episode.title)
+                    .font(.subheadline)
+                    .lineLimit(1)
+
+                HStack(spacing: 8) {
+                    Text("第 \(episode.episode) 集")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+
+                    Label(episode.formattedDuration, systemImage: "clock")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+
+                    Text(episode.formattedFileSize)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+
+                    Spacer(minLength: 0)
+
+                    HStack(spacing: 6) {
+                        if hasMp3 { downloadButton(type: .mp3) }
+                        if hasMp4 { downloadButton(type: .mp4) }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - iPad / macOS 宽屏布局（单行）
+
+    private var regularBody: some View {
         HStack(spacing: 14) {
-            // 集数序号
             Text("\(index + 1)")
                 .font(.title3)
                 .fontWeight(.medium)
                 .foregroundStyle(.secondary)
                 .frame(width: 36, alignment: .center)
 
-            // 封面缩略图 / 音频图标
-            if episode.isVideo {
-                // 视频讲集：显示封面缩略图
-                KFImage(URL(string: episode.coverUrl))
-                    .placeholder {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(Color.gray.opacity(0.12))
-                            ProgressView()
-                                .scaleEffect(0.5)
-                        }
-                    }
-                    .onFailureImage(KFCrossPlatformImage(systemSymbolName: "play.rectangle", accessibilityDescription: nil))
-                    .fade(duration: 0.25)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                    .frame(width: 80, height: 50)
-                    .clipped()
-            } else {
-                // 音频讲集：使用渐变背景 + 耳机图标
-                ZStack {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.orange.opacity(0.15), Color.orange.opacity(0.06)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                    Image(systemName: "headphones")
-                        .font(.title3)
-                        .foregroundStyle(Color.orange.opacity(0.7))
-                }
-                .frame(width: 50, height: 50)
-            }
+            episodeThumbnail(width: episode.isVideo ? 80 : 50, height: 50)
 
-            // 标题
             VStack(alignment: .leading, spacing: 3) {
                 Text(episode.title)
                     .font(.body)
                     .lineLimit(1)
-
                 Text("第 \(episode.episode) 集")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
@@ -89,38 +131,59 @@ struct EpisodeRowView: View {
 
             Spacer()
 
-            // 时长
             Label(episode.formattedDuration, systemImage: "clock")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            // 文件大小
             Text(episode.formattedFileSize)
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .frame(width: 70, alignment: .trailing)
 
-            // 下载操作区域：音频下载 + 视频下载
             HStack(spacing: 8) {
-                if hasMp3 {
-                    downloadButton(type: .mp3)
-                }
-                if hasMp4 {
-                    downloadButton(type: .mp4)
-                }
+                if hasMp3 { downloadButton(type: .mp3) }
+                if hasMp4 { downloadButton(type: .mp4) }
             }
             .frame(minWidth: 80)
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 14)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(isHovered ? Color.accentColor.opacity(0.06) : Color.clear)
-        )
-        .contentShape(Rectangle())
-        .animation(.easeInOut(duration: 0.15), value: isHovered)
-        .onHover { hovering in
-            isHovered = hovering
+    }
+
+    // MARK: - 封面缩略图
+
+    @ViewBuilder
+    private func episodeThumbnail(width: CGFloat, height: CGFloat) -> some View {
+        if episode.isVideo {
+            KFImage(URL(string: episode.coverUrl))
+                .placeholder {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(Color.gray.opacity(0.12))
+                        ProgressView()
+                            .scaleEffect(0.5)
+                    }
+                }
+                .onFailureImage(PlatformImage.systemImage("play.rectangle"))
+                .fade(duration: 0.25)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .frame(width: width, height: height)
+                .clipped()
+        } else {
+            ZStack {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.orange.opacity(0.15), Color.orange.opacity(0.06)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                Image(systemName: "headphones")
+                    .font(isCompact ? .subheadline : .title3)
+                    .foregroundStyle(Color.orange.opacity(0.7))
+            }
+            .frame(width: isCompact ? width : 50, height: height)
         }
     }
 
@@ -187,16 +250,27 @@ struct EpisodeRowView: View {
             .animation(.easeInOut(duration: 0.3), value: progress)
 
         case .completed:
-            // 完成状态：显示绿色对勾
-            HStack(spacing: 3) {
+            // 完成状态：绿色对勾 + iOS 分享按钮
+            HStack(spacing: 6) {
                 Image(systemName: icon)
                     .font(.caption2)
                 Image(systemName: "checkmark.circle.fill")
                     .font(.caption2)
+                #if os(iOS)
+                if let fileURL = downloadManager.completedFileURL(for: episode.id, type: type) {
+                    ShareLink(item: fileURL, preview: SharePreview("\(episode.title)", image: Image(systemName: icon))) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.caption2)
+                            .foregroundStyle(.green)
+                    }
+                }
+                #endif
             }
             .foregroundStyle(.green)
             .transition(.scale.combined(with: .opacity))
+            #if os(macOS)
             .help("\(label)下载完成")
+            #endif
 
         case .failed(let message):
             // 失败状态：显示红色感叹号，点击重试

@@ -17,11 +17,10 @@ enum LayoutStyle {
 struct HomeView: View {
     @State private var viewModel = HomeViewModel()
     @State private var layoutStyle: LayoutStyle = .list
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
-    private let gridColumns = [
-        GridItem(.flexible(), spacing: 20),
-        GridItem(.flexible(), spacing: 20)
-    ]
+    /// 网格列：自适应宽度，最小 160pt，适配 iPhone 单列 / iPad 双列 / Mac 多列
+    private let gridColumns = [GridItem(.adaptive(minimum: 160), spacing: 20)]
 
     var body: some View {
         Group {
@@ -57,8 +56,8 @@ struct HomeView: View {
                     listLayoutView
                 }
             }
-            .padding(.horizontal, 28)
-            .padding(.vertical, 24)
+            .padding(.horizontal, LayoutConstants.horizontalPadding(sizeClass: sizeClass))
+            .padding(.vertical, LayoutConstants.verticalPadding(sizeClass: sizeClass))
         }
         .animation(.easeInOut(duration: 0.35), value: layoutStyle)
     }

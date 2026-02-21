@@ -12,6 +12,7 @@ struct CategoryDetailView: View {
     let category: CategoryItem
 
     @State private var viewModel = CategoryDetailViewModel()
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
         Group {
@@ -43,7 +44,7 @@ struct CategoryDetailView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 28)
+                        .padding(.horizontal, LayoutConstants.horizontalPadding(sizeClass: sizeClass))
                         .padding(.top, 16)
                         .padding(.bottom, 8)
                 }
@@ -55,7 +56,7 @@ struct CategoryDetailView: View {
                         .foregroundStyle(.tertiary)
                     Spacer()
                 }
-                .padding(.horizontal, 28)
+                .padding(.horizontal, LayoutConstants.horizontalPadding(sizeClass: sizeClass))
                 .padding(.bottom, 8)
 
                 // 列表

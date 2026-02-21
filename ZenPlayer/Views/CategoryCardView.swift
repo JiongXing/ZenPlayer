@@ -26,7 +26,7 @@ struct CategoryCardView: View {
                             .scaleEffect(0.8)
                     }
                 }
-                .onFailureImage(KFCrossPlatformImage(systemSymbolName: "photo", accessibilityDescription: nil))
+                .onFailureImage(PlatformImage.systemImage("photo"))
                 .fade(duration: 0.25)
                 .resizable()
                 .aspectRatio(contentMode: .fill)
@@ -59,8 +59,10 @@ struct CategoryCardView: View {
         )
         .scaleEffect(isHovered ? 1.02 : 1.0)
         .animation(.easeInOut(duration: 0.2), value: isHovered)
+#if os(macOS)
         .onHover { hovering in
             isHovered = hovering
         }
+#endif
     }
 }

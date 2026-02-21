@@ -13,16 +13,22 @@ import Kingfisher
 struct ZenPlayerApp: App {
 
     init() {
+        #if DEBUG
         Atlantis.start()
+        #endif
         configureKingfisher()
     }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
+#if os(macOS)
                 .frame(minWidth: 500, minHeight: 500)
+#endif
         }
+#if os(macOS)
         .defaultSize(width: 700, height: 700)
+#endif
     }
 
     // MARK: - Kingfisher 全局配置

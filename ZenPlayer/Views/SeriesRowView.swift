@@ -13,9 +13,20 @@ struct SeriesRowView: View {
     let series: SeriesItem
 
     @State private var isHovered = false
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    #endif
+
+    private var isCompact: Bool {
+        #if os(iOS)
+        return sizeClass == .compact
+        #else
+        return false
+        #endif
+    }
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: isCompact ? 10 : 14) {
             // 封面缩略图
             KFImage(URL(string: series.coverUrl))
                 .placeholder {
@@ -26,38 +37,39 @@ struct SeriesRowView: View {
                             .scaleEffect(0.6)
                     }
                 }
-                .onFailureImage(KFCrossPlatformImage(systemSymbolName: "photo", accessibilityDescription: nil))
+                .onFailureImage(PlatformImage.systemImage("photo"))
                 .fade(duration: 0.25)
                 .resizable()
                 .aspectRatio(contentMode: .fill)
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .frame(width: 100, height: 70)
-            .clipped()
+                .frame(width: isCompact ? 72 : 100, height: isCompact ? 50 : 70)
+                .clipped()
 
             // 文字信息
-            VStack(alignment: .leading, spacing: 5) {
-                // 标题行
+            VStack(alignment: .leading, spacing: isCompact ? 3 : 5) {
                 Text(series.title)
-                    .font(.headline)
+                    .font(isCompact ? .subheadline : .headline)
+                    .fontWeight(.semibold)
                     .lineLimit(1)
 
-                // 详情行：作者 + 日期
-                HStack(spacing: 12) {
+                // 详情行：作者 + 日期（窄屏用 caption）
+                HStack(spacing: isCompact ? 8 : 12) {
                     if !series.author.isEmpty {
                         Label(series.author, systemImage: "person")
-                            .font(.subheadline)
+                            .font(isCompact ? .caption : .subheadline)
                             .foregroundStyle(.secondary)
                     }
                     if !series.date.isEmpty {
                         Label(series.date, systemImage: "calendar")
-                            .font(.subheadline)
+                            .font(isCompact ? .caption : .subheadline)
                             .foregroundStyle(.secondary)
                     }
                 }
+                .lineLimit(1)
 
-                // 底部行：地点 + 集数 + 类型标签
-                HStack(spacing: 12) {
-                    if !series.address.trimmingCharacters(in: .whitespaces).isEmpty {
+                // 底部行：集数 + 类型标签（窄屏隐藏地点，节省空间）
+                HStack(spacing: isCompact ? 8 : 12) {
+                    if !isCompact, !series.address.trimmingCharacters(in: .whitespaces).isEmpty {
                         Label(series.address.trimmingCharacters(in: .whitespaces), systemImage: "mappin")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
@@ -66,26 +78,26 @@ struct SeriesRowView: View {
 
                     Spacer()
 
-                    // 集数
                     Text("\(series.total) 集")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
-                    // 类型标签
                     typeTag
                 }
             }
         }
         .padding(.vertical, 8)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, isCompact ? 8 : 12)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(isHovered ? Color.accentColor.opacity(0.06) : Color.clear)
         )
         .animation(.easeInOut(duration: 0.15), value: isHovered)
+#if os(macOS)
         .onHover { hovering in
             isHovered = hovering
         }
+#endif
     }
 
     // MARK: - 类型标签
