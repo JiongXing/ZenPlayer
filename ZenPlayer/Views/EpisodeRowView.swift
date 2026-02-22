@@ -41,13 +41,16 @@ struct EpisodeRowView: View {
     }
 
     var body: some View {
-        Group {
-            if isCompact {
-                compactBody
-            } else {
-                regularBody
+        NavigationLink(value: PlaybackContext(episode: episode, serverUrl: serverUrl)) {
+            Group {
+                if isCompact {
+                    compactBody
+                } else {
+                    regularBody
+                }
             }
         }
+        .buttonStyle(.plain)
         .padding(.vertical, 8)
         .padding(.horizontal, isCompact ? 6 : 8)
         .background(
@@ -60,6 +63,7 @@ struct EpisodeRowView: View {
         .onHover { hovering in
             isHovered = hovering
         }
+        .help("播放")
 #endif
     }
 
@@ -69,7 +73,6 @@ struct EpisodeRowView: View {
         HStack(alignment: .center, spacing: 12) {
             episodeThumbnail(width: 56, height: 38)
 
-            // 右侧：上行标题，下行元信息+下载
             VStack(alignment: .leading, spacing: 4) {
                 Text(episode.title)
                     .font(.subheadline)

@@ -22,6 +22,19 @@ enum DownloadType: String {
     case mp4
 }
 
+// MARK: - 文件名清理
+
+/// 将标题中的非法文件名字符替换为安全字符
+private func sanitizedFileName(from title: String) -> String {
+    let invalid = CharacterSet(charactersIn: "/:\\*?\"<>|")
+    let cleaned = title
+        .components(separatedBy: invalid)
+        .joined(separator: "_")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+    let result = String(cleaned.prefix(100))
+    return result.isEmpty ? "untitled" : result
+}
+
 // MARK: - 下载状态
 
 /// 单集下载状态
@@ -48,6 +61,13 @@ enum DownloadState: Equatable {
     }
 }
 
+// MARK: - 下载清单持久化
+
+/// 持久化存储的下载记录（key -> 相对路径）
+private struct DownloadManifest: Codable {
+    var entries: [String: String] = [:]
+}
+
 // MARK: - 下载管理器
 
 /// 全局下载管理器，管理所有单集的下载任务与状态
@@ -63,7 +83,7 @@ final class DownloadManager {
     /// 每个单集的下载状态（key: "\(episodeId)_mp3" 或 "\(episodeId)_mp4"）
     var downloadStates: [String: DownloadState] = [:]
 
-    /// 已完成下载的本地文件 URL（key 同 downloadStates），用于 iOS 分享
+    /// 已完成下载的本地文件 URL（key 同 downloadStates），用于 iOS 分享与播放
     var completedFileURLs: [String: URL] = [:]
 
     // MARK: - 私有属性
@@ -76,7 +96,64 @@ final class DownloadManager {
 
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "ZenPlayer", category: "DownloadManager")
 
-    private init() {}
+    /// iOS 下载根目录：Documents/ZenPlayerDownloads/
+    private var downloadsRootURL: URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("ZenPlayerDownloads", isDirectory: true)
+    }
+
+    /// 清单文件路径
+    private var manifestURL: URL {
+        downloadsRootURL.appendingPathComponent("download_manifest.json", isDirectory: false)
+    }
+
+    private init() {
+        restoreFromManifest()
+    }
+
+    // MARK: - 持久化
+
+    /// 从清单恢复下载状态
+    private func restoreFromManifest() {
+#if os(iOS)
+        guard FileManager.default.fileExists(atPath: manifestURL.path) else { return }
+        do {
+            let data = try Data(contentsOf: manifestURL)
+            let manifest = try JSONDecoder().decode(DownloadManifest.self, from: data)
+            for (key, relativePath) in manifest.entries {
+                let fullURL = downloadsRootURL.appendingPathComponent(relativePath)
+                if FileManager.default.fileExists(atPath: fullURL.path) {
+                    downloadStates[key] = .completed
+                    completedFileURLs[key] = fullURL
+                }
+            }
+            logger.info("📂 已恢复 \(manifest.entries.count) 条下载记录")
+        } catch {
+            logger.error("❌ 恢复下载清单失败: \(error.localizedDescription)")
+        }
+#endif
+    }
+
+    /// 保存清单到磁盘
+    private func saveManifest() {
+#if os(iOS)
+        let basePath = downloadsRootURL.path + "/"
+        let manifest = DownloadManifest(entries: Dictionary(
+            uniqueKeysWithValues: completedFileURLs.compactMap { key, url in
+                guard url.path.hasPrefix(basePath) else { return nil }
+                let rel = String(url.path.dropFirst(basePath.count))
+                return rel.isEmpty ? nil : (key, rel)
+            }
+        ))
+        do {
+            try FileManager.default.createDirectory(at: downloadsRootURL, withIntermediateDirectories: true)
+            let data = try JSONEncoder().encode(manifest)
+            try data.write(to: manifestURL)
+        } catch {
+            logger.error("❌ 保存下载清单失败: \(error.localizedDescription)")
+        }
+#endif
+    }
 
     // MARK: - 公共接口
 
@@ -129,12 +206,13 @@ final class DownloadManager {
         panel.title = "选择保存位置"
         panel.message = "将「\(episode.title)」保存到："
 
+        let safeTitle = sanitizedFileName(from: episode.title)
         switch type {
         case .mp3:
-            panel.nameFieldStringValue = "\(episode.title).mp3"
+            panel.nameFieldStringValue = "\(episode.id)_\(safeTitle).mp3"
             panel.allowedContentTypes = [.mp3]
         case .mp4:
-            panel.nameFieldStringValue = "\(episode.title).mp4"
+            panel.nameFieldStringValue = "\(episode.id)_\(safeTitle).mp4"
             panel.allowedContentTypes = [.mpeg4Movie]
         }
 
@@ -149,10 +227,12 @@ final class DownloadManager {
         }
         saveURL = panelURL
 #else
-        // iOS：保存到 Documents 目录（在「文件」App 中可见）
-        let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let fileName = "\(episode.title).\(type.rawValue)"
-        saveURL = documentsDir.appendingPathComponent(fileName)
+        // iOS：保存到 Documents/ZenPlayerDownloads/{mp3|mp4}/ 子目录
+        let safeTitle = sanitizedFileName(from: episode.title)
+        let fileName = "\(episode.id)_\(safeTitle).\(type.rawValue)"
+        let subDir = downloadsRootURL.appendingPathComponent(type.rawValue, isDirectory: true)
+        try? FileManager.default.createDirectory(at: subDir, withIntermediateDirectories: true)
+        saveURL = subDir.appendingPathComponent(fileName)
 #endif
 
         logger.info("📂 保存路径: \(saveURL.path)  类型: \(type.rawValue)")
@@ -187,6 +267,7 @@ final class DownloadManager {
                 self.downloadStates[key] = .completed
                 self.completedFileURLs[key] = saveURL
                 self.downloadTasks.removeValue(forKey: key)
+                self.saveManifest()
                 self.logger.info("✅ 下载完成: \(episode.title) (\(type.rawValue))")
 
             } catch is CancellationError {

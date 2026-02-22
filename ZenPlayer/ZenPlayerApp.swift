@@ -9,8 +9,23 @@ import SwiftUI
 import Atlantis
 import Kingfisher
 
+#if os(iOS)
+/// AppDelegate：通过 OrientationManager 控制全局方向锁定
+final class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        supportedInterfaceOrientationsFor window: UIWindow?
+    ) -> UIInterfaceOrientationMask {
+        OrientationManager.shared.supportedOrientations
+    }
+}
+#endif
+
 @main
 struct ZenPlayerApp: App {
+    #if os(iOS)
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    #endif
 
     init() {
         #if DEBUG
