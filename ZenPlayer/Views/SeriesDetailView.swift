@@ -55,6 +55,7 @@ struct SeriesDetailView: View {
                         EpisodeRowView(
                             episode: episode,
                             serverUrl: detail.serverUrl,
+                            seriesType: detail.type,
                             downloadManager: downloadManager
                         )
                         .padding(.horizontal, 6)

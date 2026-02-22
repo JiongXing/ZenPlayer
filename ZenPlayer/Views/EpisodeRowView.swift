@@ -13,6 +13,9 @@ struct EpisodeRowView: View {
     let episode: EpisodeItem
     let serverUrl: String
 
+    /// 系列类型："mp4" 视频 / "mp3" 音频（音频不获取封面，仅显示耳机图标）
+    var seriesType: String = "mp4"
+
     /// 下载管理器（由父视图传入）
     var downloadManager: DownloadManager
 
@@ -27,9 +30,9 @@ struct EpisodeRowView: View {
         return false
     }
 
-    /// 是否有可用的 mp4 下载链接
+    /// 是否有可用的 mp4 视频下载链接（音频系列不显示视频下载，因 API 会将 mp3 路径误填到 mp4_url）
     private var hasMp4: Bool {
-        !episode.mp4Url.isEmpty
+        !episode.mp4Url.isEmpty && seriesType != "mp3"
     }
 
     private var isCompact: Bool {
@@ -138,9 +141,12 @@ struct EpisodeRowView: View {
 
     // MARK: - 封面缩略图
 
+    /// 是否为音频系列（mp3 系列不获取封面，显示耳机占位符）
+    private var isAudioSeries: Bool { seriesType == "mp3" }
+
     @ViewBuilder
     private func episodeThumbnail(width: CGFloat, height: CGFloat) -> some View {
-        if episode.isVideo {
+        if episode.isVideo && !isAudioSeries {
             KFImage(URL(string: episode.coverUrl))
                 .placeholder {
                     ZStack {
@@ -158,21 +164,31 @@ struct EpisodeRowView: View {
                 .frame(width: width, height: height)
                 .clipped()
         } else {
-            ZStack {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.orange.opacity(0.15), Color.orange.opacity(0.06)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                Image(systemName: "headphones")
-                    .font(isCompact ? .subheadline : .title3)
-                    .foregroundStyle(Color.orange.opacity(0.7))
-            }
-            .frame(width: isCompact ? width : 50, height: height)
+            audioPlaceholder(width: width, height: height)
         }
+    }
+
+    /// 音频占位符：不获取封面，仅显示小耳机图标
+    private func audioPlaceholder(width: CGFloat, height: CGFloat) -> some View {
+        let thumbWidth = isCompact ? width : 50
+        return ZStack {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.orange.opacity(0.1),
+                            Color.orange.opacity(0.06),
+                            Color.orange.opacity(0.03)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            Image(systemName: "headphones")
+                .font(.system(size: isCompact ? 12 : 14, weight: .light))
+                .foregroundStyle(Color.orange.opacity(0.55))
+        }
+        .frame(width: thumbWidth, height: height)
     }
 
     // MARK: - 单个下载按钮（根据类型和状态渲染）
