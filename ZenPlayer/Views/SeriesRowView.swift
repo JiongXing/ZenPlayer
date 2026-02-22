@@ -88,10 +88,12 @@ struct SeriesRowView: View {
         }
         .padding(.vertical, 8)
         .padding(.horizontal, isCompact ? 8 : 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(isHovered ? Color.accentColor.opacity(0.06) : Color.clear)
         )
+        .contentShape(Rectangle())
         .animation(.easeInOut(duration: 0.15), value: isHovered)
 #if os(macOS)
         .onHover { hovering in

@@ -52,6 +52,8 @@ struct EpisodeRowView: View {
                     regularBody
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .padding(.vertical, 8)
