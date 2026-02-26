@@ -44,11 +44,8 @@ struct PlayerView: View {
             await viewModel.preparePlayback(episode: context.episode, serverUrl: context.serverUrl)
         }
         .onChange(of: scenePhase) { _, newPhase in
-            // 进入后台时不自动 stop，以支持后台持续播放。
-            shouldStopOnDisappear = newPhase != .background
-            if newPhase == .background {
-                viewModel.switchCurrentVideoToBackgroundAudioModeIfNeeded()
-            }
+            // 仅在前台活跃态下页面离开才停止播放，避免 PiP 过渡阶段被误停。
+            shouldStopOnDisappear = newPhase == .active
         }
         .onDisappear {
             if shouldStopOnDisappear {
@@ -201,6 +198,10 @@ final class PlayerContainerViewController: UIViewController {
         playerVC = AVPlayerViewController()
         playerVC.player = player
         playerVC.showsPlaybackControls = true
+        playerVC.allowsPictureInPicturePlayback = true
+        if #available(iOS 14.2, *) {
+            playerVC.canStartPictureInPictureAutomaticallyFromInline = true
+        }
 
         addChild(playerVC)
         view.addSubview(playerVC.view)

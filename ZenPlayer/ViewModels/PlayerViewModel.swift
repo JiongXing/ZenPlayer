@@ -224,19 +224,6 @@ final class PlayerViewModel {
         errorMessage = "没有可播放的地址"
     }
 
-    /// App 进入后台时，不切换数据源，仅将视频会话切到音频后台模式。
-    func switchCurrentVideoToBackgroundAudioModeIfNeeded() {
-#if os(iOS)
-        guard isVideo else { return }
-        let shouldResumePlaying = (player?.rate ?? 0) > 0
-        configureAudioSessionForPlayback(isVideo: false)
-        if shouldResumePlaying {
-            player?.play()
-        }
-        updateNowPlayingPlaybackState()
-#endif
-    }
-
     /// 二次校验本地文件存在，避免映射残留导致播放失败。
     private func verifiedLocalURL(for episodeId: Int, type: DownloadType) -> URL? {
         guard let localURL = downloadManager.completedFileURL(for: episodeId, type: type) else { return nil }
@@ -273,15 +260,33 @@ final class PlayerViewModel {
     /// 后台播放依赖 AVAudioSession.playback。
     private func configureAudioSessionForPlayback(isVideo: Bool) {
         let session = AVAudioSession.sharedInstance()
+        let preferredMode: AVAudioSession.Mode = isVideo ? .moviePlayback : .spokenAudio
+        let attempts: [(mode: AVAudioSession.Mode, options: AVAudioSession.CategoryOptions)] = [
+            (preferredMode, [.allowAirPlay, .allowBluetoothA2DP]),
+            (preferredMode, []),
+            (.default, [])
+        ]
+
+        var didSetCategory = false
+        for attempt in attempts {
+            do {
+                try session.setCategory(.playback, mode: attempt.mode, options: attempt.options)
+                didSetCategory = true
+                break
+            } catch {
+                continue
+            }
+        }
+
+        guard didSetCategory else {
+            // 音频会话异常不应打断播放页加载态，避免短暂误报“无法播放”。
+            return
+        }
+
         do {
-            try session.setCategory(
-                .playback,
-                mode: isVideo ? .moviePlayback : .spokenAudio,
-                options: [.allowAirPlay, .allowBluetoothA2DP]
-            )
             try session.setActive(true)
         } catch {
-            // 音频会话异常不应打断播放页加载态，避免短暂误报“无法播放”。
+            // 音频会话激活失败时静默降级，避免影响页面主流程。
         }
     }
 
