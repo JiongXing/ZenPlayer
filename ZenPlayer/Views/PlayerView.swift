@@ -13,11 +13,16 @@ struct PlayerView: View {
     let context: PlaybackContext
 
     @State private var viewModel = PlayerViewModel()
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var shouldStopOnDisappear = true
 
     var body: some View {
         VStack(spacing: 14) {
             if let player = viewModel.player {
                 mediaPlayerArea(player: player)
+            } else if viewModel.isPreparingPlayback {
+                ProgressView("加载中...")
+                    .frame(maxWidth: .infinity, minHeight: 220)
             } else if let error = viewModel.errorMessage {
                 errorView(message: error)
             } else {
@@ -38,8 +43,14 @@ struct PlayerView: View {
         .task(id: context.id) {
             await viewModel.preparePlayback(episode: context.episode, serverUrl: context.serverUrl)
         }
+        .onChange(of: scenePhase) { _, newPhase in
+            // 进入后台时不自动 stop，以支持后台持续播放。
+            shouldStopOnDisappear = newPhase != .background
+        }
         .onDisappear {
-            viewModel.stopPlayback()
+            if shouldStopOnDisappear {
+                viewModel.stopPlayback()
+            }
         }
     }
 
@@ -72,7 +83,8 @@ struct PlayerView: View {
             #endif
         }
         .frame(maxWidth: .infinity)
-        .frame(height: viewModel.isVideo ? 260 : 220)
+        .aspectRatio(viewModel.isVideo ? (4.0 / 3.0) : nil, contentMode: .fit)
+        .frame(height: viewModel.isVideo ? nil : 220)
         .background(Color.black, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -84,7 +96,7 @@ struct PlayerView: View {
     private var controlPanel: some View {
         VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("降噪强度")
+                Text("语音降噪")
                     .font(.subheadline)
                     .foregroundStyle(.black)
 
@@ -104,6 +116,7 @@ struct PlayerView: View {
                                 )
                         }
                         .buttonStyle(.plain)
+                        .frame(maxWidth: .infinity)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -130,6 +143,7 @@ struct PlayerView: View {
                                 )
                         }
                         .buttonStyle(.plain)
+                        .frame(maxWidth: .infinity)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -206,9 +220,6 @@ final class PlayerContainerViewController: UIViewController {
         }
     }
 
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        player.pause()
-    }
+    // 不在这里强制暂停，避免 App 进后台时被误判为页面离开。
 }
 #endif

@@ -195,6 +195,56 @@ struct EpisodeRowView: View {
 
     // MARK: - 单个下载按钮（根据类型和状态渲染）
 
+    private enum DownloadAction {
+        case pause, resume, cancel
+
+        var systemImage: String {
+            switch self {
+            case .pause: "pause.circle.fill"
+            case .resume: "play.circle.fill"
+            case .cancel: "xmark.circle.fill"
+            }
+        }
+
+        var iconFont: Font {
+            switch self {
+            case .cancel: .caption2
+            default: .caption
+            }
+        }
+
+        var color: Color {
+            switch self {
+            case .pause: .secondary
+            case .resume: .accentColor
+            case .cancel: .red.opacity(0.8)
+            }
+        }
+
+        func helpText(for label: String) -> String {
+            switch self {
+            case .pause: "暂停\(label)下载"
+            case .resume: "继续\(label)下载"
+            case .cancel: "取消\(label)下载"
+            }
+        }
+    }
+
+    private func downloadActionButton(
+        _ actionType: DownloadAction,
+        label: String,
+        tintColor: Color? = nil,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: actionType.systemImage)
+                .font(actionType.iconFont)
+                .foregroundStyle(tintColor ?? actionType.color)
+        }
+        .buttonStyle(.plain)
+        .help(actionType.helpText(for: label))
+    }
+
     @ViewBuilder
     private func downloadButton(type: DownloadType) -> some View {
         let state = downloadManager.state(for: episode.id, type: type)
@@ -226,7 +276,7 @@ struct EpisodeRowView: View {
 
         case .downloading(let progress):
             // 下载中：显示进度环 + 百分比 + 暂停按钮
-            HStack(spacing: 4) {
+            HStack(spacing: 6) {
                 ZStack {
                     Circle()
                         .stroke(Color.gray.opacity(0.2), lineWidth: 2)
@@ -243,21 +293,14 @@ struct EpisodeRowView: View {
                     .foregroundStyle(.secondary)
                     .frame(width: 28, alignment: .leading)
 
-                Button {
+                downloadActionButton(.pause, label: label) {
                     downloadManager.pauseDownload(episodeId: episode.id, type: type)
-                } label: {
-                    Image(systemName: "pause.circle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.plain)
-                .help("暂停\(label)下载")
             }
-            .animation(.easeInOut(duration: 0.3), value: progress)
 
         case .paused(let progress):
             // 暂停中：显示当前进度 + 继续 + 取消
-            HStack(spacing: 4) {
+            HStack(spacing: 6) {
                 Image(systemName: "pause.circle")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -268,27 +311,14 @@ struct EpisodeRowView: View {
                     .foregroundStyle(.secondary)
                     .frame(width: 28, alignment: .leading)
 
-                Button {
+                downloadActionButton(.resume, label: label, tintColor: tintColor) {
                     downloadManager.resumeDownload(episodeId: episode.id, type: type)
-                } label: {
-                    Image(systemName: "play.circle.fill")
-                        .font(.caption)
-                        .foregroundStyle(tintColor)
                 }
-                .buttonStyle(.plain)
-                .help("继续\(label)下载")
 
-                Button {
+                downloadActionButton(.cancel, label: label) {
                     downloadManager.cancelDownload(episodeId: episode.id, type: type)
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.caption2)
-                        .foregroundStyle(.red.opacity(0.8))
                 }
-                .buttonStyle(.plain)
-                .help("取消\(label)下载")
             }
-            .animation(.easeInOut(duration: 0.3), value: progress)
 
         case .completed:
             // 完成状态：绿色对勾 + iOS 分享按钮

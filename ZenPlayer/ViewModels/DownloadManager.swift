@@ -89,7 +89,18 @@ private final class DownloadSessionDelegate: NSObject, URLSessionDownloadDelegat
         downloadTask: URLSessionDownloadTask,
         didFinishDownloadingTo location: URL
     ) {
-        onFinished?(downloadTask.taskIdentifier, location)
+        // URLSession 提供的临时文件仅在回调期间有效，先转存到稳定临时路径再异步处理。
+        let preservedURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ZenPlayerDownload_\(downloadTask.taskIdentifier)_\(UUID().uuidString).tmp")
+        do {
+            if FileManager.default.fileExists(atPath: preservedURL.path) {
+                try FileManager.default.removeItem(at: preservedURL)
+            }
+            try FileManager.default.moveItem(at: location, to: preservedURL)
+            onFinished?(downloadTask.taskIdentifier, preservedURL)
+        } catch {
+            onCompleted?(downloadTask.taskIdentifier, error)
+        }
     }
 
     func urlSession(
@@ -658,6 +669,7 @@ final class DownloadManager {
             removeActiveDownload(for: key)
             cancelIntents.removeValue(forKey: key)
             downloadStates[key] = .failed(error.localizedDescription)
+            try? FileManager.default.removeItem(at: tempLocation)
             if var record = downloadRecords[key] {
                 record.status = .failed
                 record.updatedAt = Date().timeIntervalSince1970

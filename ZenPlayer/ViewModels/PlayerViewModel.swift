@@ -71,6 +71,9 @@ final class PlayerViewModel {
     /// 解析错误信息
     var errorMessage: String?
 
+    /// 是否正在准备播放（用于控制加载态与错误态展示时机）
+    var isPreparingPlayback = false
+
     /// 降噪强度档位（播放中可动态生效）
     var denoiseLevel: DenoiseLevel = .level100 {
         didSet {
@@ -126,14 +129,20 @@ final class PlayerViewModel {
     ///   - serverUrl: 服务器根地址
     ///   - preferVideo: 若同时有 mp3 和 mp4，true 表示优先视频
     func preparePlayback(episode: EpisodeItem, serverUrl: String, preferVideo: Bool = true) async {
+        isPreparingPlayback = true
+        errorMessage = nil
         stopPlayback()
         resolvePlaybackURL(episode: episode, serverUrl: serverUrl, preferVideo: preferVideo)
-        guard let url = playbackURL else { return }
+        guard let url = playbackURL else {
+            isPreparingPlayback = false
+            return
+        }
 #if os(iOS)
         configureAudioSessionForPlayback(isVideo: isVideo)
         setupAudioSessionObserversIfNeeded()
 #endif
         await buildPlayer(for: url, episode: episode)
+        isPreparingPlayback = false
     }
 
     /// 停止并释放当前播放链路资源
@@ -141,6 +150,7 @@ final class PlayerViewModel {
 #if os(iOS)
         stopPlaybackObservation()
 #endif
+        isPreparingPlayback = false
         player?.pause()
         player = nil
         denoiseTapProcessor = nil
@@ -258,7 +268,7 @@ final class PlayerViewModel {
             )
             try session.setActive(true)
         } catch {
-            errorMessage = "音频会话配置失败：\(error.localizedDescription)"
+            // 音频会话异常不应打断播放页加载态，避免短暂误报“无法播放”。
         }
     }
 
@@ -459,7 +469,7 @@ final class PlayerViewModel {
     }
 #endif
 
-    static let supportedAmplificationOptions: [Double] = [1.0, 2.0, 3.0, 4.0]
+    static let supportedAmplificationOptions: [Double] = [1.0, 2.0, 3.0, 4.0, 5.0]
 
     static func amplificationLabel(_ value: Double) -> String {
         switch value {
@@ -467,11 +477,12 @@ final class PlayerViewModel {
         case 2.0: return "2x"
         case 3.0: return "3x"
         case 4.0: return "4x"
+        case 5.0: return "5x"
         default: return String(format: "%.2fx", value)
         }
     }
 
     private static func clampAmplification(_ value: Double) -> Double {
-        min(4.0, max(1.0, value))
+        min(5.0, max(1.0, value))
     }
 }
