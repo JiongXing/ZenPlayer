@@ -412,8 +412,17 @@ final class DownloadManager {
     private func makeRemoteURLString(episode: EpisodeItem, type: DownloadType, serverUrl: String) -> String? {
         switch type {
         case .mp3:
-            guard let mp3URL = episode.mp3Url, !mp3URL.isEmpty else { return nil }
-            return mp3URL
+            if let mp3URL = episode.mp3Url, !mp3URL.isEmpty {
+                return mp3URL
+            }
+            // 兼容纯音频专辑：后端偶发将音频地址填在 mp4_url 字段。
+            guard !episode.mp4Url.isEmpty else { return nil }
+            if let url = URL(string: episode.mp4Url), url.scheme != nil {
+                return episode.mp4Url
+            }
+            let base = serverUrl.hasSuffix("/") ? String(serverUrl.dropLast()) : serverUrl
+            let path = episode.mp4Url.hasPrefix("/") ? episode.mp4Url : "/" + episode.mp4Url
+            return base + path
         case .mp4:
             guard !episode.mp4Url.isEmpty else { return nil }
             if let url = URL(string: episode.mp4Url), url.scheme != nil {

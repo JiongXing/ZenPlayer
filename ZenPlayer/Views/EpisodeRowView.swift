@@ -27,7 +27,8 @@ struct EpisodeRowView: View {
     /// 是否有可用的 mp3 下载链接
     private var hasMp3: Bool {
         if let mp3Url = episode.mp3Url, !mp3Url.isEmpty { return true }
-        return false
+        // 部分纯音频专辑会把音频地址落在 mp4_url 字段，需兜底显示音频下载按钮。
+        return seriesType == "mp3" && !episode.mp4Url.isEmpty
     }
 
     /// 是否有可用的 mp4 视频下载链接（音频系列不显示视频下载，因 API 会将 mp3 路径误填到 mp4_url）

@@ -224,6 +224,19 @@ final class PlayerViewModel {
         errorMessage = "没有可播放的地址"
     }
 
+    /// App 进入后台时，不切换数据源，仅将视频会话切到音频后台模式。
+    func switchCurrentVideoToBackgroundAudioModeIfNeeded() {
+#if os(iOS)
+        guard isVideo else { return }
+        let shouldResumePlaying = (player?.rate ?? 0) > 0
+        configureAudioSessionForPlayback(isVideo: false)
+        if shouldResumePlaying {
+            player?.play()
+        }
+        updateNowPlayingPlaybackState()
+#endif
+    }
+
     /// 二次校验本地文件存在，避免映射残留导致播放失败。
     private func verifiedLocalURL(for episodeId: Int, type: DownloadType) -> URL? {
         guard let localURL = downloadManager.completedFileURL(for: episodeId, type: type) else { return nil }

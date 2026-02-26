@@ -46,6 +46,9 @@ struct PlayerView: View {
         .onChange(of: scenePhase) { _, newPhase in
             // 进入后台时不自动 stop，以支持后台持续播放。
             shouldStopOnDisappear = newPhase != .background
+            if newPhase == .background {
+                viewModel.switchCurrentVideoToBackgroundAudioModeIfNeeded()
+            }
         }
         .onDisappear {
             if shouldStopOnDisappear {
