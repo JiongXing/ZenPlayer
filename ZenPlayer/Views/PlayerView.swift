@@ -16,15 +16,15 @@ struct PlayerView: View {
 
     var body: some View {
         Group {
-            if let url = viewModel.playbackURL {
+            if let player = viewModel.player {
                 #if os(iOS)
                 AVPlayerContainerView(
-                    url: url,
+                    player: player,
                     isVideo: viewModel.isVideo,
                     episodeTitle: context.episode.title
                 )
                 #else
-                VideoPlayer(player: AVPlayer(url: url))
+                VideoPlayer(player: player)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 #endif
             } else if let error = viewModel.errorMessage {
@@ -37,9 +37,14 @@ struct PlayerView: View {
         .background(Color.black)
         .ignoresSafeArea()
         .navigationBarBackButtonHidden(false)
+        #if os(iOS)
         .toolbarBackground(.hidden, for: .navigationBar)
-        .onAppear {
-            viewModel.resolvePlaybackURL(episode: context.episode, serverUrl: context.serverUrl)
+        #endif
+        .task(id: context.id) {
+            await viewModel.preparePlayback(episode: context.episode, serverUrl: context.serverUrl)
+        }
+        .onDisappear {
+            viewModel.stopPlayback()
         }
     }
 
@@ -65,35 +70,36 @@ struct PlayerView: View {
 
 #if os(iOS)
 struct AVPlayerContainerView: UIViewControllerRepresentable {
-    let url: URL
+    let player: AVPlayer
     let isVideo: Bool
     let episodeTitle: String
 
     func makeUIViewController(context: Context) -> UIViewController {
         let container = PlayerContainerViewController()
-        container.playURL = url
+        container.player = player
         container.isVideo = isVideo
         container.episodeTitle = episodeTitle
         return container
     }
 
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+        guard let container = uiViewController as? PlayerContainerViewController else { return }
+        container.configure(player: player, isVideo: isVideo, episodeTitle: episodeTitle)
+    }
 }
 
 /// 承载 AVPlayerViewController 的容器，带全屏按钮
 final class PlayerContainerViewController: UIViewController {
-    var playURL: URL!
+    var player: AVPlayer!
     var isVideo: Bool = true
     var episodeTitle: String = ""
 
     private var playerVC: AVPlayerViewController!
-    private var player: AVPlayer!
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
 
-        player = AVPlayer(url: playURL)
         playerVC = AVPlayerViewController()
         playerVC.player = player
         playerVC.showsPlaybackControls = true
@@ -127,6 +133,20 @@ final class PlayerContainerViewController: UIViewController {
         playerVC.didMove(toParent: self)
 
         player.play()
+    }
+
+    func configure(player: AVPlayer, isVideo: Bool, episodeTitle: String) {
+        self.isVideo = isVideo
+        self.episodeTitle = episodeTitle
+        guard isViewLoaded else {
+            self.player = player
+            return
+        }
+        if self.player !== player {
+            self.player = player
+            playerVC.player = player
+            player.play()
+        }
     }
 
     @objc private func enterFullscreenTapped() {

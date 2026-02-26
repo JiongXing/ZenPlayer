@@ -24,6 +24,9 @@ final class PlayerViewModel {
     /// 解析后的播放 URL（本地优先）
     var playbackURL: URL?
 
+    /// 供视图绑定的播放器实例
+    var player: AVPlayer?
+
     /// 是否为视频（用于决定使用视频或音频播放器）
     var isVideo: Bool = false
 
@@ -31,6 +34,29 @@ final class PlayerViewModel {
     var errorMessage: String?
 
     private let downloadManager = DownloadManager.shared
+    private var denoiseTapProcessor: AVPlayerDenoiseTapProcessor?
+
+    /// 默认开启降噪，当前版本不暴露 UI 开关
+    private let defaultDenoiseStrength: Float = 1.0
+
+    /// 统一准备播放：先解析 URL，再构建带降噪回退能力的 AVPlayer
+    /// - Parameters:
+    ///   - episode: 单集
+    ///   - serverUrl: 服务器根地址
+    ///   - preferVideo: 若同时有 mp3 和 mp4，true 表示优先视频
+    func preparePlayback(episode: EpisodeItem, serverUrl: String, preferVideo: Bool = true) async {
+        stopPlayback()
+        resolvePlaybackURL(episode: episode, serverUrl: serverUrl, preferVideo: preferVideo)
+        guard let url = playbackURL else { return }
+        await buildPlayer(for: url)
+    }
+
+    /// 停止并释放当前播放链路资源
+    func stopPlayback() {
+        player?.pause()
+        player = nil
+        denoiseTapProcessor = nil
+    }
 
     /// 根据上下文解析播放 URL
     /// - Parameters:
@@ -92,5 +118,22 @@ final class PlayerViewModel {
         }
 
         errorMessage = "没有可播放的地址"
+    }
+
+    private func buildPlayer(for url: URL) async {
+        let item = AVPlayerItem(url: url)
+        let tap = AVPlayerDenoiseTapProcessor(
+            strength: defaultDenoiseStrength,
+            enabled: true
+        )
+        do {
+            try await tap.attach(to: item)
+            denoiseTapProcessor = tap
+            player = AVPlayer(playerItem: item)
+        } catch {
+            // Tap 失败时回退原声直通，优先保证可播放。
+            denoiseTapProcessor = nil
+            player = AVPlayer(url: url)
+        }
     }
 }

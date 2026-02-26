@@ -283,6 +283,11 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/ZenPlayer/Libraries/RNNoise/src",
+					"$(SRCROOT)/ZenPlayer/Libraries/RNNoise/include",
+				);
 				INFOPLIST_FILE = ZenPlayer/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Zen Player";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
@@ -306,6 +311,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_INCLUDE_PATHS = "$(inherited) $(SRCROOT)/ZenPlayer/Libraries/RNNoise/include";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -326,6 +332,11 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/ZenPlayer/Libraries/RNNoise/src",
+					"$(SRCROOT)/ZenPlayer/Libraries/RNNoise/include",
+				);
 				INFOPLIST_FILE = ZenPlayer/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Zen Player";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
@@ -349,6 +360,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_INCLUDE_PATHS = "$(inherited) $(SRCROOT)/ZenPlayer/Libraries/RNNoise/include";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
