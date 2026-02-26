@@ -22,7 +22,38 @@ struct PlaybackContext: Identifiable, Hashable {
 final class PlayerViewModel {
 
     private enum StorageKeys {
-        static let denoiseEnabled = "player.denoiseEnabled"
+        static let denoiseLevel = "player.denoiseLevel"
+    }
+
+    enum DenoiseLevel: Int, CaseIterable {
+        case original = 0
+        case level25 = 25
+        case level50 = 50
+        case level75 = 75
+        case level100 = 100
+
+        var strength: Float {
+            Float(rawValue) / 100.0
+        }
+
+        var isEnabled: Bool {
+            self != .original
+        }
+
+        var label: String {
+            switch self {
+            case .original:
+                return "原声"
+            case .level25:
+                return "25%"
+            case .level50:
+                return "50%"
+            case .level75:
+                return "75%"
+            case .level100:
+                return "100%"
+            }
+        }
     }
 
     /// 解析后的播放 URL（本地优先）
@@ -37,11 +68,12 @@ final class PlayerViewModel {
     /// 解析错误信息
     var errorMessage: String?
 
-    /// 降噪开关（播放中可动态生效）
-    var denoiseEnabled: Bool = true {
+    /// 降噪强度档位（播放中可动态生效）
+    var denoiseLevel: DenoiseLevel = .level100 {
         didSet {
-            UserDefaults.standard.set(denoiseEnabled, forKey: StorageKeys.denoiseEnabled)
-            denoiseTapProcessor?.setEnabled(denoiseEnabled)
+            UserDefaults.standard.set(denoiseLevel.rawValue, forKey: StorageKeys.denoiseLevel)
+            denoiseTapProcessor?.setEnabled(denoiseLevel.isEnabled)
+            denoiseTapProcessor?.updateStrength(denoiseLevel.strength)
         }
     }
 
@@ -60,14 +92,10 @@ final class PlayerViewModel {
     private let downloadManager = DownloadManager.shared
     private var denoiseTapProcessor: AVPlayerDenoiseTapProcessor?
 
-    /// 默认开启降噪，当前版本不暴露 UI 开关
-    private let defaultDenoiseStrength: Float = 1.0
-
     init() {
-        if let stored = UserDefaults.standard.object(forKey: StorageKeys.denoiseEnabled) as? Bool {
-            denoiseEnabled = stored
-        } else {
-            denoiseEnabled = true
+        if let stored = UserDefaults.standard.object(forKey: StorageKeys.denoiseLevel) as? Int,
+           let level = DenoiseLevel(rawValue: stored) {
+            denoiseLevel = level
         }
     }
 
@@ -155,11 +183,12 @@ final class PlayerViewModel {
     private func buildPlayer(for url: URL) async {
         let item = AVPlayerItem(url: url)
         let tap = AVPlayerDenoiseTapProcessor(
-            strength: defaultDenoiseStrength,
-            enabled: denoiseEnabled
+            strength: denoiseLevel.strength,
+            enabled: denoiseLevel.isEnabled
         )
         do {
             try await tap.attach(to: item)
+            tap.updateStrength(denoiseLevel.strength)
             tap.updateGainMultiplier(Float(amplificationMultiplier))
             denoiseTapProcessor = tap
             player = AVPlayer(playerItem: item)
@@ -170,20 +199,19 @@ final class PlayerViewModel {
         }
     }
 
-    static let supportedAmplificationOptions: [Double] = [1.0, 1.5, 2.0, 2.5, 3.0]
+    static let supportedAmplificationOptions: [Double] = [1.0, 2.0, 3.0, 4.0]
 
     static func amplificationLabel(_ value: Double) -> String {
         switch value {
-        case 1.0: return "1.0x"
-        case 1.5: return "1.5x"
-        case 2.0: return "2.0x"
-        case 2.5: return "2.5x"
-        case 3.0: return "3.0x"
+        case 1.0: return "1x"
+        case 2.0: return "2x"
+        case 3.0: return "3x"
+        case 4.0: return "4x"
         default: return String(format: "%.2fx", value)
         }
     }
 
     private static func clampAmplification(_ value: Double) -> Double {
-        min(3.0, max(1.0, value))
+        min(4.0, max(1.0, value))
     }
 }

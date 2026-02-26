@@ -60,7 +60,7 @@ final class AVPlayerDenoiseTapProcessor {
 
     func updateGainMultiplier(_ value: Float) {
         stateLock.lock()
-        gainMultiplier = max(1.0, min(3.0, value))
+        gainMultiplier = max(1.0, min(4.0, value))
         stateLock.unlock()
     }
 

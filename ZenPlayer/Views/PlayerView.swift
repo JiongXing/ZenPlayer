@@ -8,7 +8,7 @@
 import SwiftUI
 import AVKit
 
-/// 播放页：支持视频/音频播放，带全屏按钮（点击进入横屏全屏）
+/// 播放页：支持视频/音频播放与音频处理控制
 struct PlayerView: View {
     let context: PlaybackContext
 
@@ -65,9 +65,7 @@ struct PlayerView: View {
         Group {
             #if os(iOS)
             AVPlayerContainerView(
-                player: player,
-                isVideo: viewModel.isVideo,
-                episodeTitle: context.episode.title
+                player: player
             )
             #else
             VideoPlayer(player: player)
@@ -84,15 +82,31 @@ struct PlayerView: View {
     }
 
     private var controlPanel: some View {
-        VStack(spacing: 10) {
-            HStack {
-                Text("降噪")
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("降噪强度")
                     .font(.subheadline)
                     .foregroundStyle(.black)
-                Spacer()
-                Toggle("降噪开关", isOn: $viewModel.denoiseEnabled)
-                    .tint(.black)
-                    .labelsHidden()
+
+                HStack(spacing: 8) {
+                    ForEach(PlayerViewModel.DenoiseLevel.allCases, id: \.rawValue) { level in
+                        Button {
+                            viewModel.denoiseLevel = level
+                        } label: {
+                            Text(level.label)
+                                .font(.footnote.weight(.semibold))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .foregroundStyle(viewModel.denoiseLevel == level ? .white : .black)
+                                .background(
+                                    Capsule(style: .continuous)
+                                        .fill(viewModel.denoiseLevel == level ? Color.black : Color.black.opacity(0.08))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -118,8 +132,10 @@ struct PlayerView: View {
                         .buttonStyle(.plain)
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -142,28 +158,22 @@ struct PlayerView: View {
 #if os(iOS)
 struct AVPlayerContainerView: UIViewControllerRepresentable {
     let player: AVPlayer
-    let isVideo: Bool
-    let episodeTitle: String
 
     func makeUIViewController(context: Context) -> UIViewController {
         let container = PlayerContainerViewController()
         container.player = player
-        container.isVideo = isVideo
-        container.episodeTitle = episodeTitle
         return container
     }
 
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
         guard let container = uiViewController as? PlayerContainerViewController else { return }
-        container.configure(player: player, isVideo: isVideo, episodeTitle: episodeTitle)
+        container.configure(player: player)
     }
 }
 
-/// 承载 AVPlayerViewController 的容器，带全屏按钮
+/// 承载 AVPlayerViewController 的容器
 final class PlayerContainerViewController: UIViewController {
     var player: AVPlayer!
-    var isVideo: Bool = true
-    var episodeTitle: String = ""
 
     private var playerVC: AVPlayerViewController!
 
@@ -175,28 +185,6 @@ final class PlayerContainerViewController: UIViewController {
         playerVC.player = player
         playerVC.showsPlaybackControls = true
 
-        if isVideo, let overlay = playerVC.contentOverlayView {
-            let fullscreenButton = UIButton(type: .system)
-            fullscreenButton.setImage(
-                UIImage(systemName: "arrow.up.left.and.arrow.down.right")?
-                    .withConfiguration(UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)),
-                for: .normal
-            )
-            fullscreenButton.tintColor = .white
-            fullscreenButton.backgroundColor = UIColor.black.withAlphaComponent(0.4)
-            fullscreenButton.layer.cornerRadius = 22
-            fullscreenButton.clipsToBounds = true
-            fullscreenButton.addTarget(self, action: #selector(enterFullscreenTapped), for: .touchUpInside)
-            fullscreenButton.translatesAutoresizingMaskIntoConstraints = false
-            overlay.addSubview(fullscreenButton)
-            NSLayoutConstraint.activate([
-                fullscreenButton.trailingAnchor.constraint(equalTo: overlay.trailingAnchor, constant: -16),
-                fullscreenButton.bottomAnchor.constraint(equalTo: overlay.bottomAnchor, constant: -60),
-                fullscreenButton.widthAnchor.constraint(equalToConstant: 44),
-                fullscreenButton.heightAnchor.constraint(equalToConstant: 44)
-            ])
-        }
-
         addChild(playerVC)
         view.addSubview(playerVC.view)
         playerVC.view.frame = view.bounds
@@ -206,9 +194,7 @@ final class PlayerContainerViewController: UIViewController {
         player.play()
     }
 
-    func configure(player: AVPlayer, isVideo: Bool, episodeTitle: String) {
-        self.isVideo = isVideo
-        self.episodeTitle = episodeTitle
+    func configure(player: AVPlayer) {
         guard isViewLoaded else {
             self.player = player
             return
@@ -220,54 +206,9 @@ final class PlayerContainerViewController: UIViewController {
         }
     }
 
-    @objc private func enterFullscreenTapped() {
-        OrientationManager.shared.supportedOrientations = [.portrait, .landscape]
-        let fullscreenVC = FullscreenLandscapePlayerViewController()
-        fullscreenVC.player = player
-        fullscreenVC.modalPresentationStyle = .fullScreen
-        fullscreenVC.modalTransitionStyle = .crossDissolve
-        present(fullscreenVC, animated: true)
-    }
-
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         player.pause()
-    }
-}
-
-/// 横屏全屏播放器，仅支持横屏
-final class FullscreenLandscapePlayerViewController: UIViewController {
-    var player: AVPlayer!
-
-    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
-        .landscape
-    }
-
-    override var prefersStatusBarHidden: Bool { true }
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        view.backgroundColor = .black
-
-        let playerVC = AVPlayerViewController()
-        playerVC.player = player
-        playerVC.showsPlaybackControls = true
-
-        addChild(playerVC)
-        view.addSubview(playerVC.view)
-        playerVC.view.frame = view.bounds
-        playerVC.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        playerVC.didMove(toParent: self)
-    }
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        OrientationManager.shared.supportedOrientations = .landscape
-    }
-
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        OrientationManager.shared.supportedOrientations = .portrait
     }
 }
 #endif
