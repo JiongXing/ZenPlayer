@@ -55,6 +55,25 @@ struct CategoryDetailView: View {
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                     Spacer()
+                    Picker("排序字段", selection: $viewModel.sortField) {
+                        ForEach(CategoryDetailViewModel.SortField.allCases) { field in
+                            Text(field.displayName).tag(field)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+
+                    Button {
+                        viewModel.isAscending.toggle()
+                    } label: {
+                        Label(
+                            viewModel.isAscending ? "正序" : "倒序",
+                            systemImage: viewModel.isAscending ? "arrow.up" : "arrow.down"
+                        )
+                        .labelStyle(.iconOnly)
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel(viewModel.isAscending ? "当前正序，点击切换到倒序" : "当前倒序，点击切换到正序")
                 }
                 .padding(.horizontal, LayoutConstants.horizontalPadding(sizeClass: sizeClass))
                 .padding(.bottom, 8)

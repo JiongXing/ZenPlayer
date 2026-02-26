@@ -67,7 +67,7 @@ struct SeriesRowView: View {
                 }
                 .lineLimit(1)
 
-                // 底部行：集数 + 类型标签（窄屏隐藏地点，节省空间）
+                // 底部行：编号 + 集数 + 类型标签（窄屏隐藏地点，节省空间）
                 HStack(spacing: isCompact ? 8 : 12) {
                     if !isCompact, !series.address.trimmingCharacters(in: .whitespaces).isEmpty {
                         Label(series.address.trimmingCharacters(in: .whitespaces), systemImage: "mappin")
@@ -77,6 +77,12 @@ struct SeriesRowView: View {
                     }
 
                     Spacer()
+
+                    if !series.num.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Text("编号: \(series.num)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
 
                     Text("\(series.total) 集")
                         .font(.caption)
