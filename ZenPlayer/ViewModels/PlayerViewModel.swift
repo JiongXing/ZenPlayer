@@ -7,6 +7,9 @@
 
 import Foundation
 import AVFoundation
+#if os(iOS)
+import MediaPlayer
+#endif
 
 /// 播放上下文：单集 + 服务器地址，用于导航传递
 struct PlaybackContext: Identifiable, Hashable {
@@ -92,6 +95,24 @@ final class PlayerViewModel {
     private let downloadManager = DownloadManager.shared
     private var denoiseTapProcessor: AVPlayerDenoiseTapProcessor?
 
+#if os(iOS)
+    @ObservationIgnored
+    private var playbackTimeObserverToken: Any?
+    @ObservationIgnored
+    private var interruptionObserver: NSObjectProtocol?
+    @ObservationIgnored
+    private var routeChangeObserver: NSObjectProtocol?
+    @ObservationIgnored
+    private var playCommandTarget: Any?
+    @ObservationIgnored
+    private var pauseCommandTarget: Any?
+    @ObservationIgnored
+    private var toggleCommandTarget: Any?
+    @ObservationIgnored
+    private var seekCommandTarget: Any?
+    private var nowPlayingBaseInfo: [String: Any] = [:]
+#endif
+
     init() {
         if let stored = UserDefaults.standard.object(forKey: StorageKeys.denoiseLevel) as? Int,
            let level = DenoiseLevel(rawValue: stored) {
@@ -108,14 +129,27 @@ final class PlayerViewModel {
         stopPlayback()
         resolvePlaybackURL(episode: episode, serverUrl: serverUrl, preferVideo: preferVideo)
         guard let url = playbackURL else { return }
-        await buildPlayer(for: url)
+#if os(iOS)
+        configureAudioSessionForPlayback(isVideo: isVideo)
+        setupAudioSessionObserversIfNeeded()
+#endif
+        await buildPlayer(for: url, episode: episode)
     }
 
     /// 停止并释放当前播放链路资源
     func stopPlayback() {
+#if os(iOS)
+        stopPlaybackObservation()
+#endif
         player?.pause()
         player = nil
         denoiseTapProcessor = nil
+#if os(iOS)
+        clearNowPlaying()
+        removeRemoteCommandTargets()
+        removeAudioSessionObservers()
+        deactivateAudioSession()
+#endif
     }
 
     /// 根据上下文解析播放 URL
@@ -187,7 +221,7 @@ final class PlayerViewModel {
         return localURL
     }
 
-    private func buildPlayer(for url: URL) async {
+    private func buildPlayer(for url: URL, episode: EpisodeItem) async {
         let item = AVPlayerItem(url: url)
         let tap = AVPlayerDenoiseTapProcessor(
             strength: denoiseLevel.strength,
@@ -204,7 +238,226 @@ final class PlayerViewModel {
             denoiseTapProcessor = nil
             player = AVPlayer(url: url)
         }
+
+#if os(iOS)
+        setupPlaybackObservation()
+        setupRemoteCommandCenter()
+        setupNowPlayingInfo(episode: episode)
+#endif
     }
+
+#if os(iOS)
+    /// 后台播放依赖 AVAudioSession.playback。
+    private func configureAudioSessionForPlayback(isVideo: Bool) {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(
+                .playback,
+                mode: isVideo ? .moviePlayback : .spokenAudio,
+                options: [.allowAirPlay, .allowBluetoothA2DP]
+            )
+            try session.setActive(true)
+        } catch {
+            errorMessage = "音频会话配置失败：\(error.localizedDescription)"
+        }
+    }
+
+    private func deactivateAudioSession() {
+        do {
+            try AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
+        } catch {
+            // 停播时的会话释放失败不影响主流程。
+        }
+    }
+
+    // MARK: - 锁屏信息与远程控制
+
+    private func setupNowPlayingInfo(episode: EpisodeItem) {
+        nowPlayingBaseInfo = [
+            MPMediaItemPropertyTitle: episode.title,
+            MPMediaItemPropertyArtist: "净宗学院",
+            MPMediaItemPropertyPlaybackDuration: Double(episode.duration) / 1000.0
+        ]
+        updateNowPlayingPlaybackState()
+    }
+
+    private func updateNowPlayingPlaybackState() {
+        guard let player else { return }
+        var info = nowPlayingBaseInfo
+        info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = player.currentTime().seconds.isFinite ? player.currentTime().seconds : 0
+        info[MPNowPlayingInfoPropertyPlaybackRate] = player.rate
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+    }
+
+    private func clearNowPlaying() {
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        nowPlayingBaseInfo = [:]
+    }
+
+    private func setupRemoteCommandCenter() {
+        removeRemoteCommandTargets()
+        let commandCenter = MPRemoteCommandCenter.shared()
+        commandCenter.playCommand.isEnabled = true
+        commandCenter.pauseCommand.isEnabled = true
+        commandCenter.togglePlayPauseCommand.isEnabled = true
+        commandCenter.changePlaybackPositionCommand.isEnabled = true
+
+        playCommandTarget = commandCenter.playCommand.addTarget { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.player?.play()
+                self?.updateNowPlayingPlaybackState()
+            }
+            return .success
+        }
+
+        pauseCommandTarget = commandCenter.pauseCommand.addTarget { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.player?.pause()
+                self?.updateNowPlayingPlaybackState()
+            }
+            return .success
+        }
+
+        toggleCommandTarget = commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                if self.player?.rate == 0 {
+                    self.player?.play()
+                } else {
+                    self.player?.pause()
+                }
+                self.updateNowPlayingPlaybackState()
+            }
+            return .success
+        }
+
+        seekCommandTarget = commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
+            guard let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
+            Task { @MainActor [weak self] in
+                let target = CMTime(seconds: event.positionTime, preferredTimescale: 600)
+                self?.player?.seek(to: target)
+                self?.updateNowPlayingPlaybackState()
+            }
+            return .success
+        }
+    }
+
+    private func removeRemoteCommandTargets() {
+        let commandCenter = MPRemoteCommandCenter.shared()
+        if let playCommandTarget {
+            commandCenter.playCommand.removeTarget(playCommandTarget)
+        }
+        if let pauseCommandTarget {
+            commandCenter.pauseCommand.removeTarget(pauseCommandTarget)
+        }
+        if let toggleCommandTarget {
+            commandCenter.togglePlayPauseCommand.removeTarget(toggleCommandTarget)
+        }
+        if let seekCommandTarget {
+            commandCenter.changePlaybackPositionCommand.removeTarget(seekCommandTarget)
+        }
+        playCommandTarget = nil
+        pauseCommandTarget = nil
+        toggleCommandTarget = nil
+        seekCommandTarget = nil
+    }
+
+    // MARK: - 播放状态观察
+
+    private func setupPlaybackObservation() {
+        guard let player else { return }
+        stopPlaybackObservation()
+        playbackTimeObserverToken = player.addPeriodicTimeObserver(
+            forInterval: CMTime(seconds: 1, preferredTimescale: 600),
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.updateNowPlayingPlaybackState()
+            }
+        }
+    }
+
+    private func stopPlaybackObservation() {
+        guard let player, let token = playbackTimeObserverToken else { return }
+        player.removeTimeObserver(token)
+        playbackTimeObserverToken = nil
+    }
+
+    // MARK: - 音频中断/路由变化
+
+    private func setupAudioSessionObserversIfNeeded() {
+        let center = NotificationCenter.default
+        if interruptionObserver == nil {
+            interruptionObserver = center.addObserver(
+                forName: AVAudioSession.interruptionNotification,
+                object: AVAudioSession.sharedInstance(),
+                queue: .main
+            ) { [weak self] notification in
+                Task { @MainActor [weak self] in
+                    self?.handleAudioInterruption(notification)
+                }
+            }
+        }
+        if routeChangeObserver == nil {
+            routeChangeObserver = center.addObserver(
+                forName: AVAudioSession.routeChangeNotification,
+                object: AVAudioSession.sharedInstance(),
+                queue: .main
+            ) { [weak self] notification in
+                Task { @MainActor [weak self] in
+                    self?.handleRouteChange(notification)
+                }
+            }
+        }
+    }
+
+    private func removeAudioSessionObservers() {
+        let center = NotificationCenter.default
+        if let interruptionObserver {
+            center.removeObserver(interruptionObserver)
+            self.interruptionObserver = nil
+        }
+        if let routeChangeObserver {
+            center.removeObserver(routeChangeObserver)
+            self.routeChangeObserver = nil
+        }
+    }
+
+    private func handleAudioInterruption(_ notification: Notification) {
+        guard let info = notification.userInfo,
+              let typeRaw = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeRaw) else {
+            return
+        }
+        switch type {
+        case .began:
+            player?.pause()
+            updateNowPlayingPlaybackState()
+        case .ended:
+            let optionsRaw = info[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
+            let options = AVAudioSession.InterruptionOptions(rawValue: optionsRaw)
+            if options.contains(.shouldResume) {
+                player?.play()
+            }
+            updateNowPlayingPlaybackState()
+        @unknown default:
+            break
+        }
+    }
+
+    private func handleRouteChange(_ notification: Notification) {
+        guard let info = notification.userInfo,
+              let reasonRaw = info[AVAudioSessionRouteChangeReasonKey] as? UInt,
+              let reason = AVAudioSession.RouteChangeReason(rawValue: reasonRaw) else {
+            return
+        }
+        // 耳机拔出时自动暂停，避免外放打扰。
+        if reason == .oldDeviceUnavailable {
+            player?.pause()
+            updateNowPlayingPlaybackState()
+        }
+    }
+#endif
 
     static let supportedAmplificationOptions: [Double] = [1.0, 2.0, 3.0, 4.0]
 

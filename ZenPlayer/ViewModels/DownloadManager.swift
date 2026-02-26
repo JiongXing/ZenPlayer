@@ -72,6 +72,7 @@ private final class DownloadSessionDelegate: NSObject, URLSessionDownloadDelegat
     var onProgress: ((Int, Int64, Int64) -> Void)?
     var onFinished: ((Int, URL) -> Void)?
     var onCompleted: ((Int, Error?) -> Void)?
+    var onDidFinishEvents: (() -> Void)?
 
     func urlSession(
         _ session: URLSession,
@@ -97,6 +98,10 @@ private final class DownloadSessionDelegate: NSObject, URLSessionDownloadDelegat
         didCompleteWithError error: (any Error)?
     ) {
         onCompleted?(task.taskIdentifier, error)
+    }
+
+    func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
+        onDidFinishEvents?()
     }
 }
 #endif
@@ -137,6 +142,11 @@ final class DownloadManager {
 
     /// 单例
     static let shared = DownloadManager()
+
+#if os(iOS)
+    /// iOS 后台下载 Session 标识，必须稳定不变，系统据此恢复任务。
+    static let backgroundSessionIdentifier = "\(Bundle.main.bundleIdentifier ?? "ZenPlayer").download.background"
+#endif
 
     // MARK: - 可观察状态
 
@@ -191,6 +201,9 @@ final class DownloadManager {
     @ObservationIgnored
     private var downloadSession: URLSession!
 
+    @ObservationIgnored
+    private var backgroundSessionCompletionHandler: (() -> Void)?
+
     /// key -> 活跃下载任务
     private var activeDownloads: [String: ActiveDownloadTask] = [:]
 
@@ -217,6 +230,9 @@ final class DownloadManager {
         bindSessionCallbacks()
 #endif
         restoreFromManifest()
+#if os(iOS)
+        reattachActiveSystemTasks()
+#endif
     }
 
     // MARK: - 公共接口
@@ -234,6 +250,22 @@ final class DownloadManager {
         let key = Self.downloadKey(episodeId: episodeId, type: type)
         return downloadStates[key] ?? .idle
     }
+
+#if os(iOS)
+    /// 将 AppDelegate 的后台 URLSession 完成回调交给下载管理器。
+    func setBackgroundSessionCompletionHandler(
+        identifier: String,
+        completionHandler: @escaping () -> Void
+    ) {
+        guard identifier == Self.backgroundSessionIdentifier else { return }
+        backgroundSessionCompletionHandler = completionHandler
+
+        // 若当前没有活跃任务，立即回调，避免系统等待超时。
+        if activeDownloads.isEmpty {
+            finishBackgroundSessionEventsIfNeeded()
+        }
+    }
+#endif
 
     /// 开始下载单集的音频或视频
     /// - Parameters:
@@ -386,7 +418,10 @@ final class DownloadManager {
     // MARK: - iOS：URLSession 绑定
 
     private func makeDownloadSession() -> URLSession {
-        let config = URLSessionConfiguration.default
+        let config = URLSessionConfiguration.background(withIdentifier: Self.backgroundSessionIdentifier)
+        config.sessionSendsLaunchEvents = true
+        config.isDiscretionary = false
+        config.waitsForConnectivity = true
         config.timeoutIntervalForRequest = 30
         config.timeoutIntervalForResource = 1800
         return URLSession(configuration: config, delegate: sessionDelegate, delegateQueue: nil)
@@ -410,6 +445,63 @@ final class DownloadManager {
         sessionDelegate.onCompleted = { [weak self] taskIdentifier, error in
             Task { @MainActor [weak self] in
                 self?.handleDidComplete(taskIdentifier: taskIdentifier, error: error)
+            }
+        }
+        sessionDelegate.onDidFinishEvents = { [weak self] in
+            Task { @MainActor [weak self] in
+                self?.finishBackgroundSessionEventsIfNeeded()
+            }
+        }
+    }
+
+    private func finishBackgroundSessionEventsIfNeeded() {
+        guard let completion = backgroundSessionCompletionHandler else { return }
+        backgroundSessionCompletionHandler = nil
+        completion()
+    }
+
+    /// App 冷启动后重新挂接系统托管的后台下载任务。
+    private func reattachActiveSystemTasks() {
+        downloadSession.getAllTasks { [weak self] tasks in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                var restoredCount = 0
+
+                for task in tasks {
+                    guard let downloadTask = task as? URLSessionDownloadTask else { continue }
+                    guard let key = downloadTask.taskDescription else {
+                        downloadTask.cancel()
+                        continue
+                    }
+                    guard var record = self.downloadRecords[key] else {
+                        downloadTask.cancel()
+                        continue
+                    }
+
+                    let destinationURL = self.absoluteURL(fromRelativePath: record.destinationRelativePath)
+                    let active = ActiveDownloadTask(
+                        task: downloadTask,
+                        episodeId: record.episodeId,
+                        type: record.type,
+                        remoteURLString: record.remoteURL,
+                        destinationURL: destinationURL,
+                        usedResumeData: false
+                    )
+                    self.activeDownloads[key] = active
+                    self.taskKeyMap[downloadTask.taskIdentifier] = key
+
+                    let clampedProgress = max(0, min(1, record.progress))
+                    self.downloadStates[key] = .downloading(progress: clampedProgress)
+                    record.status = .downloading
+                    record.updatedAt = Date().timeIntervalSince1970
+                    self.downloadRecords[key] = record
+                    restoredCount += 1
+                }
+
+                if restoredCount > 0 {
+                    self.scheduleManifestSave()
+                    self.logger.info("📡 已重新挂接 \(restoredCount) 个后台下载任务")
+                }
             }
         }
     }
@@ -474,6 +566,7 @@ final class DownloadManager {
         } else {
             task = downloadSession.downloadTask(with: URLRequest(url: remoteURL))
         }
+        task.taskDescription = key
         let active = ActiveDownloadTask(
             task: task,
             episodeId: episodeId,
@@ -490,6 +583,9 @@ final class DownloadManager {
     private func removeActiveDownload(for key: String) {
         guard let active = activeDownloads.removeValue(forKey: key) else { return }
         taskKeyMap.removeValue(forKey: active.task.taskIdentifier)
+        if activeDownloads.isEmpty {
+            finishBackgroundSessionEventsIfNeeded()
+        }
     }
 
     private func handleDownloadProgress(

@@ -18,6 +18,17 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     ) -> UIInterfaceOrientationMask {
         OrientationManager.shared.supportedOrientations
     }
+
+    func application(
+        _ application: UIApplication,
+        handleEventsForBackgroundURLSession identifier: String,
+        completionHandler: @escaping () -> Void
+    ) {
+        DownloadManager.shared.setBackgroundSessionCompletionHandler(
+            identifier: identifier,
+            completionHandler: completionHandler
+        )
+    }
 }
 #endif
 
