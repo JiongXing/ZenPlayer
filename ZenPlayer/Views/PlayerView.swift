@@ -15,31 +15,26 @@ struct PlayerView: View {
     @State private var viewModel = PlayerViewModel()
 
     var body: some View {
-        Group {
+        VStack(spacing: 14) {
             if let player = viewModel.player {
-                #if os(iOS)
-                AVPlayerContainerView(
-                    player: player,
-                    isVideo: viewModel.isVideo,
-                    episodeTitle: context.episode.title
-                )
-                #else
-                VideoPlayer(player: player)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                #endif
+                mediaPlayerArea(player: player)
             } else if let error = viewModel.errorMessage {
                 errorView(message: error)
             } else {
                 ProgressView("加载中...")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity, minHeight: 220)
             }
+
+            if viewModel.player != nil {
+                controlPanel
+            }
+
+            Spacer(minLength: 0)
         }
-        .background(Color.black)
-        .ignoresSafeArea()
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(pageBackground)
         .navigationBarBackButtonHidden(false)
-        #if os(iOS)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        #endif
         .task(id: context.id) {
             await viewModel.preparePlayback(episode: context.episode, serverUrl: context.serverUrl)
         }
@@ -63,6 +58,82 @@ struct PlayerView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
+    }
+
+    @ViewBuilder
+    private func mediaPlayerArea(player: AVPlayer) -> some View {
+        Group {
+            #if os(iOS)
+            AVPlayerContainerView(
+                player: player,
+                isVideo: viewModel.isVideo,
+                episodeTitle: context.episode.title
+            )
+            #else
+            VideoPlayer(player: player)
+            #endif
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: viewModel.isVideo ? 260 : 220)
+        .background(Color.black, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private var controlPanel: some View {
+        VStack(spacing: 10) {
+            HStack {
+                Text("降噪")
+                    .font(.subheadline)
+                    .foregroundStyle(.black)
+                Spacer()
+                Toggle("降噪开关", isOn: $viewModel.denoiseEnabled)
+                    .tint(.black)
+                    .labelsHidden()
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("音量放大")
+                    .font(.subheadline)
+                    .foregroundStyle(.black)
+
+                HStack(spacing: 8) {
+                    ForEach(PlayerViewModel.supportedAmplificationOptions, id: \.self) { option in
+                        Button {
+                            viewModel.amplificationMultiplier = option
+                        } label: {
+                            Text(PlayerViewModel.amplificationLabel(option))
+                                .font(.footnote.weight(.semibold))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .foregroundStyle(viewModel.amplificationMultiplier == option ? .white : .black)
+                                .background(
+                                    Capsule(style: .continuous)
+                                        .fill(viewModel.amplificationMultiplier == option ? Color.black : Color.black.opacity(0.08))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 3)
+        )
+    }
+
+    private var pageBackground: Color {
+        #if os(iOS)
+        Color(uiColor: .systemGroupedBackground)
+        #else
+        Color(nsColor: .windowBackgroundColor)
+        #endif
     }
 }
 

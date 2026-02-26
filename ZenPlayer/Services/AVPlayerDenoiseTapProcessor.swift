@@ -14,6 +14,7 @@ final class AVPlayerDenoiseTapProcessor {
     private let stateLock = NSLock()
     private var strength: Float = 1.0
     private var enabled = true
+    private var gainMultiplier: Float = 1.0
     private var processor: RNNoiseProcessor?
 
     private var inputFrame = [Float](repeating: 0, count: RNNoiseProcessor.frameSize)
@@ -54,6 +55,12 @@ final class AVPlayerDenoiseTapProcessor {
     func setEnabled(_ isEnabled: Bool) {
         stateLock.lock()
         enabled = isEnabled
+        stateLock.unlock()
+    }
+
+    func updateGainMultiplier(_ value: Float) {
+        stateLock.lock()
+        gainMultiplier = max(1.0, min(3.0, value))
         stateLock.unlock()
     }
 
@@ -119,11 +126,12 @@ final class AVPlayerDenoiseTapProcessor {
     fileprivate func processAudioList(_ bufferList: UnsafeMutablePointer<AudioBufferList>, frameCount: Int) {
         guard frameCount > 0 else { return }
         stateLock.lock()
-        let shouldProcess = enabled
+        let shouldDenoise = enabled
         let localStrength = strength
+        let localGain = gainMultiplier
         let localProcessor = processor
         stateLock.unlock()
-        guard shouldProcess, let localProcessor else { return }
+        guard shouldDenoise || localGain > 1.0001 else { return }
 
         let buffers = UnsafeMutableAudioBufferListPointer(bufferList)
         guard !buffers.isEmpty else { return }
@@ -156,33 +164,35 @@ final class AVPlayerDenoiseTapProcessor {
         }
 
         var denoised = mono
-        if tapSampleRate > 0, abs(tapSampleRate - RNNoiseProcessor.sampleRate) > 1 {
-            denoised = processResampled(
-                mono: mono,
-                localProcessor: localProcessor,
-                localStrength: localStrength
-            )
-        } else {
-            var offset = 0
-            while offset < frameCount {
-                let current = min(RNNoiseProcessor.frameSize, frameCount - offset)
-                for i in 0..<current { inputFrame[i] = mono[offset + i] * scale }
-                if current < RNNoiseProcessor.frameSize {
-                    for i in current..<RNNoiseProcessor.frameSize { inputFrame[i] = 0 }
+        if shouldDenoise, let localProcessor {
+            if tapSampleRate > 0, abs(tapSampleRate - RNNoiseProcessor.sampleRate) > 1 {
+                denoised = processResampled(
+                    mono: mono,
+                    localProcessor: localProcessor,
+                    localStrength: localStrength
+                )
+            } else {
+                var offset = 0
+                while offset < frameCount {
+                    let current = min(RNNoiseProcessor.frameSize, frameCount - offset)
+                    for i in 0..<current { inputFrame[i] = mono[offset + i] * scale }
+                    if current < RNNoiseProcessor.frameSize {
+                        for i in current..<RNNoiseProcessor.frameSize { inputFrame[i] = 0 }
+                    }
+                    localProcessor.processFrame(output: &outputFrame, input: &inputFrame)
+                    for i in 0..<current {
+                        let clean = outputFrame[i] * invScale
+                        denoised[offset + i] = mono[offset + i] * (1 - localStrength) + clean * localStrength
+                    }
+                    offset += RNNoiseProcessor.frameSize
                 }
-                localProcessor.processFrame(output: &outputFrame, input: &inputFrame)
-                for i in 0..<current {
-                    let clean = outputFrame[i] * invScale
-                    denoised[offset + i] = mono[offset + i] * (1 - localStrength) + clean * localStrength
-                }
-                offset += RNNoiseProcessor.frameSize
             }
         }
 
-        if !denoised.isEmpty {
+        if shouldDenoise, !denoised.isEmpty {
             applyBoundarySmoothingIfNeeded(&denoised)
         }
-        if let tail = denoised.last {
+        if shouldDenoise, let tail = denoised.last {
             previousOutputTail = tail
         }
 
@@ -191,7 +201,7 @@ final class AVPlayerDenoiseTapProcessor {
             guard let data = buffers[0].mData else { return }
             let ptr = data.bindMemory(to: Float.self, capacity: frameCount * channels)
             for i in 0..<frameCount {
-                let v = denoised[i]
+                let v = max(-1.0, min(1.0, denoised[i] * localGain))
                 for ch in 0..<channels {
                     ptr[i * channels + ch] = v
                 }
@@ -200,7 +210,9 @@ final class AVPlayerDenoiseTapProcessor {
             for ch in 0..<buffers.count {
                 guard let data = buffers[ch].mData else { continue }
                 let ptr = data.bindMemory(to: Float.self, capacity: frameCount)
-                for i in 0..<frameCount { ptr[i] = denoised[i] }
+                for i in 0..<frameCount {
+                    ptr[i] = max(-1.0, min(1.0, denoised[i] * localGain))
+                }
             }
         }
     }

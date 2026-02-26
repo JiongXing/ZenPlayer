@@ -21,6 +21,10 @@ struct PlaybackContext: Identifiable, Hashable {
 @Observable
 final class PlayerViewModel {
 
+    private enum StorageKeys {
+        static let denoiseEnabled = "player.denoiseEnabled"
+    }
+
     /// 解析后的播放 URL（本地优先）
     var playbackURL: URL?
 
@@ -33,11 +37,39 @@ final class PlayerViewModel {
     /// 解析错误信息
     var errorMessage: String?
 
+    /// 降噪开关（播放中可动态生效）
+    var denoiseEnabled: Bool = true {
+        didSet {
+            UserDefaults.standard.set(denoiseEnabled, forKey: StorageKeys.denoiseEnabled)
+            denoiseTapProcessor?.setEnabled(denoiseEnabled)
+        }
+    }
+
+    /// 音量放大倍数（播放中可动态生效）
+    var amplificationMultiplier: Double = 1.0 {
+        didSet {
+            let clamped = Self.clampAmplification(amplificationMultiplier)
+            if abs(clamped - amplificationMultiplier) > 0.0001 {
+                amplificationMultiplier = clamped
+                return
+            }
+            denoiseTapProcessor?.updateGainMultiplier(Float(amplificationMultiplier))
+        }
+    }
+
     private let downloadManager = DownloadManager.shared
     private var denoiseTapProcessor: AVPlayerDenoiseTapProcessor?
 
     /// 默认开启降噪，当前版本不暴露 UI 开关
     private let defaultDenoiseStrength: Float = 1.0
+
+    init() {
+        if let stored = UserDefaults.standard.object(forKey: StorageKeys.denoiseEnabled) as? Bool {
+            denoiseEnabled = stored
+        } else {
+            denoiseEnabled = true
+        }
+    }
 
     /// 统一准备播放：先解析 URL，再构建带降噪回退能力的 AVPlayer
     /// - Parameters:
@@ -124,10 +156,11 @@ final class PlayerViewModel {
         let item = AVPlayerItem(url: url)
         let tap = AVPlayerDenoiseTapProcessor(
             strength: defaultDenoiseStrength,
-            enabled: true
+            enabled: denoiseEnabled
         )
         do {
             try await tap.attach(to: item)
+            tap.updateGainMultiplier(Float(amplificationMultiplier))
             denoiseTapProcessor = tap
             player = AVPlayer(playerItem: item)
         } catch {
@@ -135,5 +168,22 @@ final class PlayerViewModel {
             denoiseTapProcessor = nil
             player = AVPlayer(url: url)
         }
+    }
+
+    static let supportedAmplificationOptions: [Double] = [1.0, 1.5, 2.0, 2.5, 3.0]
+
+    static func amplificationLabel(_ value: Double) -> String {
+        switch value {
+        case 1.0: return "1.0x"
+        case 1.5: return "1.5x"
+        case 2.0: return "2.0x"
+        case 2.5: return "2.5x"
+        case 3.0: return "3.0x"
+        default: return String(format: "%.2fx", value)
+        }
+    }
+
+    private static func clampAmplification(_ value: Double) -> Double {
+        min(3.0, max(1.0, value))
     }
 }
