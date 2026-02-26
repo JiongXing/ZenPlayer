@@ -5,6 +5,7 @@
 //  Created by jxing on 2026/2/11.
 //
 
+import Foundation
 import SwiftUI
 #if os(macOS)
 import AppKit
@@ -17,7 +18,7 @@ import os.log
 // MARK: - 下载类型
 
 /// 下载类型：音频 (mp3) 或视频 (mp4)
-enum DownloadType: String {
+enum DownloadType: String, Codable {
     case mp3
     case mp4
 }
@@ -41,6 +42,7 @@ private func sanitizedFileName(from title: String) -> String {
 enum DownloadState: Equatable {
     case idle
     case downloading(progress: Double)  // 0.0 ~ 1.0
+    case paused(progress: Double)       // 0.0 ~ 1.0
     case completed
     case failed(String)
 
@@ -50,6 +52,8 @@ enum DownloadState: Equatable {
         case (.idle, .idle):
             return true
         case (.downloading(let a), .downloading(let b)):
+            return a == b
+        case (.paused(let a), .paused(let b)):
             return a == b
         case (.completed, .completed):
             return true
@@ -61,12 +65,68 @@ enum DownloadState: Equatable {
     }
 }
 
+// MARK: - iOS 下载委托
+
+#if os(iOS)
+private final class DownloadSessionDelegate: NSObject, URLSessionDownloadDelegate, URLSessionTaskDelegate {
+    var onProgress: ((Int, Int64, Int64) -> Void)?
+    var onFinished: ((Int, URL) -> Void)?
+    var onCompleted: ((Int, Error?) -> Void)?
+
+    func urlSession(
+        _ session: URLSession,
+        downloadTask: URLSessionDownloadTask,
+        didWriteData bytesWritten: Int64,
+        totalBytesWritten: Int64,
+        totalBytesExpectedToWrite: Int64
+    ) {
+        onProgress?(downloadTask.taskIdentifier, totalBytesWritten, totalBytesExpectedToWrite)
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        downloadTask: URLSessionDownloadTask,
+        didFinishDownloadingTo location: URL
+    ) {
+        onFinished?(downloadTask.taskIdentifier, location)
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        didCompleteWithError error: (any Error)?
+    ) {
+        onCompleted?(task.taskIdentifier, error)
+    }
+}
+#endif
+
 // MARK: - 下载清单持久化
 
-/// 持久化存储的下载记录（key -> 相对路径）
-private struct DownloadManifest: Codable {
-    var entries: [String: String] = [:]
+#if os(iOS)
+private enum PersistedDownloadStatus: String, Codable {
+    case downloading
+    case paused
+    case completed
+    case failed
 }
+
+private struct DownloadRecord: Codable {
+    var episodeId: Int
+    var type: DownloadType
+    var remoteURL: String
+    var destinationRelativePath: String
+    var status: PersistedDownloadStatus
+    var progress: Double
+    var resumeDataRelativePath: String?
+    var updatedAt: TimeInterval
+}
+
+private struct DownloadManifest: Codable {
+    var version: Int = 1
+    var records: [String: DownloadRecord] = [:]
+}
+#endif
 
 // MARK: - 下载管理器
 
@@ -88,15 +148,18 @@ final class DownloadManager {
 
     // MARK: - 私有属性
 
-    /// 正在执行的下载任务（key 同 downloadStates）
+    /// macOS 兼容下载任务（iOS 使用 URLSessionDownloadTask）
+    @ObservationIgnored
     private var downloadTasks: [String: Task<Void, Never>] = [:]
 
-    /// 直链下载服务（用于 mp3 和 mp4）
+    /// 直链下载服务（用于 macOS 回退路径）
+    @ObservationIgnored
     private let directDownloadService = MP3DownloadService()
 
+    @ObservationIgnored
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "ZenPlayer", category: "DownloadManager")
 
-    /// iOS 下载根目录：Documents/ZenPlayerDownloads/
+    /// 下载根目录：Documents/ZenPlayerDownloads/
     private var downloadsRootURL: URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("ZenPlayerDownloads", isDirectory: true)
@@ -107,52 +170,53 @@ final class DownloadManager {
         downloadsRootURL.appendingPathComponent("download_manifest.json", isDirectory: false)
     }
 
+#if os(iOS)
+    private struct ActiveDownloadTask {
+        let task: URLSessionDownloadTask
+        let episodeId: Int
+        let type: DownloadType
+        let remoteURLString: String
+        let destinationURL: URL
+        let usedResumeData: Bool
+    }
+
+    private enum CancellationIntent {
+        case pause
+        case cancel
+    }
+
+    @ObservationIgnored
+    private let sessionDelegate = DownloadSessionDelegate()
+
+    @ObservationIgnored
+    private var downloadSession: URLSession!
+
+    /// key -> 活跃下载任务
+    private var activeDownloads: [String: ActiveDownloadTask] = [:]
+
+    /// taskIdentifier -> key
+    private var taskKeyMap: [Int: String] = [:]
+
+    /// key -> 用户触发的取消意图（暂停/取消）
+    private var cancelIntents: [String: CancellationIntent] = [:]
+
+    /// key -> 持久化记录
+    private var downloadRecords: [String: DownloadRecord] = [:]
+
+    private var manifestSaveTask: Task<Void, Never>?
+    private let manifestDebounceNanoseconds: UInt64 = 300_000_000
+
+    private var resumeDataRootURL: URL {
+        downloadsRootURL.appendingPathComponent("resumeData", isDirectory: true)
+    }
+#endif
+
     private init() {
+#if os(iOS)
+        downloadSession = makeDownloadSession()
+        bindSessionCallbacks()
+#endif
         restoreFromManifest()
-    }
-
-    // MARK: - 持久化
-
-    /// 从清单恢复下载状态
-    private func restoreFromManifest() {
-#if os(iOS)
-        guard FileManager.default.fileExists(atPath: manifestURL.path) else { return }
-        do {
-            let data = try Data(contentsOf: manifestURL)
-            let manifest = try JSONDecoder().decode(DownloadManifest.self, from: data)
-            for (key, relativePath) in manifest.entries {
-                let fullURL = downloadsRootURL.appendingPathComponent(relativePath)
-                if FileManager.default.fileExists(atPath: fullURL.path) {
-                    downloadStates[key] = .completed
-                    completedFileURLs[key] = fullURL
-                }
-            }
-            logger.info("📂 已恢复 \(manifest.entries.count) 条下载记录")
-        } catch {
-            logger.error("❌ 恢复下载清单失败: \(error.localizedDescription)")
-        }
-#endif
-    }
-
-    /// 保存清单到磁盘
-    private func saveManifest() {
-#if os(iOS)
-        let basePath = downloadsRootURL.path + "/"
-        let manifest = DownloadManifest(entries: Dictionary(
-            uniqueKeysWithValues: completedFileURLs.compactMap { key, url in
-                guard url.path.hasPrefix(basePath) else { return nil }
-                let rel = String(url.path.dropFirst(basePath.count))
-                return rel.isEmpty ? nil : (key, rel)
-            }
-        ))
-        do {
-            try FileManager.default.createDirectory(at: downloadsRootURL, withIntermediateDirectories: true)
-            let data = try JSONEncoder().encode(manifest)
-            try data.write(to: manifestURL)
-        } catch {
-            logger.error("❌ 保存下载清单失败: \(error.localizedDescription)")
-        }
-#endif
     }
 
     // MARK: - 公共接口
@@ -172,7 +236,6 @@ final class DownloadManager {
     }
 
     /// 开始下载单集的音频或视频
-    /// 弹出 NSSavePanel 让用户选择保存位置，确认后开始下载
     /// - Parameters:
     ///   - episode: 要下载的单集
     ///   - type: 下载类型（.mp3 音频 / .mp4 视频）
@@ -180,28 +243,584 @@ final class DownloadManager {
     func startDownload(episode: EpisodeItem, type: DownloadType, serverUrl: String) {
         let key = Self.downloadKey(episodeId: episode.id, type: type)
 
-        // 构建完整下载 URL
-        let downloadUrlString: String
-        switch type {
-        case .mp3:
-            guard let mp3Url = episode.mp3Url, !mp3Url.isEmpty else {
+        guard let remoteURLString = makeRemoteURLString(episode: episode, type: type, serverUrl: serverUrl) else {
+            switch type {
+            case .mp3:
                 downloadStates[key] = .failed("该集没有可下载的音频地址")
-                return
-            }
-            downloadUrlString = mp3Url
-        case .mp4:
-            guard !episode.mp4Url.isEmpty else {
+            case .mp4:
                 downloadStates[key] = .failed("该集没有可下载的视频地址")
-                return
             }
-            // mp4Url 是相对路径，需要拼接 serverUrl
-            downloadUrlString = serverUrl + episode.mp4Url
+            return
         }
 
-        // 获取保存路径
-        let saveURL: URL
-#if os(macOS)
-        // macOS：弹出保存面板让用户选择路径
+#if os(iOS)
+        let destinationURL = makeIOSDestinationURL(episodeId: episode.id, title: episode.title, type: type)
+        startIOSDownload(
+            key: key,
+            episodeId: episode.id,
+            type: type,
+            remoteURLString: remoteURLString,
+            destinationURL: destinationURL,
+            resumeData: nil,
+            initialProgress: 0,
+            persistedProgress: 0
+        )
+#else
+        startMacDownload(
+            key: key,
+            episode: episode,
+            type: type,
+            remoteURLString: remoteURLString
+        )
+#endif
+    }
+
+    /// 暂停指定下载（iOS 真正断点续传；macOS 退化为取消）
+    func pauseDownload(episodeId: Int, type: DownloadType) {
+        let key = Self.downloadKey(episodeId: episodeId, type: type)
+#if os(iOS)
+        guard let active = activeDownloads[key] else { return }
+        cancelIntents[key] = .pause
+        active.task.cancel(byProducingResumeData: { [weak self] resumeData in
+            Task { @MainActor [weak self] in
+                self?.storePausedState(for: key, resumeData: resumeData)
+            }
+        })
+#else
+        cancelDownload(episodeId: episodeId, type: type)
+#endif
+    }
+
+    /// 继续指定下载（仅 iOS）
+    func resumeDownload(episodeId: Int, type: DownloadType) {
+        let key = Self.downloadKey(episodeId: episodeId, type: type)
+#if os(iOS)
+        guard activeDownloads[key] == nil else { return }
+        guard var record = downloadRecords[key] else { return }
+        let destinationURL = absoluteURL(fromRelativePath: record.destinationRelativePath)
+
+        var resumeData: Data?
+        if let resumePath = record.resumeDataRelativePath {
+            resumeData = loadResumeData(fromRelativePath: resumePath)
+            if resumeData == nil {
+                record.resumeDataRelativePath = nil
+                record.progress = 0
+                downloadRecords[key] = record
+            }
+        } else {
+            record.progress = 0
+            downloadRecords[key] = record
+        }
+
+        startIOSDownload(
+            key: key,
+            episodeId: record.episodeId,
+            type: record.type,
+            remoteURLString: record.remoteURL,
+            destinationURL: destinationURL,
+            resumeData: resumeData,
+            initialProgress: record.progress,
+            persistedProgress: record.progress
+        )
+#endif
+    }
+
+    /// 获取已完成下载的本地文件 URL（会自动清理失效记录）
+    func completedFileURL(for episodeId: Int, type: DownloadType) -> URL? {
+        let key = Self.downloadKey(episodeId: episodeId, type: type)
+        guard let url = completedFileURLs[key] else { return nil }
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            logger.warning("⚠️ 本地文件缺失，移除失效记录 key=\(key)")
+#if os(iOS)
+            removeRecordAndArtifacts(for: key, resetStateToIdle: true)
+#else
+            completedFileURLs.removeValue(forKey: key)
+            downloadStates[key] = .idle
+#endif
+            return nil
+        }
+        return url
+    }
+
+    /// 取消指定单集某种类型的下载
+    /// - Parameters:
+    ///   - episodeId: 单集 ID
+    ///   - type: 下载类型
+    func cancelDownload(episodeId: Int, type: DownloadType) {
+        let key = Self.downloadKey(episodeId: episodeId, type: type)
+#if os(iOS)
+        if let active = activeDownloads[key] {
+            cancelIntents[key] = .cancel
+            active.task.cancel()
+            return
+        }
+        removeRecordAndArtifacts(for: key, resetStateToIdle: true)
+#else
+        downloadTasks[key]?.cancel()
+        downloadTasks.removeValue(forKey: key)
+        downloadStates[key] = .idle
+        logger.info("🛑 取消下载 episodeId=\(episodeId) type=\(type.rawValue)")
+#endif
+    }
+
+    // MARK: - 公共辅助
+
+    /// 拼接远端下载 URL（mp4 支持 serverUrl + 相对路径）
+    private func makeRemoteURLString(episode: EpisodeItem, type: DownloadType, serverUrl: String) -> String? {
+        switch type {
+        case .mp3:
+            guard let mp3URL = episode.mp3Url, !mp3URL.isEmpty else { return nil }
+            return mp3URL
+        case .mp4:
+            guard !episode.mp4Url.isEmpty else { return nil }
+            if let url = URL(string: episode.mp4Url), url.scheme != nil {
+                return episode.mp4Url
+            }
+            let base = serverUrl.hasSuffix("/") ? String(serverUrl.dropLast()) : serverUrl
+            let path = episode.mp4Url.hasPrefix("/") ? episode.mp4Url : "/" + episode.mp4Url
+            return base + path
+        }
+    }
+
+#if os(iOS)
+    // MARK: - iOS：URLSession 绑定
+
+    private func makeDownloadSession() -> URLSession {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 30
+        config.timeoutIntervalForResource = 1800
+        return URLSession(configuration: config, delegate: sessionDelegate, delegateQueue: nil)
+    }
+
+    private func bindSessionCallbacks() {
+        sessionDelegate.onProgress = { [weak self] taskIdentifier, totalBytesWritten, totalBytesExpectedToWrite in
+            Task { @MainActor [weak self] in
+                self?.handleDownloadProgress(
+                    taskIdentifier: taskIdentifier,
+                    totalBytesWritten: totalBytesWritten,
+                    totalBytesExpectedToWrite: totalBytesExpectedToWrite
+                )
+            }
+        }
+        sessionDelegate.onFinished = { [weak self] taskIdentifier, location in
+            Task { @MainActor [weak self] in
+                self?.handleDidFinishDownloading(taskIdentifier: taskIdentifier, tempLocation: location)
+            }
+        }
+        sessionDelegate.onCompleted = { [weak self] taskIdentifier, error in
+            Task { @MainActor [weak self] in
+                self?.handleDidComplete(taskIdentifier: taskIdentifier, error: error)
+            }
+        }
+    }
+
+    // MARK: - iOS：下载任务
+
+    private func makeIOSDestinationURL(episodeId: Int, title: String, type: DownloadType) -> URL {
+        let safeTitle = sanitizedFileName(from: title)
+        let fileName = "\(episodeId)_\(safeTitle).\(type.rawValue)"
+        let subDir = downloadsRootURL.appendingPathComponent(type.rawValue, isDirectory: true)
+        try? FileManager.default.createDirectory(at: subDir, withIntermediateDirectories: true)
+        return subDir.appendingPathComponent(fileName)
+    }
+
+    private func startIOSDownload(
+        key: String,
+        episodeId: Int,
+        type: DownloadType,
+        remoteURLString: String,
+        destinationURL: URL,
+        resumeData: Data?,
+        initialProgress: Double,
+        persistedProgress: Double
+    ) {
+        guard activeDownloads[key] == nil else { return }
+        guard let remoteURL = URL(string: remoteURLString) else {
+            downloadStates[key] = .failed("无效的下载地址")
+            return
+        }
+
+        let destinationRelativePath = relativePath(fromAbsoluteURL: destinationURL) ?? "\(type.rawValue)/\(destinationURL.lastPathComponent)"
+        var record = downloadRecords[key] ?? DownloadRecord(
+            episodeId: episodeId,
+            type: type,
+            remoteURL: remoteURLString,
+            destinationRelativePath: destinationRelativePath,
+            status: .downloading,
+            progress: 0,
+            resumeDataRelativePath: nil,
+            updatedAt: Date().timeIntervalSince1970
+        )
+        record.episodeId = episodeId
+        record.type = type
+        record.remoteURL = remoteURLString
+        record.destinationRelativePath = destinationRelativePath
+        record.status = .downloading
+        record.progress = max(0, min(1, persistedProgress))
+        if resumeData == nil, let oldResumePath = record.resumeDataRelativePath {
+            removeResumeDataFile(atRelativePath: oldResumePath)
+            record.resumeDataRelativePath = nil
+        }
+        record.updatedAt = Date().timeIntervalSince1970
+        downloadRecords[key] = record
+
+        downloadStates[key] = .downloading(progress: max(0, min(1, initialProgress)))
+        completedFileURLs.removeValue(forKey: key)
+        scheduleManifestSave()
+
+        let task: URLSessionDownloadTask
+        if let resumeData {
+            task = downloadSession.downloadTask(withResumeData: resumeData)
+        } else {
+            task = downloadSession.downloadTask(with: URLRequest(url: remoteURL))
+        }
+        let active = ActiveDownloadTask(
+            task: task,
+            episodeId: episodeId,
+            type: type,
+            remoteURLString: remoteURLString,
+            destinationURL: destinationURL,
+            usedResumeData: resumeData != nil
+        )
+        activeDownloads[key] = active
+        taskKeyMap[task.taskIdentifier] = key
+        task.resume()
+    }
+
+    private func removeActiveDownload(for key: String) {
+        guard let active = activeDownloads.removeValue(forKey: key) else { return }
+        taskKeyMap.removeValue(forKey: active.task.taskIdentifier)
+    }
+
+    private func handleDownloadProgress(
+        taskIdentifier: Int,
+        totalBytesWritten: Int64,
+        totalBytesExpectedToWrite: Int64
+    ) {
+        guard let key = taskKeyMap[taskIdentifier] else { return }
+        guard case .downloading = downloadStates[key] else { return }
+
+        let candidateProgress: Double
+        if totalBytesExpectedToWrite > 0 {
+            candidateProgress = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
+        } else {
+            candidateProgress = progressFromState(for: key, fallback: downloadRecords[key]?.progress ?? 0)
+        }
+
+        let clamped = max(0, min(1, candidateProgress))
+        downloadStates[key] = .downloading(progress: clamped)
+
+        if var record = downloadRecords[key], record.status != .completed {
+            // 对 resume 场景使用 max，避免回调进度回退导致 UI 抖动。
+            record.progress = max(record.progress, clamped)
+            record.status = .downloading
+            record.updatedAt = Date().timeIntervalSince1970
+            downloadRecords[key] = record
+            scheduleManifestSave()
+        }
+    }
+
+    private func handleDidFinishDownloading(taskIdentifier: Int, tempLocation: URL) {
+        guard let key = taskKeyMap[taskIdentifier], let active = activeDownloads[key] else { return }
+
+        do {
+            let parent = active.destinationURL.deletingLastPathComponent()
+            try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
+            if FileManager.default.fileExists(atPath: active.destinationURL.path) {
+                try FileManager.default.removeItem(at: active.destinationURL)
+            }
+            try FileManager.default.moveItem(at: tempLocation, to: active.destinationURL)
+
+            removeActiveDownload(for: key)
+            cancelIntents.removeValue(forKey: key)
+
+            completedFileURLs[key] = active.destinationURL
+            downloadStates[key] = .completed
+
+            var record = downloadRecords[key] ?? DownloadRecord(
+                episodeId: active.episodeId,
+                type: active.type,
+                remoteURL: active.remoteURLString,
+                destinationRelativePath: relativePath(fromAbsoluteURL: active.destinationURL) ?? "\(active.type.rawValue)/\(active.destinationURL.lastPathComponent)",
+                status: .completed,
+                progress: 1,
+                resumeDataRelativePath: nil,
+                updatedAt: Date().timeIntervalSince1970
+            )
+            if let oldResumePath = record.resumeDataRelativePath {
+                removeResumeDataFile(atRelativePath: oldResumePath)
+            }
+            record.status = .completed
+            record.progress = 1
+            record.resumeDataRelativePath = nil
+            record.updatedAt = Date().timeIntervalSince1970
+            downloadRecords[key] = record
+            scheduleManifestSave()
+
+            logger.info("✅ 下载完成 key=\(key)")
+        } catch {
+            removeActiveDownload(for: key)
+            cancelIntents.removeValue(forKey: key)
+            downloadStates[key] = .failed(error.localizedDescription)
+            if var record = downloadRecords[key] {
+                record.status = .failed
+                record.updatedAt = Date().timeIntervalSince1970
+                downloadRecords[key] = record
+                scheduleManifestSave()
+            }
+            logger.error("❌ 移动下载文件失败 key=\(key) - \(error.localizedDescription)")
+        }
+    }
+
+    private func handleDidComplete(taskIdentifier: Int, error: Error?) {
+        guard let key = taskKeyMap[taskIdentifier], let active = activeDownloads[key] else { return }
+        guard let nsError = error as NSError? else {
+            // 正常完成场景由 didFinishDownloadingTo 处理
+            return
+        }
+
+        if nsError.domain == NSURLErrorDomain, nsError.code == NSURLErrorCancelled {
+            let intent = cancelIntents.removeValue(forKey: key)
+            removeActiveDownload(for: key)
+
+            switch intent {
+            case .pause:
+                if case .paused = downloadStates[key] { return }
+                let progress = progressFromState(for: key, fallback: downloadRecords[key]?.progress ?? 0)
+                downloadStates[key] = .paused(progress: progress)
+                if var record = downloadRecords[key] {
+                    record.status = .paused
+                    record.progress = progress
+                    record.updatedAt = Date().timeIntervalSince1970
+                    downloadRecords[key] = record
+                    scheduleManifestSave()
+                }
+            case .cancel:
+                removeRecordAndArtifacts(for: key, resetStateToIdle: true)
+            case .none:
+                downloadStates[key] = .idle
+            }
+            return
+        }
+
+        // resumeData 无效时自动降级为全量重下
+        if active.usedResumeData, shouldFallbackToFreshDownload(error: nsError) {
+            removeActiveDownload(for: key)
+            cancelIntents.removeValue(forKey: key)
+            logger.warning("⚠️ resumeData 无效，降级全量重下 key=\(key)")
+
+            guard var record = downloadRecords[key] else {
+                downloadStates[key] = .failed("恢复下载失败，请重试")
+                return
+            }
+            if let resumePath = record.resumeDataRelativePath {
+                removeResumeDataFile(atRelativePath: resumePath)
+            }
+            record.resumeDataRelativePath = nil
+            record.progress = 0
+            record.status = .paused
+            record.updatedAt = Date().timeIntervalSince1970
+            downloadRecords[key] = record
+            scheduleManifestSave()
+
+            let destinationURL = absoluteURL(fromRelativePath: record.destinationRelativePath)
+            startIOSDownload(
+                key: key,
+                episodeId: record.episodeId,
+                type: record.type,
+                remoteURLString: record.remoteURL,
+                destinationURL: destinationURL,
+                resumeData: nil,
+                initialProgress: 0,
+                persistedProgress: 0
+            )
+            return
+        }
+
+        removeActiveDownload(for: key)
+        cancelIntents.removeValue(forKey: key)
+        downloadStates[key] = .failed(nsError.localizedDescription)
+        if var record = downloadRecords[key] {
+            record.status = .failed
+            record.updatedAt = Date().timeIntervalSince1970
+            downloadRecords[key] = record
+            scheduleManifestSave()
+        }
+        logger.error("❌ 下载失败 key=\(key) - \(nsError.localizedDescription)")
+    }
+
+    private func shouldFallbackToFreshDownload(error: NSError) -> Bool {
+        if error.domain == NSURLErrorDomain, error.code == URLError.Code.cannotDecodeRawData.rawValue {
+            return true
+        }
+        return error.localizedDescription.localizedCaseInsensitiveContains("resume")
+    }
+
+    private func storePausedState(for key: String, resumeData: Data?) {
+        guard var record = downloadRecords[key] else { return }
+        if let resumeData, let resumePath = persistResumeData(resumeData, for: key) {
+            if let oldPath = record.resumeDataRelativePath, oldPath != resumePath {
+                removeResumeDataFile(atRelativePath: oldPath)
+            }
+            record.resumeDataRelativePath = resumePath
+        } else {
+            record.resumeDataRelativePath = nil
+        }
+        let progress = progressFromState(for: key, fallback: record.progress)
+        record.progress = progress
+        record.status = .paused
+        record.updatedAt = Date().timeIntervalSince1970
+        downloadRecords[key] = record
+        downloadStates[key] = .paused(progress: progress)
+        scheduleManifestSave()
+    }
+
+    // MARK: - iOS：持久化
+
+    private func relativePath(fromAbsoluteURL url: URL) -> String? {
+        let base = downloadsRootURL.path + "/"
+        let full = url.path
+        guard full.hasPrefix(base) else { return nil }
+        let relative = String(full.dropFirst(base.count))
+        return relative.isEmpty ? nil : relative
+    }
+
+    private func absoluteURL(fromRelativePath relativePath: String) -> URL {
+        downloadsRootURL.appendingPathComponent(relativePath)
+    }
+
+    private func persistResumeData(_ resumeData: Data, for key: String) -> String? {
+        do {
+            try FileManager.default.createDirectory(at: resumeDataRootURL, withIntermediateDirectories: true)
+            let url = resumeDataRootURL.appendingPathComponent("\(key).resume", isDirectory: false)
+            try resumeData.write(to: url, options: .atomic)
+            return relativePath(fromAbsoluteURL: url)
+        } catch {
+            logger.error("❌ 保存 resumeData 失败 key=\(key) - \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    private func loadResumeData(fromRelativePath relativePath: String) -> Data? {
+        let url = absoluteURL(fromRelativePath: relativePath)
+        return try? Data(contentsOf: url)
+    }
+
+    private func removeResumeDataFile(atRelativePath relativePath: String) {
+        let url = absoluteURL(fromRelativePath: relativePath)
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        try? FileManager.default.removeItem(at: url)
+    }
+
+    private func removeRecordAndArtifacts(for key: String, resetStateToIdle: Bool) {
+        if let record = downloadRecords.removeValue(forKey: key), let resumePath = record.resumeDataRelativePath {
+            removeResumeDataFile(atRelativePath: resumePath)
+        }
+        completedFileURLs.removeValue(forKey: key)
+        if resetStateToIdle {
+            downloadStates[key] = .idle
+        }
+        scheduleManifestSave()
+    }
+
+    private func progressFromState(for key: String, fallback: Double) -> Double {
+        switch downloadStates[key] {
+        case .downloading(let p):
+            return p
+        case .paused(let p):
+            return p
+        default:
+            return fallback
+        }
+    }
+
+    private func scheduleManifestSave() {
+        manifestSaveTask?.cancel()
+        manifestSaveTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: self?.manifestDebounceNanoseconds ?? 300_000_000)
+            guard !Task.isCancelled else { return }
+            self?.saveManifestNow()
+        }
+    }
+
+    private func saveManifestNow() {
+        do {
+            try FileManager.default.createDirectory(at: downloadsRootURL, withIntermediateDirectories: true)
+            let manifest = DownloadManifest(version: 1, records: downloadRecords)
+            let data = try JSONEncoder().encode(manifest)
+            try data.write(to: manifestURL, options: .atomic)
+        } catch {
+            logger.error("❌ 保存下载清单失败: \(error.localizedDescription)")
+        }
+    }
+
+    private func restoreFromManifest() {
+        guard FileManager.default.fileExists(atPath: manifestURL.path) else { return }
+        do {
+            let data = try Data(contentsOf: manifestURL)
+            let manifest = try JSONDecoder().decode(DownloadManifest.self, from: data)
+            var needsRewrite = false
+
+            for (key, var record) in manifest.records {
+                let destinationURL = absoluteURL(fromRelativePath: record.destinationRelativePath)
+
+                switch record.status {
+                case .completed:
+                    guard FileManager.default.fileExists(atPath: destinationURL.path) else {
+                        needsRewrite = true
+                        continue
+                    }
+                    completedFileURLs[key] = destinationURL
+                    downloadStates[key] = .completed
+                    downloadRecords[key] = record
+
+                case .downloading, .paused:
+                    if record.status == .downloading {
+                        record.status = .paused
+                        needsRewrite = true
+                    }
+                    if let resumePath = record.resumeDataRelativePath {
+                        let resumeURL = absoluteURL(fromRelativePath: resumePath)
+                        if !FileManager.default.fileExists(atPath: resumeURL.path) {
+                            record.resumeDataRelativePath = nil
+                            record.progress = 0
+                            needsRewrite = true
+                        }
+                    }
+                    record.progress = max(0, min(1, record.progress))
+                    record.updatedAt = Date().timeIntervalSince1970
+                    downloadRecords[key] = record
+                    downloadStates[key] = .paused(progress: record.progress)
+
+                case .failed:
+                    record.progress = max(0, min(1, record.progress))
+                    record.updatedAt = Date().timeIntervalSince1970
+                    downloadRecords[key] = record
+                    downloadStates[key] = .failed("上次下载失败，点击重试")
+                }
+            }
+
+            if needsRewrite {
+                saveManifestNow()
+            }
+            logger.info("📂 已恢复 \(self.downloadRecords.count) 条下载记录")
+        } catch {
+            logger.error("❌ 恢复下载清单失败: \(error.localizedDescription)")
+        }
+    }
+#else
+    // MARK: - macOS：兼容旧下载实现
+
+    private func restoreFromManifest() {
+        // macOS 暂不实现持久化下载恢复（本次迭代 iOS first）
+    }
+
+    private func startMacDownload(
+        key: String,
+        episode: EpisodeItem,
+        type: DownloadType,
+        remoteURLString: String
+    ) {
         let panel = NSSavePanel()
         panel.title = "选择保存位置"
         panel.message = "将「\(episode.title)」保存到："
@@ -218,36 +837,16 @@ final class DownloadManager {
 
         panel.canCreateDirectories = true
         panel.isExtensionHidden = false
-
         let response = panel.runModal()
-
-        guard response == .OK, let panelURL = panel.url else {
+        guard response == .OK, let saveURL = panel.url else {
             logger.info("用户取消了保存面板")
             return
         }
-        saveURL = panelURL
-#else
-        // iOS：保存到 Documents/ZenPlayerDownloads/{mp3|mp4}/ 子目录
-        let safeTitle = sanitizedFileName(from: episode.title)
-        let fileName = "\(episode.id)_\(safeTitle).\(type.rawValue)"
-        let subDir = downloadsRootURL.appendingPathComponent(type.rawValue, isDirectory: true)
-        try? FileManager.default.createDirectory(at: subDir, withIntermediateDirectories: true)
-        saveURL = subDir.appendingPathComponent(fileName)
-#endif
 
-        logger.info("📂 保存路径: \(saveURL.path)  类型: \(type.rawValue)")
-
-        // 更新状态为下载中
         downloadStates[key] = .downloading(progress: 0)
-
-        // 创建下载任务
         let task = Task { [weak self] in
             guard let self else { return }
-
             do {
-                // 进度回调闭包
-                // 注意：仅在当前仍处于 .downloading 状态时才更新进度，
-                // 避免迟到的进度回调覆盖已完成/已失败的终态（竞态条件）
                 let progressHandler: @Sendable (Double) -> Void = { [weak self] progress in
                     Task { @MainActor [weak self] in
                         guard let self,
@@ -255,55 +854,25 @@ final class DownloadManager {
                         self.downloadStates[key] = .downloading(progress: progress)
                     }
                 }
-
-                // mp3 和 mp4 均使用直链下载服务
                 try await self.directDownloadService.download(
-                    urlString: downloadUrlString,
+                    urlString: remoteURLString,
                     to: saveURL,
                     onProgress: progressHandler
                 )
-
-                // 下载完成
                 self.downloadStates[key] = .completed
                 self.completedFileURLs[key] = saveURL
                 self.downloadTasks.removeValue(forKey: key)
-                self.saveManifest()
-                self.logger.info("✅ 下载完成: \(episode.title) (\(type.rawValue))")
-
             } catch is CancellationError {
                 self.downloadStates[key] = .idle
                 self.downloadTasks.removeValue(forKey: key)
-                // 尝试清理不完整的文件
                 try? FileManager.default.removeItem(at: saveURL)
-                self.logger.info("🛑 下载已取消: \(episode.title) (\(type.rawValue))")
-
             } catch {
                 self.downloadStates[key] = .failed(error.localizedDescription)
                 self.downloadTasks.removeValue(forKey: key)
-                // 清理不完整的文件
                 try? FileManager.default.removeItem(at: saveURL)
-                self.logger.error("❌ 下载失败: \(episode.title) (\(type.rawValue)) - \(error.localizedDescription)")
             }
         }
-
         downloadTasks[key] = task
     }
-
-    /// 获取已完成下载的本地文件 URL
-    func completedFileURL(for episodeId: Int, type: DownloadType) -> URL? {
-        let key = Self.downloadKey(episodeId: episodeId, type: type)
-        return completedFileURLs[key]
-    }
-
-    /// 取消指定单集某种类型的下载
-    /// - Parameters:
-    ///   - episodeId: 单集 ID
-    ///   - type: 下载类型
-    func cancelDownload(episodeId: Int, type: DownloadType) {
-        let key = Self.downloadKey(episodeId: episodeId, type: type)
-        downloadTasks[key]?.cancel()
-        downloadTasks.removeValue(forKey: key)
-        downloadStates[key] = .idle
-        logger.info("🛑 取消下载 episodeId=\(episodeId) type=\(type.rawValue)")
-    }
+#endif
 }

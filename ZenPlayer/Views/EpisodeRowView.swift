@@ -225,7 +225,7 @@ struct EpisodeRowView: View {
             .help("下载\(label)")
 
         case .downloading(let progress):
-            // 下载中：显示进度环 + 百分比 + 停止按钮
+            // 下载中：显示进度环 + 百分比 + 暂停按钮
             HStack(spacing: 4) {
                 ZStack {
                     Circle()
@@ -244,14 +244,49 @@ struct EpisodeRowView: View {
                     .frame(width: 28, alignment: .leading)
 
                 Button {
+                    downloadManager.pauseDownload(episodeId: episode.id, type: type)
+                } label: {
+                    Image(systemName: "pause.circle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("暂停\(label)下载")
+            }
+            .animation(.easeInOut(duration: 0.3), value: progress)
+
+        case .paused(let progress):
+            // 暂停中：显示当前进度 + 继续 + 取消
+            HStack(spacing: 4) {
+                Image(systemName: "pause.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Text("\(Int(progress * 100))%")
+                    .font(.caption2)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .frame(width: 28, alignment: .leading)
+
+                Button {
+                    downloadManager.resumeDownload(episodeId: episode.id, type: type)
+                } label: {
+                    Image(systemName: "play.circle.fill")
+                        .font(.caption)
+                        .foregroundStyle(tintColor)
+                }
+                .buttonStyle(.plain)
+                .help("继续\(label)下载")
+
+                Button {
                     downloadManager.cancelDownload(episodeId: episode.id, type: type)
                 } label: {
-                    Image(systemName: "stop.circle.fill")
-                        .font(.caption)
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.caption2)
                         .foregroundStyle(.red.opacity(0.8))
                 }
                 .buttonStyle(.plain)
-                .help("停止\(label)下载")
+                .help("取消\(label)下载")
             }
             .animation(.easeInOut(duration: 0.3), value: progress)
 

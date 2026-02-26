@@ -130,7 +130,7 @@ final class PlayerViewModel {
 
         if preferVideo, episode.isVideo {
             // 视频：优先本地 mp4
-            if let localURL = downloadManager.completedFileURL(for: episode.id, type: .mp4) {
+            if let localURL = verifiedLocalURL(for: episode.id, type: .mp4) {
                 playbackURL = localURL
                 return
             }
@@ -146,7 +146,7 @@ final class PlayerViewModel {
         }
 
         // 音频：优先本地 mp3
-        if let localURL = downloadManager.completedFileURL(for: episode.id, type: .mp3) {
+        if let localURL = verifiedLocalURL(for: episode.id, type: .mp3) {
             playbackURL = localURL
             isVideo = false
             return
@@ -159,7 +159,7 @@ final class PlayerViewModel {
 
         // 若 preferVideo 为 false 或没有音频，再尝试视频
         if !preferVideo || playbackURL == nil, episode.isVideo {
-            if let localURL = downloadManager.completedFileURL(for: episode.id, type: .mp4) {
+            if let localURL = verifiedLocalURL(for: episode.id, type: .mp4) {
                 playbackURL = localURL
                 isVideo = true
                 return
@@ -178,6 +178,13 @@ final class PlayerViewModel {
         }
 
         errorMessage = "没有可播放的地址"
+    }
+
+    /// 二次校验本地文件存在，避免映射残留导致播放失败。
+    private func verifiedLocalURL(for episodeId: Int, type: DownloadType) -> URL? {
+        guard let localURL = downloadManager.completedFileURL(for: episodeId, type: type) else { return nil }
+        guard FileManager.default.fileExists(atPath: localURL.path) else { return nil }
+        return localURL
     }
 
     private func buildPlayer(for url: URL) async {
