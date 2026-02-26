@@ -32,11 +32,15 @@ struct ZenPlayerApp: App {
         Atlantis.start()
         #endif
         configureKingfisher()
+        configureNavigationBarStyle()
     }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
+#if os(iOS)
+                .tint(.secondary)
+#endif
 #if os(macOS)
                 .frame(minWidth: 500, minHeight: 500)
 #endif
@@ -60,5 +64,14 @@ struct ZenPlayerApp: App {
         cache.diskStorage.config.sizeLimit = 1024 * 1024 * 1024
         // 磁盘缓存过期时间：100 天
         cache.diskStorage.config.expiration = .days(100)
+    }
+
+    // MARK: - NavigationBar 全局样式
+
+    private func configureNavigationBarStyle() {
+        #if os(iOS)
+        // 返回按钮使用稍浅层级，避免视觉上压过导航标题
+        UINavigationBar.appearance().tintColor = .secondaryLabel
+        #endif
     }
 }
