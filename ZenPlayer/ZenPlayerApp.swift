@@ -49,16 +49,14 @@ struct ZenPlayerApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-#if os(iOS)
+                #if os(iOS)
                 .tint(.secondary)
-#endif
-#if os(macOS)
-                .frame(minWidth: 500, minHeight: 500)
-#endif
+                #endif
         }
-#if os(macOS)
-        .defaultSize(width: 700, height: 700)
-#endif
+        #if os(macOS)
+        .defaultSize(width: 1024, height: 768)
+        .windowResizability(.automatic)
+        #endif
     }
 
     // MARK: - Kingfisher 全局配置
