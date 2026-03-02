@@ -289,9 +289,9 @@ final class DownloadManager {
         guard let remoteURLString = makeRemoteURLString(episode: episode, type: type, serverUrl: serverUrl) else {
             switch type {
             case .mp3:
-                downloadStates[key] = .failed("该集没有可下载的音频地址")
+                downloadStates[key] = .failed(L10n.string(.errorNoAudioDownload))
             case .mp4:
-                downloadStates[key] = .failed("该集没有可下载的视频地址")
+                downloadStates[key] = .failed(L10n.string(.errorNoVideoDownload))
             }
             return
         }
@@ -548,7 +548,7 @@ final class DownloadManager {
     ) {
         guard activeDownloads[key] == nil else { return }
         guard let remoteURL = URL(string: remoteURLString) else {
-            downloadStates[key] = .failed("无效的下载地址")
+            downloadStates[key] = .failed(L10n.string(.errorInvalidDownloadUrl))
             return
         }
 
@@ -727,7 +727,7 @@ final class DownloadManager {
             logger.warning("⚠️ resumeData 无效，降级全量重下 key=\(key)")
 
             guard var record = downloadRecords[key] else {
-                downloadStates[key] = .failed("恢复下载失败，请重试")
+                downloadStates[key] = .failed(L10n.string(.errorResumeDownloadFailed))
                 return
             }
             if let resumePath = record.resumeDataRelativePath {
@@ -913,7 +913,7 @@ final class DownloadManager {
                     record.progress = max(0, min(1, record.progress))
                     record.updatedAt = Date().timeIntervalSince1970
                     downloadRecords[key] = record
-                    downloadStates[key] = .failed("上次下载失败，点击重试")
+                    downloadStates[key] = .failed(L10n.string(.errorLastDownloadFailed))
                 }
             }
 
@@ -939,8 +939,8 @@ final class DownloadManager {
         remoteURLString: String
     ) {
         let panel = NSSavePanel()
-        panel.title = "选择保存位置"
-        panel.message = "将「\(episode.title)」保存到："
+        panel.title = L10n.string(.errorChooseSaveLocation)
+        panel.message = L10n.string(.errorSaveToMessage, episode.title)
 
         let safeTitle = sanitizedFileName(from: episode.title)
         switch type {

@@ -19,8 +19,8 @@ final class CategoryDetailViewModel {
 
         var displayName: String {
             switch self {
-            case .number: return "编号"
-            case .date: return "日期"
+            case .number: return L10n.string(.categorySortByNumber)
+            case .date: return L10n.string(.categorySortByDate)
             }
         }
     }

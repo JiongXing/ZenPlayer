@@ -84,7 +84,7 @@ struct CategoryRowView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "play.circle")
                         .font(.caption)
-                    Text("点击浏览系列")
+                    Text(L10n.text(.contentBrowseSeries))
                         .font(.caption)
                 }
                 .foregroundStyle(.tertiary)
@@ -130,7 +130,7 @@ struct CategoryRowView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "play.circle")
                         .font(.caption)
-                    Text("点击浏览系列")
+                    Text(L10n.text(.contentBrowseSeries))
                         .font(.caption)
                 }
                 .foregroundStyle(.tertiary)

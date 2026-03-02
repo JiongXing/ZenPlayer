@@ -69,7 +69,7 @@ struct EpisodeRowView: View {
         .onHover { hovering in
             isHovered = hovering
         }
-        .help("播放")
+        .help(L10n.string(.episodePlay))
 #endif
     }
 
@@ -85,7 +85,7 @@ struct EpisodeRowView: View {
                     .lineLimit(1)
 
                 HStack(spacing: 8) {
-                    Text("第 \(episode.episode) 集")
+                    Text(L10n.string(.episodeFormat, episode.episode))
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
 
@@ -224,9 +224,9 @@ struct EpisodeRowView: View {
 
         func helpText(for label: String) -> String {
             switch self {
-            case .pause: "暂停\(label)下载"
-            case .resume: "继续\(label)下载"
-            case .cancel: "取消\(label)下载"
+            case .pause: L10n.string(.episodePauseDownload, label)
+            case .resume: L10n.string(.episodeResumeDownload, label)
+            case .cancel: L10n.string(.episodeCancelDownload, label)
             }
         }
     }
@@ -250,7 +250,7 @@ struct EpisodeRowView: View {
     private func downloadButton(type: DownloadType) -> some View {
         let state = downloadManager.state(for: episode.id, type: type)
         let icon = type == .mp3 ? "headphones" : "video.fill"
-        let label = type == .mp3 ? "音频" : "视频"
+        let label = type == .mp3 ? L10n.string(.episodeAudio) : L10n.string(.episodeVideo)
         let tintColor: Color = type == .mp3 ? .orange : .blue
 
         switch state {
@@ -273,7 +273,7 @@ struct EpisodeRowView: View {
                 .foregroundStyle(tintColor)
             }
             .buttonStyle(.plain)
-            .help("下载\(label)")
+            .help(L10n.string(.episodeDownload, label))
 
         case .downloading(let progress):
             // 下载中：显示进度环 + 百分比 + 暂停按钮
@@ -341,7 +341,7 @@ struct EpisodeRowView: View {
             .foregroundStyle(.green)
             .transition(.scale.combined(with: .opacity))
             #if os(macOS)
-            .help("\(label)下载完成")
+            .help(L10n.string(.episodeDownloadComplete, label))
             #endif
 
         case .failed(let message):
@@ -363,7 +363,7 @@ struct EpisodeRowView: View {
                 .foregroundStyle(.red)
             }
             .buttonStyle(.plain)
-            .help("\(label)下载失败：\(message)，点击重试")
+            .help(L10n.string(.errorDownloadFailedRetry, label, message))
         }
     }
 }

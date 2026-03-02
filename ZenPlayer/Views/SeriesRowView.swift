@@ -79,12 +79,12 @@ struct SeriesRowView: View {
                     Spacer()
 
                     if !series.num.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        Text("编号: \(series.num)")
+                        Text(L10n.string(.seriesNumberLabel, series.num))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
 
-                    Text("\(series.total) 集")
+                    Text(L10n.string(.seriesEpisodeCount, Int64(series.total)))
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
@@ -114,7 +114,7 @@ struct SeriesRowView: View {
         HStack(spacing: 3) {
             Image(systemName: series.isVideo ? "video.fill" : "headphones")
                 .font(.caption2)
-            Text(series.typeName)
+            Text(series.isVideo ? L10n.text(.episodeVideo) : L10n.text(.episodeAudio))
                 .font(.caption)
                 .fontWeight(.medium)
         }

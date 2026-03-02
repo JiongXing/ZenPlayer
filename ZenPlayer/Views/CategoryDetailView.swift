@@ -51,11 +51,11 @@ struct CategoryDetailView: View {
 
                 // 统计信息
                 HStack {
-                    Text("共 \(viewModel.seriesList.count) 个专辑")
+                    Text(L10n.string(.categorySeriesCount, Int64(viewModel.seriesList.count)))
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                     Spacer()
-                    Picker("排序字段", selection: $viewModel.sortField) {
+                    Picker(L10n.text(.categorySortField), selection: $viewModel.sortField) {
                         ForEach(CategoryDetailViewModel.SortField.allCases) { field in
                             Text(field.displayName).tag(field)
                         }
@@ -67,13 +67,13 @@ struct CategoryDetailView: View {
                         viewModel.isAscending.toggle()
                     } label: {
                         Label(
-                            viewModel.isAscending ? "正序" : "倒序",
+                            viewModel.isAscending ? L10n.text(.categorySortAsc) : L10n.text(.categorySortDesc),
                             systemImage: viewModel.isAscending ? "arrow.up" : "arrow.down"
                         )
                         .labelStyle(.iconOnly)
                     }
                     .buttonStyle(.borderless)
-                    .accessibilityLabel(viewModel.isAscending ? "当前正序，点击切换到倒序" : "当前倒序，点击切换到正序")
+                    .accessibilityLabel(viewModel.isAscending ? Text(L10n.text(.categorySortAscHint)) : Text(L10n.text(.categorySortDescHint)))
                 }
                 .padding(.horizontal, LayoutConstants.horizontalPadding(sizeClass: sizeClass))
                 .padding(.bottom, 8)
@@ -99,7 +99,7 @@ struct CategoryDetailView: View {
         VStack(spacing: 16) {
             ProgressView()
                 .scaleEffect(1.2)
-            Text("正在加载...")
+            Text(L10n.text(.homeLoading))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -114,7 +114,7 @@ struct CategoryDetailView: View {
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)
 
-            Text("加载失败")
+            Text(L10n.text(.homeLoadFailed))
                 .font(.title3)
                 .fontWeight(.medium)
 
@@ -129,7 +129,7 @@ struct CategoryDetailView: View {
                     await viewModel.loadSeries(url: category.url)
                 }
             } label: {
-                Label("重新加载", systemImage: "arrow.clockwise")
+                Label(L10n.text(.homeRetry), systemImage: "arrow.clockwise")
                     .padding(.horizontal, 20)
                     .padding(.vertical, 8)
             }

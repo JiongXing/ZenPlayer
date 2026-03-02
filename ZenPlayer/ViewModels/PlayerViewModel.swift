@@ -46,7 +46,7 @@ final class PlayerViewModel {
         var label: String {
             switch self {
             case .original:
-                return "原声"
+                return L10n.string(.playerOriginal)
             case .level25:
                 return "25%"
             case .level50:
@@ -221,7 +221,7 @@ final class PlayerViewModel {
             }
         }
 
-        errorMessage = "没有可播放的地址"
+        errorMessage = L10n.string(.errorNoPlayableAddress)
     }
 
     /// 二次校验本地文件存在，避免映射残留导致播放失败。

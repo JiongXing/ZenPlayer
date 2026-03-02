@@ -76,7 +76,7 @@ struct HomeView: View {
         VStack(spacing: 16) {
             ProgressView()
                 .scaleEffect(1.2)
-            Text("正在加载...")
+            Text(L10n.text(.homeLoading))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -91,7 +91,7 @@ struct HomeView: View {
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)
 
-            Text("加载失败")
+            Text(L10n.text(.homeLoadFailed))
                 .font(.title3)
                 .fontWeight(.medium)
 
@@ -106,7 +106,7 @@ struct HomeView: View {
                     await viewModel.loadCategories()
                 }
             } label: {
-                Label("重新加载", systemImage: "arrow.clockwise")
+                Label(L10n.text(.homeRetry), systemImage: "arrow.clockwise")
                     .padding(.horizontal, 20)
                     .padding(.vertical, 8)
             }

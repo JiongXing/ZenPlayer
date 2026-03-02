@@ -21,12 +21,12 @@ struct PlayerView: View {
             if let player = viewModel.player {
                 mediaPlayerArea(player: player)
             } else if viewModel.isPreparingPlayback {
-                ProgressView("加载中...")
+                ProgressView(L10n.text(.playerLoading))
                     .frame(maxWidth: .infinity, minHeight: 220)
             } else if let error = viewModel.errorMessage {
                 errorView(message: error)
             } else {
-                ProgressView("加载中...")
+                ProgressView(L10n.text(.playerLoading))
                     .frame(maxWidth: .infinity, minHeight: 220)
             }
 
@@ -59,7 +59,7 @@ struct PlayerView: View {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 48))
                 .foregroundStyle(.secondary)
-            Text("无法播放")
+            Text(L10n.text(.playerCannotPlay))
                 .font(.headline)
                 .foregroundStyle(.white)
             Text(message)
@@ -96,7 +96,7 @@ struct PlayerView: View {
     private var controlPanel: some View {
         VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("语音降噪")
+                Text(L10n.text(.playerVoiceDenoise))
                     .font(.subheadline)
                     .foregroundStyle(.black)
 
@@ -123,7 +123,7 @@ struct PlayerView: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("音量放大")
+                Text(L10n.text(.playerVolumeBoost))
                     .font(.subheadline)
                     .foregroundStyle(.black)
 
