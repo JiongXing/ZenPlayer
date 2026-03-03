@@ -94,26 +94,31 @@ struct PlayerView: View {
     }
 
     private var controlPanel: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
                 Text(L10n.text(.playerVoiceDenoise))
-                    .font(.subheadline)
-                    .foregroundStyle(.black)
+                    .font(.headline)
+                    .foregroundStyle(Color(red: 0.4, green: 0.3, blue: 0.2))
 
                 HStack(spacing: 8) {
                     ForEach(PlayerViewModel.DenoiseLevel.allCases, id: \.rawValue) { level in
                         Button {
-                            viewModel.denoiseLevel = level
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                viewModel.denoiseLevel = level
+                            }
                         } label: {
                             Text(level.label)
                                 .font(.footnote.weight(.semibold))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
                                 .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .foregroundStyle(viewModel.denoiseLevel == level ? .white : .black)
+                                .padding(.vertical, 9)
+                                .foregroundStyle(viewModel.denoiseLevel == level ? .white : Color(red: 0.5, green: 0.4, blue: 0.3))
                                 .background(
                                     Capsule(style: .continuous)
-                                        .fill(viewModel.denoiseLevel == level ? Color.black : Color.black.opacity(0.08))
+                                        .fill(viewModel.denoiseLevel == level ? Color(red: 0.8, green: 0.6, blue: 0.4) : Color(red: 0.95, green: 0.9, blue: 0.85))
                                 )
+                                .shadow(color: viewModel.denoiseLevel == level ? Color(red: 0.8, green: 0.6, blue: 0.4).opacity(0.3) : .clear, radius: 4, x: 0, y: 2)
                         }
                         .buttonStyle(.plain)
                         .frame(maxWidth: .infinity)
@@ -122,25 +127,33 @@ struct PlayerView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            VStack(alignment: .leading, spacing: 8) {
+            Divider()
+                .background(Color(red: 0.9, green: 0.85, blue: 0.8))
+
+            VStack(alignment: .leading, spacing: 12) {
                 Text(L10n.text(.playerVolumeBoost))
-                    .font(.subheadline)
-                    .foregroundStyle(.black)
+                    .font(.headline)
+                    .foregroundStyle(Color(red: 0.4, green: 0.3, blue: 0.2))
 
                 HStack(spacing: 8) {
                     ForEach(PlayerViewModel.supportedAmplificationOptions, id: \.self) { option in
                         Button {
-                            viewModel.amplificationMultiplier = option
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                viewModel.amplificationMultiplier = option
+                            }
                         } label: {
                             Text(PlayerViewModel.amplificationLabel(option))
                                 .font(.footnote.weight(.semibold))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
                                 .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .foregroundStyle(viewModel.amplificationMultiplier == option ? .white : .black)
+                                .padding(.vertical, 9)
+                                .foregroundStyle(viewModel.amplificationMultiplier == option ? .white : Color(red: 0.5, green: 0.4, blue: 0.3))
                                 .background(
                                     Capsule(style: .continuous)
-                                        .fill(viewModel.amplificationMultiplier == option ? Color.black : Color.black.opacity(0.08))
+                                        .fill(viewModel.amplificationMultiplier == option ? Color(red: 0.8, green: 0.6, blue: 0.4) : Color(red: 0.95, green: 0.9, blue: 0.85))
                                 )
+                                .shadow(color: viewModel.amplificationMultiplier == option ? Color(red: 0.8, green: 0.6, blue: 0.4).opacity(0.3) : .clear, radius: 4, x: 0, y: 2)
                         }
                         .buttonStyle(.plain)
                         .frame(maxWidth: .infinity)
@@ -150,20 +163,20 @@ struct PlayerView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
+        .padding(16)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 3)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(red: 0.98, green: 0.96, blue: 0.94))
+                .shadow(color: Color(red: 0.8, green: 0.6, blue: 0.4).opacity(0.15), radius: 10, x: 0, y: 5)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color(red: 0.9, green: 0.85, blue: 0.8), lineWidth: 1)
+                )
         )
     }
 
     private var pageBackground: Color {
-        #if os(iOS)
-        Color(uiColor: .systemGroupedBackground)
-        #else
-        Color(nsColor: .windowBackgroundColor)
-        #endif
+        Color(red: 0.92, green: 0.88, blue: 0.82).opacity(0.3)
     }
 }
 
