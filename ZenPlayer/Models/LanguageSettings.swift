@@ -13,45 +13,55 @@ struct AppLanguage: Identifiable, Hashable {
     var id: String { code }
     var locale: Locale { Locale(identifier: code) }
 
-    var nameKey: L10nKey {
-        switch code {
-        case "zh-Hans": return .settingsLanguageNameZhHans
-        case "zh-Hant": return .settingsLanguageNameZhHant
-        default: return .settingsLanguageNameZhHans
-        }
-    }
-
     static var supported: [AppLanguage] {
         LocalizationConfig.supportedLanguageCodes.map { AppLanguage(code: $0) }
     }
 }
 
 final class LanguageSettings: ObservableObject {
-    private enum Keys {
-        static let appLanguage = "app.language"
-    }
-
     @Published var selectedLanguage: AppLanguage {
         didSet {
             guard oldValue != selectedLanguage else { return }
-            UserDefaults.standard.set(selectedLanguage.code, forKey: Keys.appLanguage)
             L10n.setCurrentLocale(selectedLanguage.locale)
         }
     }
 
     var currentLocale: Locale { selectedLanguage.locale }
     var locale: Locale { currentLocale }
-    var availableLanguages: [AppLanguage] { AppLanguage.supported }
 
-    init() {
-        let storedCode = UserDefaults.standard.string(forKey: Keys.appLanguage)
-        if let code = storedCode,
-           let matched = LocalizationConfig.matchSupportedLanguage(for: code) {
-            selectedLanguage = AppLanguage(code: matched)
-        } else {
-            let best = LocalizationConfig.bestMatch(preferredLanguages: Locale.preferredLanguages)
-            selectedLanguage = AppLanguage(code: best)
-        }
+    private let notificationCenter: NotificationCenter
+    private var localeDidChangeObserver: NSObjectProtocol?
+
+    init(notificationCenter: NotificationCenter = .default) {
+        self.notificationCenter = notificationCenter
+
+        let best = LocalizationConfig.bestMatch(preferredLanguages: Locale.preferredLanguages)
+        selectedLanguage = AppLanguage(code: best)
         L10n.setCurrentLocale(selectedLanguage.locale)
+
+        localeDidChangeObserver = notificationCenter.addObserver(
+            forName: NSLocale.currentLocaleDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.refreshFromSystemLanguage()
+        }
+    }
+
+    deinit {
+        if let observer = localeDidChangeObserver {
+            notificationCenter.removeObserver(observer)
+        }
+    }
+
+    private func refreshFromSystemLanguage() {
+        let best = LocalizationConfig.bestMatch(preferredLanguages: Locale.preferredLanguages)
+        let language = AppLanguage(code: best)
+
+        if language != selectedLanguage {
+            selectedLanguage = language
+        } else {
+            L10n.setCurrentLocale(selectedLanguage.locale)
+        }
     }
 }

@@ -599,6 +599,7 @@
       }
     },
     "home.settings_accessibility" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -743,6 +744,7 @@
       }
     },
     "settings.language.name.zh_hans" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -759,6 +761,7 @@
       }
     },
     "settings.language.name.zh_hant" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -775,6 +778,7 @@
       }
     },
     "settings.language.switched_to" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -791,6 +795,7 @@
       }
     },
     "settings.language.title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {

@@ -13,12 +13,6 @@ enum L10nKey: String, CaseIterable {
     case homeLoading = "home.loading"
     case homeLoadFailed = "home.load_failed"
     case homeRetry = "home.retry"
-    case homeSettingsAccessibility = "home.settings_accessibility"
-
-    case settingsLanguageTitle = "settings.language.title"
-    case settingsLanguageNameZhHans = "settings.language.name.zh_hans"
-    case settingsLanguageNameZhHant = "settings.language.name.zh_hant"
-    case settingsLanguageSwitchedTo = "settings.language.switched_to"
 
     case contentSelectCategoryHint = "content.select_category_hint"
     case contentBrowseSeries = "content.browse_series"
