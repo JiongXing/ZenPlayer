@@ -77,9 +77,11 @@ final class AVPlayerDenoiseTapProcessor {
             ])
         }
 
+        let retainedSelf = Unmanaged.passRetained(self).toOpaque()
+
         var callbacks = MTAudioProcessingTapCallbacks(
             version: kMTAudioProcessingTapCallbacksVersion_0,
-            clientInfo: UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque()),
+            clientInfo: UnsafeMutableRawPointer(retainedSelf),
             init: { tap, clientInfo, tapStorageOut in
                 tapInit(tap: tap, clientInfo: clientInfo, tapStorageOut: tapStorageOut)
             },
@@ -111,6 +113,7 @@ final class AVPlayerDenoiseTapProcessor {
             &tap
         )
         guard status == noErr, let tap else {
+            Unmanaged<AVPlayerDenoiseTapProcessor>.fromOpaque(retainedSelf).release()
             throw NSError(domain: "AVPlayerDenoiseTapProcessor", code: Int(status), userInfo: [
                 NSLocalizedDescriptionKey: "无法创建音频处理 Tap"
             ])
@@ -385,7 +388,10 @@ private func tapInit(
     tapStorageOut.pointee = clientInfo
 }
 
-private func tapFinalize(tap: MTAudioProcessingTap) {}
+private func tapFinalize(tap: MTAudioProcessingTap) {
+    let storage = MTAudioProcessingTapGetStorage(tap)
+    Unmanaged<AVPlayerDenoiseTapProcessor>.fromOpaque(storage).release()
+}
 
 private func tapPrepare(
     tap: MTAudioProcessingTap,
