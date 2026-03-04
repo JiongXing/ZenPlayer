@@ -75,7 +75,7 @@ final class PlayerViewModel {
     var isPreparingPlayback = false
 
     /// 降噪强度档位（播放中可动态生效）
-    var denoiseLevel: DenoiseLevel = .level100 {
+    var denoiseLevel: DenoiseLevel = .original {
         didSet {
             UserDefaults.standard.set(denoiseLevel.rawValue, forKey: StorageKeys.denoiseLevel)
             denoiseTapProcessor?.setEnabled(denoiseLevel.isEnabled)
@@ -98,6 +98,13 @@ final class PlayerViewModel {
     private let downloadManager = DownloadManager.shared
     private var denoiseTapProcessor: AVPlayerDenoiseTapProcessor?
 
+    init() {
+        if let stored = UserDefaults.standard.object(forKey: StorageKeys.denoiseLevel) as? Int,
+           let level = DenoiseLevel(rawValue: stored) {
+            denoiseLevel = level
+        }
+    }
+
 #if os(iOS)
     @ObservationIgnored
     private var playbackTimeObserverToken: Any?
@@ -115,13 +122,6 @@ final class PlayerViewModel {
     private var seekCommandTarget: Any?
     private var nowPlayingBaseInfo: [String: Any] = [:]
 #endif
-
-    init() {
-        if let stored = UserDefaults.standard.object(forKey: StorageKeys.denoiseLevel) as? Int,
-           let level = DenoiseLevel(rawValue: stored) {
-            denoiseLevel = level
-        }
-    }
 
     /// 统一准备播放：先解析 URL，再构建带降噪回退能力的 AVPlayer
     /// - Parameters:
