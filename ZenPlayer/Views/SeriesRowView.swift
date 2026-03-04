@@ -52,13 +52,8 @@ struct SeriesRowView: View {
                     .fontWeight(.semibold)
                     .lineLimit(1)
 
-                // 详情行：作者 + 日期（窄屏用 caption）
+                // 详情行：日期（窄屏用 caption）
                 HStack(spacing: isCompact ? 8 : 12) {
-                    if !series.author.isEmpty {
-                        Label(series.author, systemImage: "person")
-                            .font(isCompact ? .caption : .subheadline)
-                            .foregroundStyle(.secondary)
-                    }
                     if !series.date.isEmpty {
                         Label(series.date, systemImage: "calendar")
                             .font(isCompact ? .caption : .subheadline)

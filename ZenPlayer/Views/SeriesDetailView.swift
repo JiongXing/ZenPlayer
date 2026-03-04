@@ -145,7 +145,6 @@ struct SeriesDetailView: View {
             Spacer().frame(height: 2)
 
             VStack(alignment: .leading, spacing: 5) {
-                infoRow(icon: "person.fill", text: detail.speechAuthor)
                 infoRow(icon: "calendar", text: detail.speechDate)
                 if !detail.speechAddress.trimmingCharacters(in: .whitespaces).isEmpty {
                     infoRow(icon: "mappin.and.ellipse",
