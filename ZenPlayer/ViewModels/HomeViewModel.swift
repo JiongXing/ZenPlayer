@@ -12,7 +12,7 @@ import SwiftUI
 @Observable
 final class HomeViewModel {
     var categories: [CategoryItem] = []
-    var headerTitle: String = "經典講演集"
+    var headerTitle: String = "Zen Player"
     var headerSubtitle: String = ""
     var isLoading = false
     var errorMessage: String?
