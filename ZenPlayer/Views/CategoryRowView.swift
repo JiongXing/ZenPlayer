@@ -95,7 +95,7 @@ struct CategoryRowView: View {
     // MARK: - 宽屏布局（iPad / macOS）
 
     private var regularLayout: some View {
-        HStack(spacing: 16) {
+        HStack(alignment: .center, spacing: 24) {
             KFImage(URL(string: category.coverUrl))
                 .placeholder {
                     ZStack {
@@ -109,40 +109,45 @@ struct CategoryRowView: View {
                 .fade(duration: 0.25)
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .frame(width: 120, height: 90)
+                .frame(width: 280, height: 157.5)
                 .clipped()
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 12) {
                 Text(category.title)
-                    .font(.title3)
-                    .fontWeight(.semibold)
+                    .font(.title2)
+                    .fontWeight(.bold)
                     .lineLimit(1)
 
                 Text(category.desc)
-                    .font(.subheadline)
+                    .font(.body)
                     .foregroundStyle(.secondary)
-                    .lineLimit(3)
+                    .lineLimit(4)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Spacer(minLength: 0)
 
-                HStack(spacing: 4) {
-                    Image(systemName: "play.circle")
-                        .font(.caption)
+                HStack(spacing: 6) {
+                    Image(systemName: "play.circle.fill")
+                        .font(.subheadline)
                     Text(L10n.text(.contentBrowseSeries))
-                        .font(.caption)
+                        .font(.subheadline)
                 }
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
             }
-            .padding(.vertical, 12)
+            .padding(.vertical, 8)
+            .frame(height: 157.5)
 
             Spacer(minLength: 0)
 
             Image(systemName: "chevron.right")
-                .font(.body)
+                .font(.title3)
+                .fontWeight(.semibold)
                 .foregroundStyle(.tertiary)
+                .padding(.trailing, 10)
         }
-        .frame(height: 154)
+        .padding(.horizontal, 4)
+        .padding(.vertical, 8)
     }
 }
