@@ -3,6 +3,10 @@
         "/^cd /Users/Jason/Desktop/ZenPlayer && dst='\\./ZenPlayer/Assets\\.xcassets/AppIcon\\.appiconset' && while read -r name px; do w=\\$\\(sips -g pixelWidth \"\\$dst/\\$name\" \\| awk '/pixelWidth/\\{print \\$2\\}'\\); h=\\$\\(sips -g pixelHeight \"\\$dst/\\$name\" \\| awk '/pixelHeight/\\{print \\$2\\}'\\); echo \"\\$name expected=\\$\\{px\\}x\\$\\{px\\} actual=\\$\\{w\\}x\\$\\{h\\}\"; done <<'EOF'\nappicon_ios_marketing_1024\\.png 1024\nappicon_16\\.png 16\nappicon_16@2x\\.png 32\nappicon_32\\.png 32\nappicon_32@2x\\.png 64\nappicon_128\\.png 128\nappicon_128@2x\\.png 256\nappicon_256\\.png 256\nappicon_256@2x\\.png 512\nappicon_512\\.png 512\nappicon_512@2x\\.png 1024\nEOF$/": {
             "approve": true,
             "matchCommandLine": true
+        },
+        "/^setopt null_glob; for f in Screenshots/mac/homepage\\.png Screenshots/mac/detail\\.png Screenshots/mac/play\\.png; do echo \"--- \\$f\"; sips -g pixelWidth -g pixelHeight \"\\$f\" \\| tail -n \\+2; done$/": {
+            "approve": true,
+            "matchCommandLine": true
         }
     }
 }

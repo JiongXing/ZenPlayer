@@ -292,8 +292,8 @@
 				);
 				INFOPLIST_FILE = ZenPlayer/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Zen Player";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
-				INFOPLIST_KEY_LSApplicationCategoryType = public.app-category.education;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Atlantis 使用 Bonjour 服务将您的记录流量发送到 Proxyman 应用。";
 				INFOPLIST_KEY_UIRequiresFullScreen = YES;
@@ -307,6 +307,7 @@
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jiongxing.ZenPlayer;
 				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]" = com.dunkong.zenplayer;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=macosx*]" = com.dunkong.zenplayer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -343,8 +344,8 @@
 				);
 				INFOPLIST_FILE = ZenPlayer/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Zen Player";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
-				INFOPLIST_KEY_LSApplicationCategoryType = public.app-category.education;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Atlantis 使用 Bonjour 服务将您的记录流量发送到 Proxyman 应用。";
 				INFOPLIST_KEY_UIRequiresFullScreen = YES;
@@ -358,6 +359,7 @@
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jiongxing.ZenPlayer;
 				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]" = com.dunkong.zenplayer;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=macosx*]" = com.dunkong.zenplayer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
