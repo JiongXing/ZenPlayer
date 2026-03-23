@@ -40,7 +40,7 @@ struct PlayerView: View {
         .padding(.vertical, 12)
         .background(pageBackground)
         .navigationBarBackButtonHidden(false)
-        .task(id: context.id) {
+        .task(id: context) {
             await viewModel.preparePlayback(episode: context.episode, serverUrl: context.serverUrl)
         }
         .onChange(of: scenePhase) { _, newPhase in

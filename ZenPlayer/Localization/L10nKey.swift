@@ -10,6 +10,9 @@ enum L10nKey: String, CaseIterable {
     case commonSelected = "common.selected"
     case commonNotSelected = "common.not_selected"
 
+    case tabHome = "tab.home"
+    case tabMy = "tab.my"
+
     case homeLoading = "home.loading"
     case homeLoadFailed = "home.load_failed"
     case homeRetry = "home.retry"
@@ -44,6 +47,24 @@ enum L10nKey: String, CaseIterable {
     case playerVoiceDenoise = "player.voice_denoise"
     case playerVolumeBoost = "player.volume_boost"
     case playerOriginal = "player.original"
+
+    case myTitle = "my.title"
+    case myRecentPlayback = "my.recent_playback"
+    case myLanguage = "my.language"
+    case myAbout = "my.about"
+
+    case recentPlaybackTitle = "recent_playback.title"
+    case recentPlaybackEmptyTitle = "recent_playback.empty_title"
+    case recentPlaybackEmptyMessage = "recent_playback.empty_message"
+    case recentPlaybackPlayedAt = "recent_playback.played_at"
+
+    case aboutTitle = "about.title"
+    case aboutDescription = "about.description"
+    case aboutVersion = "about.version"
+
+    case settingsLanguageTitle = "settings.language.title"
+    case settingsLanguageNameZhHans = "settings.language.name.zh_hans"
+    case settingsLanguageNameZhHant = "settings.language.name.zh_hant"
 
     case errorNoPlayableAddress = "error.no_playable_address"
     case errorNoAudioDownload = "error.no_audio_download"

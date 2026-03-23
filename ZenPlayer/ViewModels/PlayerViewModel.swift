@@ -12,7 +12,7 @@ import MediaPlayer
 #endif
 
 /// 播放上下文：单集 + 服务器地址，用于导航传递
-struct PlaybackContext: Identifiable, Hashable {
+struct PlaybackContext: Codable, Identifiable, Hashable {
     let episode: EpisodeItem
     let serverUrl: String
 
@@ -96,6 +96,7 @@ final class PlayerViewModel {
     }
 
     private let downloadManager = DownloadManager.shared
+    private let recentPlaybackStore = RecentPlaybackStore.shared
     private var denoiseTapProcessor: AVPlayerDenoiseTapProcessor?
 
     init() {
@@ -142,6 +143,11 @@ final class PlayerViewModel {
         setupAudioSessionObserversIfNeeded()
 #endif
         await buildPlayer(for: url, episode: episode)
+        if player != nil {
+            recentPlaybackStore.recordPlayback(
+                PlaybackContext(episode: episode, serverUrl: serverUrl)
+            )
+        }
         isPreparingPlayback = false
     }
 
