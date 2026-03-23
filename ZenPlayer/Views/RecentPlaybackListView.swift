@@ -50,6 +50,8 @@ private struct RecentPlaybackRowView: View {
     let record: RecentPlaybackRecord
 
     private var episode: EpisodeItem { record.context.episode }
+    private var mediaType: PlaybackMediaType { record.context.preferredMediaType ?? episode.fallbackMediaType }
+    private var isVideoPlayback: Bool { mediaType.isVideo }
 
     var body: some View {
         HStack(spacing: 14) {
@@ -62,8 +64,8 @@ private struct RecentPlaybackRowView: View {
 
                 HStack(spacing: 8) {
                     Label(
-                        episode.isVideo ? L10n.text(.episodeVideo) : L10n.text(.episodeAudio),
-                        systemImage: episode.isVideo ? "video.fill" : "headphones"
+                        isVideoPlayback ? L10n.text(.episodeVideo) : L10n.text(.episodeAudio),
+                        systemImage: isVideoPlayback ? "video.fill" : "headphones"
                     )
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -85,7 +87,7 @@ private struct RecentPlaybackRowView: View {
 
     @ViewBuilder
     private var thumbnailView: some View {
-        if episode.isVideo, let url = URL(string: episode.coverUrl), !episode.coverUrl.isEmpty {
+        if isVideoPlayback, let url = URL(string: episode.coverUrl), !episode.coverUrl.isEmpty {
             KFImage(url)
                 .placeholder {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)

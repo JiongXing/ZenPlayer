@@ -45,7 +45,7 @@ struct PlayerView: View {
         .background(pageBackground)
         .navigationBarBackButtonHidden(false)
         .task(id: context) {
-            await viewModel.preparePlayback(episode: context.episode, serverUrl: context.serverUrl)
+            await viewModel.preparePlayback(context: context)
         }
         .onChange(of: scenePhase) { _, newPhase in
             // 仅在前台活跃态下页面离开才停止播放，避免 PiP 过渡阶段被误停。
@@ -227,7 +227,7 @@ struct PlayerView: View {
         Color(red: 0.92, green: 0.88, blue: 0.82).opacity(0.3)
     }
 
-    private func mediaTypeLabel(for mediaType: PlayerViewModel.PlaybackMediaType) -> String {
+    private func mediaTypeLabel(for mediaType: PlaybackMediaType) -> String {
         switch mediaType {
         case .audio:
             return L10n.string(.episodeAudio)
@@ -236,7 +236,7 @@ struct PlayerView: View {
         }
     }
 
-    private func mediaTypeIcon(for mediaType: PlayerViewModel.PlaybackMediaType) -> String {
+    private func mediaTypeIcon(for mediaType: PlaybackMediaType) -> String {
         switch mediaType {
         case .audio:
             return "headphones"
@@ -245,7 +245,7 @@ struct PlayerView: View {
         }
     }
 
-    private func mediaTypeTintColor(for mediaType: PlayerViewModel.PlaybackMediaType) -> Color {
+    private func mediaTypeTintColor(for mediaType: PlaybackMediaType) -> Color {
         switch mediaType {
         case .audio:
             return .orange

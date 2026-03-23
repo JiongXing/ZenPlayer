@@ -11,12 +11,54 @@ import AVFoundation
 import MediaPlayer
 #endif
 
+enum PlaybackMediaType: String, CaseIterable, Identifiable, Codable, Hashable {
+    case audio
+    case video
+
+    var id: String { rawValue }
+
+    var isVideo: Bool {
+        self == .video
+    }
+}
+
 /// 播放上下文：单集 + 服务器地址，用于导航传递
 struct PlaybackContext: Codable, Identifiable, Hashable {
     let episode: EpisodeItem
     let serverUrl: String
+    let preferredMediaType: PlaybackMediaType?
+
+    init(
+        episode: EpisodeItem,
+        serverUrl: String,
+        preferredMediaType: PlaybackMediaType? = nil
+    ) {
+        self.episode = episode
+        self.serverUrl = serverUrl
+        self.preferredMediaType = preferredMediaType
+    }
 
     var id: Int { episode.id }
+
+    private enum CodingKeys: String, CodingKey {
+        case episode
+        case serverUrl
+        case preferredMediaType
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        episode = try container.decode(EpisodeItem.self, forKey: .episode)
+        serverUrl = try container.decode(String.self, forKey: .serverUrl)
+        preferredMediaType = try container.decodeIfPresent(PlaybackMediaType.self, forKey: .preferredMediaType)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(episode, forKey: .episode)
+        try container.encode(serverUrl, forKey: .serverUrl)
+        try container.encodeIfPresent(preferredMediaType, forKey: .preferredMediaType)
+    }
 }
 
 /// 播放 ViewModel：解析播放 URL（本地优先），管理 AVPlayer
@@ -26,17 +68,6 @@ final class PlayerViewModel {
 
     private enum StorageKeys {
         static let denoiseLevel = "player.denoiseLevel"
-    }
-
-    enum PlaybackMediaType: String, CaseIterable, Identifiable {
-        case audio
-        case video
-
-        var id: String { rawValue }
-
-        var isVideo: Bool {
-            self == .video
-        }
     }
 
     enum DenoiseLevel: Int, CaseIterable {
@@ -152,6 +183,19 @@ final class PlayerViewModel {
     ///   - episode: 单集
     ///   - serverUrl: 服务器根地址
     ///   - preferVideo: 若同时有 mp3 和 mp4，true 表示优先视频
+    func preparePlayback(context: PlaybackContext) async {
+        await preparePlayback(
+            episode: context.episode,
+            serverUrl: context.serverUrl,
+            preferredMediaType: context.preferredMediaType
+        )
+    }
+
+    /// 统一准备播放：先解析 URL，再构建带降噪回退能力的 AVPlayer
+    /// - Parameters:
+    ///   - episode: 单集
+    ///   - serverUrl: 服务器根地址
+    ///   - preferVideo: 若同时有 mp3 和 mp4，true 表示优先视频
     func preparePlayback(episode: EpisodeItem, serverUrl: String, preferVideo: Bool = true) async {
         let preferredMediaType: PlaybackMediaType = preferVideo ? .video : .audio
         await preparePlayback(episode: episode, serverUrl: serverUrl, preferredMediaType: preferredMediaType)
@@ -210,7 +254,11 @@ final class PlayerViewModel {
         await buildPlayer(for: url, episode: episode)
         if player != nil {
             recentPlaybackStore.recordPlayback(
-                PlaybackContext(episode: episode, serverUrl: serverUrl)
+                PlaybackContext(
+                    episode: episode,
+                    serverUrl: serverUrl,
+                    preferredMediaType: selectedMediaType
+                )
             )
         }
         isPreparingPlayback = false
@@ -246,7 +294,7 @@ final class PlayerViewModel {
 
         switch mediaType {
         case .audio:
-            playbackURL = resolveAudioPlaybackURL(for: episode)
+            playbackURL = resolveAudioPlaybackURL(for: episode, serverUrl: serverUrl)
         case .video:
             playbackURL = resolveVideoPlaybackURL(for: episode, serverUrl: serverUrl)
         }
@@ -287,6 +335,9 @@ final class PlayerViewModel {
         if let mp3URL = episode.mp3Url, !mp3URL.isEmpty {
             return true
         }
+        if hasFallbackAudioSource(for: episode) {
+            return true
+        }
         return false
     }
 
@@ -294,21 +345,24 @@ final class PlayerViewModel {
         if verifiedLocalURL(for: episode.id, type: .mp4) != nil {
             return true
         }
-        if !episode.mp4Url.isEmpty {
+        if !episode.mp4Url.isEmpty, !looksLikeAudioPath(episode.mp4Url) {
             return true
         }
-        if !episode.vodUrl.isEmpty {
+        if !episode.vodUrl.isEmpty, !looksLikeAudioPath(episode.vodUrl) {
             return true
         }
         return false
     }
 
-    private func resolveAudioPlaybackURL(for episode: EpisodeItem) -> URL? {
+    private func resolveAudioPlaybackURL(for episode: EpisodeItem, serverUrl: String) -> URL? {
         if let localURL = verifiedLocalURL(for: episode.id, type: .mp3) {
             return localURL
         }
         if let mp3 = episode.mp3Url, !mp3.isEmpty {
             return URL(string: mp3)
+        }
+        if let fallbackURL = resolveFallbackAudioPlaybackURL(for: episode, serverUrl: serverUrl) {
+            return fallbackURL
         }
         return nil
     }
@@ -326,10 +380,29 @@ final class PlayerViewModel {
         return nil
     }
 
+    private func hasFallbackAudioSource(for episode: EpisodeItem) -> Bool {
+        looksLikeAudioPath(episode.mp4Url) || looksLikeAudioPath(episode.vodUrl)
+    }
+
+    private func resolveFallbackAudioPlaybackURL(for episode: EpisodeItem, serverUrl: String) -> URL? {
+        if looksLikeAudioPath(episode.vodUrl), let url = URL(string: episode.vodUrl) {
+            return url
+        }
+        if looksLikeAudioPath(episode.mp4Url) {
+            return remoteVideoURL(serverUrl: serverUrl, path: episode.mp4Url)
+        }
+        return nil
+    }
+
     private func remoteVideoURL(serverUrl: String, path: String) -> URL? {
         let normalizedServerURL = serverUrl.hasSuffix("/") ? serverUrl : serverUrl + "/"
         let normalizedPath = path.hasPrefix("/") ? String(path.dropFirst()) : path
         return URL(string: normalizedServerURL + normalizedPath)
+    }
+
+    private func looksLikeAudioPath(_ value: String) -> Bool {
+        guard !value.isEmpty else { return false }
+        return (value as NSString).pathExtension.lowercased() == "mp3"
     }
 
     /// 二次校验本地文件存在，避免映射残留导致播放失败。
@@ -610,5 +683,21 @@ final class PlayerViewModel {
 
     private static func clampAmplification(_ value: Double) -> Double {
         min(5.0, max(1.0, value))
+    }
+}
+
+extension EpisodeItem {
+    var fallbackMediaType: PlaybackMediaType {
+        if (mp4Url as NSString).pathExtension.lowercased() == "mp3"
+            || (vodUrl as NSString).pathExtension.lowercased() == "mp3" {
+            return .audio
+        }
+        if isVideo {
+            return .video
+        }
+        if let mp3Url, !mp3Url.isEmpty {
+            return .audio
+        }
+        return .audio
     }
 }
