@@ -116,24 +116,29 @@ struct PlayerView: View {
 
     @ViewBuilder
     private func mediaPlayerArea(player: AVPlayer) -> some View {
+        if viewModel.isVideo {
+            playerSurface(player: player)
+                .frame(maxWidth: .infinity)
+                .aspectRatio(4.0 / 3.0, contentMode: .fit)
+                .playerSurfaceStyle()
+        } else {
+            playerSurface(player: player)
+                .frame(maxWidth: .infinity)
+                .frame(height: 220)
+                .playerSurfaceStyle()
+        }
+    }
+
+    @ViewBuilder
+    private func playerSurface(player: AVPlayer) -> some View {
         Group {
             #if os(iOS)
-            AVPlayerContainerView(
-                player: player
-            )
+            AVPlayerContainerView(player: player)
             #else
             VideoPlayer(player: player)
             #endif
         }
-        .frame(maxWidth: .infinity)
-        .aspectRatio(viewModel.isVideo ? (4.0 / 3.0) : nil, contentMode: .fit)
-        .frame(height: viewModel.isVideo ? nil : 220)
-        .background(Color.black, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .id(viewModel.selectedMediaType)
     }
 
     private var controlPanel: some View {
@@ -247,6 +252,17 @@ struct PlayerView: View {
         case .video:
             return .blue
         }
+    }
+}
+
+private extension View {
+    func playerSurfaceStyle() -> some View {
+        background(Color.black, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 
