@@ -152,6 +152,10 @@ final class PlayerViewModel {
     private var denoiseTapProcessor: AVPlayerDenoiseTapProcessor?
     private var currentEpisode: EpisodeItem?
     private var currentServerURL: String?
+    private var activePlaybackContext: PlaybackContext?
+    private let playbackProgressSaveInterval: Double = 5
+    private var shouldPersistPlaybackProgress = false
+    private var lastPersistedPlaybackSecond: Double = 0
 
     init() {
         if let stored = UserDefaults.standard.object(forKey: StorageKeys.denoiseLevel) as? Int,
@@ -160,9 +164,11 @@ final class PlayerViewModel {
         }
     }
 
-#if os(iOS)
     @ObservationIgnored
     private var playbackTimeObserverToken: Any?
+    @ObservationIgnored
+    private var playbackCompletionObserver: NSObjectProtocol?
+#if os(iOS)
     @ObservationIgnored
     private var interruptionObserver: NSObjectProtocol?
     @ObservationIgnored
@@ -238,10 +244,18 @@ final class PlayerViewModel {
 
     private func reloadCurrentPlayback() async {
         guard let episode = currentEpisode, let serverUrl = currentServerURL else { return }
+        let playbackContext = PlaybackContext(
+            episode: episode,
+            serverUrl: serverUrl,
+            preferredMediaType: selectedMediaType
+        )
+        let resumePositionSeconds = recentPlaybackStore.record(for: playbackContext)?.restorableResumePositionSeconds ?? 0
         isPreparingPlayback = true
         errorMessage = nil
         stopPlayback()
         isPreparingPlayback = true
+        shouldPersistPlaybackProgress = false
+        lastPersistedPlaybackSecond = 0
         resolvePlaybackURL(episode: episode, serverUrl: serverUrl, mediaType: selectedMediaType)
         guard let url = playbackURL else {
             isPreparingPlayback = false
@@ -253,26 +267,24 @@ final class PlayerViewModel {
 #endif
         await buildPlayer(for: url, episode: episode)
         if player != nil {
-            recentPlaybackStore.recordPlayback(
-                PlaybackContext(
-                    episode: episode,
-                    serverUrl: serverUrl,
-                    preferredMediaType: selectedMediaType
-                )
-            )
+            activePlaybackContext = playbackContext
+            recentPlaybackStore.recordPlayback(playbackContext)
+            await restorePlaybackPositionIfNeeded(to: resumePositionSeconds)
         }
         isPreparingPlayback = false
     }
 
     /// 停止并释放当前播放链路资源
     func stopPlayback() {
-#if os(iOS)
+        persistCurrentPlaybackProgress(force: true)
         stopPlaybackObservation()
-#endif
         isPreparingPlayback = false
         player?.pause()
         player = nil
         denoiseTapProcessor = nil
+        activePlaybackContext = nil
+        shouldPersistPlaybackProgress = false
+        lastPersistedPlaybackSecond = 0
 #if os(iOS)
         clearNowPlaying()
         removeRemoteCommandTargets()
@@ -430,11 +442,123 @@ final class PlayerViewModel {
             player = AVPlayer(url: url)
         }
 
-#if os(iOS)
         setupPlaybackObservation()
+#if os(iOS)
         setupRemoteCommandCenter()
         setupNowPlayingInfo(episode: episode)
 #endif
+    }
+
+    private func setupPlaybackObservation() {
+        guard let player else { return }
+        stopPlaybackObservation()
+        playbackTimeObserverToken = player.addPeriodicTimeObserver(
+            forInterval: CMTime(seconds: 1, preferredTimescale: 600),
+            queue: .main
+        ) { [weak self] time in
+            Task { @MainActor [weak self] in
+                self?.handlePlaybackTick(currentTimeSeconds: time.seconds)
+            }
+        }
+
+        if let item = player.currentItem {
+            playbackCompletionObserver = NotificationCenter.default.addObserver(
+                forName: .AVPlayerItemDidPlayToEndTime,
+                object: item,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.handlePlaybackDidFinish()
+                }
+            }
+        }
+    }
+
+    private func stopPlaybackObservation() {
+        if let player, let token = playbackTimeObserverToken {
+            player.removeTimeObserver(token)
+        }
+        playbackTimeObserverToken = nil
+
+        if let playbackCompletionObserver {
+            NotificationCenter.default.removeObserver(playbackCompletionObserver)
+            self.playbackCompletionObserver = nil
+        }
+    }
+
+    private func handlePlaybackTick(currentTimeSeconds: Double) {
+#if os(iOS)
+        updateNowPlayingPlaybackState()
+#endif
+        persistPlaybackProgressIfNeeded(currentTimeSeconds: currentTimeSeconds)
+    }
+
+    private func handlePlaybackDidFinish() {
+        guard let context = activePlaybackContext else { return }
+        recentPlaybackStore.markPlaybackCompleted(for: context)
+        lastPersistedPlaybackSecond = context.episode.playbackDurationSeconds
+        shouldPersistPlaybackProgress = true
+#if os(iOS)
+        updateNowPlayingPlaybackState()
+#endif
+    }
+
+    private func restorePlaybackPositionIfNeeded(to resumePositionSeconds: Double) async {
+        guard let player else {
+            shouldPersistPlaybackProgress = true
+            return
+        }
+
+        let clampedResumePosition = max(0, resumePositionSeconds)
+        lastPersistedPlaybackSecond = clampedResumePosition
+
+        guard clampedResumePosition > 0 else {
+            shouldPersistPlaybackProgress = true
+            return
+        }
+
+        await withCheckedContinuation { continuation in
+            let targetTime = CMTime(seconds: clampedResumePosition, preferredTimescale: 600)
+            player.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.lastPersistedPlaybackSecond = clampedResumePosition
+                    self?.shouldPersistPlaybackProgress = true
+#if os(iOS)
+                    self?.updateNowPlayingPlaybackState()
+#endif
+                    continuation.resume()
+                }
+            }
+        }
+    }
+
+    private func persistCurrentPlaybackProgress(force: Bool) {
+        guard let currentTimeSeconds = player?.currentTime().seconds else { return }
+        persistPlaybackProgress(currentTimeSeconds: currentTimeSeconds, force: force)
+    }
+
+    private func persistPlaybackProgressIfNeeded(currentTimeSeconds: Double) {
+        persistPlaybackProgress(currentTimeSeconds: currentTimeSeconds, force: false)
+    }
+
+    private func persistPlaybackProgress(currentTimeSeconds: Double, force: Bool) {
+        guard shouldPersistPlaybackProgress else { return }
+        guard let context = activePlaybackContext else { return }
+        guard currentTimeSeconds.isFinite else { return }
+
+        let boundedTime: Double
+        if context.episode.playbackDurationSeconds > 0 {
+            boundedTime = min(max(0, currentTimeSeconds), context.episode.playbackDurationSeconds)
+        } else {
+            boundedTime = max(0, currentTimeSeconds)
+        }
+
+        guard force || abs(boundedTime - lastPersistedPlaybackSecond) >= playbackProgressSaveInterval else {
+            return
+        }
+
+        recentPlaybackStore.updateProgress(for: context, resumePositionSeconds: boundedTime)
+        lastPersistedPlaybackSecond = boundedTime
     }
 
 #if os(iOS)
@@ -485,7 +609,7 @@ final class PlayerViewModel {
         nowPlayingBaseInfo = [
             MPMediaItemPropertyTitle: episode.title,
             MPMediaItemPropertyArtist: "净宗学院",
-            MPMediaItemPropertyPlaybackDuration: Double(episode.duration) / 1000.0
+            MPMediaItemPropertyPlaybackDuration: episode.playbackDurationSeconds
         ]
         updateNowPlayingPlaybackState()
     }
@@ -569,27 +693,6 @@ final class PlayerViewModel {
         pauseCommandTarget = nil
         toggleCommandTarget = nil
         seekCommandTarget = nil
-    }
-
-    // MARK: - 播放状态观察
-
-    private func setupPlaybackObservation() {
-        guard let player else { return }
-        stopPlaybackObservation()
-        playbackTimeObserverToken = player.addPeriodicTimeObserver(
-            forInterval: CMTime(seconds: 1, preferredTimescale: 600),
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.updateNowPlayingPlaybackState()
-            }
-        }
-    }
-
-    private func stopPlaybackObservation() {
-        guard let player, let token = playbackTimeObserverToken else { return }
-        player.removeTimeObserver(token)
-        playbackTimeObserverToken = nil
     }
 
     // MARK: - 音频中断/路由变化

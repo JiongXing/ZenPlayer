@@ -72,7 +72,7 @@ struct RecentPlaybackListView: View {
                     .foregroundStyle(Color(red: 0.33, green: 0.25, blue: 0.17))
 
                 if let latestRecord = recentPlaybackStore.records.first {
-                    Text(L10n.string(.recentPlaybackPlayedAt, formatted(date: latestRecord.playedAt)))
+                    Text(latestRecord.progressSummaryText)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
@@ -182,16 +182,6 @@ struct RecentPlaybackListView: View {
         }
     }
 
-    private func formatted(date: Date) -> String {
-        date.formatted(
-            .dateTime
-                .year()
-                .month()
-                .day()
-                .hour()
-                .minute()
-        )
-    }
 }
 
 private struct RecentPlaybackRowView: View {
@@ -216,8 +206,6 @@ private struct RecentPlaybackRowView: View {
                 HStack(spacing: 8) {
                     mediaTypeBadge
 
-                    metaBadge(text: episode.formattedDuration, systemImage: "clock")
-
                     Spacer(minLength: 0)
 
                     Image(systemName: "chevron.right")
@@ -238,7 +226,7 @@ private struct RecentPlaybackRowView: View {
                         )
                     }
 
-                    Text(L10n.string(.recentPlaybackPlayedAt, playedAtText))
+                    Text(record.progressSummaryText)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
@@ -333,17 +321,6 @@ private struct RecentPlaybackRowView: View {
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
-        )
-    }
-
-    private var playedAtText: String {
-        record.playedAt.formatted(
-            .dateTime
-                .year()
-                .month()
-                .day()
-                .hour()
-                .minute()
         )
     }
 }

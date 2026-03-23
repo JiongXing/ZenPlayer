@@ -42,15 +42,7 @@ struct EpisodeItem: Codable, Identifiable, Hashable {
 
     /// 格式化后的时长（如 "1:25:46"）
     var formattedDuration: String {
-        let totalSeconds = duration / 1000
-        let hours = totalSeconds / 3600
-        let minutes = (totalSeconds % 3600) / 60
-        let seconds = totalSeconds % 60
-        if hours > 0 {
-            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
-        } else {
-            return String(format: "%d:%02d", minutes, seconds)
-        }
+        Self.formatPlaybackDuration(seconds: playbackDurationSeconds)
     }
 
     /// 格式化后的文件大小（如 "224.8 MB"）
@@ -66,5 +58,21 @@ struct EpisodeItem: Codable, Identifiable, Hashable {
     /// 是否为视频
     var isVideo: Bool {
         !mp4Url.isEmpty
+    }
+
+    var playbackDurationSeconds: Double {
+        Double(duration) / 1000.0
+    }
+
+    static func formatPlaybackDuration(seconds: Double) -> String {
+        let totalSeconds = max(0, Int(seconds.rounded(.down)))
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let seconds = totalSeconds % 60
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+        } else {
+            return String(format: "%d:%02d", minutes, seconds)
+        }
     }
 }

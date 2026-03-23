@@ -50,12 +50,14 @@ enum L10nKey: String, CaseIterable {
 
     case myTitle = "my.title"
     case myRecentPlayback = "my.recent_playback"
+    case myRecentPlaybackSummary = "my.recent_playback_summary"
     case myLanguage = "my.language"
     case myAbout = "my.about"
 
     case recentPlaybackTitle = "recent_playback.title"
     case recentPlaybackEmptyTitle = "recent_playback.empty_title"
     case recentPlaybackEmptyMessage = "recent_playback.empty_message"
+    case recentPlaybackProgressSummary = "recent_playback.progress_summary"
     case recentPlaybackPlayedAt = "recent_playback.played_at"
 
     case aboutTitle = "about.title"

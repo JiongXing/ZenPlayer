@@ -273,10 +273,7 @@ struct MyView: View {
     }
 
     private var recentPlaybackDetail: String {
-        guard let latestRecord = recentPlaybackStore.records.first else {
-            return L10n.string(.recentPlaybackEmptyMessage)
-        }
-        return L10n.string(.recentPlaybackPlayedAt, formatted(date: latestRecord.playedAt))
+        L10n.string(.myRecentPlaybackSummary)
     }
 
     private var recentPlaybackCountText: String {
@@ -304,17 +301,6 @@ struct MyView: View {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "-"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "-"
         return "\(version) (\(build))"
-    }
-
-    private func formatted(date: Date) -> String {
-        date.formatted(
-            .dateTime
-                .year()
-                .month()
-                .day()
-                .hour()
-                .minute()
-        )
     }
 }
 

@@ -714,6 +714,22 @@
         }
       }
     },
+    "my.recent_playback_summary" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看最近听过和看过的内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看最近聽過和看過的內容。"
+          }
+        }
+      }
+    },
     "my.title" : {
       "localizations" : {
         "zh-Hans" : {
@@ -838,6 +854,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "暫無最近播放"
+          }
+        }
+      }
+    },
+    "recent_playback.progress_summary" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld%% · %2$@ / %3$@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld%% · %2$@ / %3$@"
           }
         }
       }
