@@ -25,7 +25,9 @@ struct RecentPlaybackListView: View {
     private var listView: some View {
         List {
             ForEach(recentPlaybackStore.records) { record in
-                NavigationLink(value: record.context) {
+                NavigationLink {
+                    PlayerView(context: record.context)
+                } label: {
                     RecentPlaybackRowView(record: record)
                 }
             }
