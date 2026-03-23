@@ -1,15 +1,6 @@
 {
-  "originHash" : "d5e02c7a5d62cecce5ba33401eb003c7f73b8b85d49d38c7b5478df9b41a43b0",
+  "originHash" : "917a2b512148612347b307b5f8d624e74df48af36fa322c80901a86fc0e1317f",
   "pins" : [
-    {
-      "identity" : "atlantis",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ProxymanApp/atlantis",
-      "state" : {
-        "revision" : "2ccbbaa031f11090c8d39b70daaf6a0d4484819d",
-        "version" : "1.34.0"
-      }
-    },
     {
       "identity" : "kingfisher",
       "kind" : "remoteSourceControl",

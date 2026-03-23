@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import Atlantis
 import Kingfisher
 
 #if os(iOS)
@@ -41,9 +40,6 @@ struct ZenPlayerApp: App {
     @StateObject private var languageSettings = LanguageSettings()
 
     init() {
-        #if DEBUG
-        Atlantis.start()
-        #endif
         configureKingfisher()
         configureNavigationBarStyle()
     }
