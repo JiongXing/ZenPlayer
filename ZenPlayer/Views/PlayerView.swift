@@ -30,6 +30,10 @@ struct PlayerView: View {
                     .frame(maxWidth: .infinity, minHeight: 220)
             }
 
+            if viewModel.canSwitchMediaType {
+                mediaTypeSwitcher
+            }
+
             if viewModel.player != nil {
                 controlPanel
             }
@@ -52,6 +56,45 @@ struct PlayerView: View {
                 viewModel.stopPlayback()
             }
         }
+    }
+
+    private var mediaTypeSwitcher: some View {
+        HStack(spacing: 8) {
+            ForEach(viewModel.availableMediaTypes) { mediaType in
+                Button {
+                    Task {
+                        await viewModel.switchMediaType(to: mediaType)
+                    }
+                } label: {
+                    Label(mediaTypeLabel(for: mediaType), systemImage: mediaTypeIcon(for: mediaType))
+                        .font(.footnote.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                        .foregroundStyle(
+                            viewModel.selectedMediaType == mediaType
+                            ? .white
+                            : mediaTypeTintColor(for: mediaType)
+                        )
+                        .background(
+                            Capsule(style: .continuous)
+                                .fill(
+                                    viewModel.selectedMediaType == mediaType
+                                    ? mediaTypeTintColor(for: mediaType)
+                                    : mediaTypeTintColor(for: mediaType).opacity(0.12)
+                                )
+                        )
+                }
+                .buttonStyle(.plain)
+                .disabled(viewModel.isPreparingPlayback)
+                .opacity(viewModel.isPreparingPlayback ? 0.7 : 1)
+            }
+        }
+        .padding(6)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.white.opacity(0.72))
+        )
     }
 
     private func errorView(message: String) -> some View {
@@ -177,6 +220,33 @@ struct PlayerView: View {
 
     private var pageBackground: Color {
         Color(red: 0.92, green: 0.88, blue: 0.82).opacity(0.3)
+    }
+
+    private func mediaTypeLabel(for mediaType: PlayerViewModel.PlaybackMediaType) -> String {
+        switch mediaType {
+        case .audio:
+            return L10n.string(.episodeAudio)
+        case .video:
+            return L10n.string(.episodeVideo)
+        }
+    }
+
+    private func mediaTypeIcon(for mediaType: PlayerViewModel.PlaybackMediaType) -> String {
+        switch mediaType {
+        case .audio:
+            return "headphones"
+        case .video:
+            return "video.fill"
+        }
+    }
+
+    private func mediaTypeTintColor(for mediaType: PlayerViewModel.PlaybackMediaType) -> Color {
+        switch mediaType {
+        case .audio:
+            return .orange
+        case .video:
+            return .blue
+        }
     }
 }
 

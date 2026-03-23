@@ -28,6 +28,17 @@ final class PlayerViewModel {
         static let denoiseLevel = "player.denoiseLevel"
     }
 
+    enum PlaybackMediaType: String, CaseIterable, Identifiable {
+        case audio
+        case video
+
+        var id: String { rawValue }
+
+        var isVideo: Bool {
+            self == .video
+        }
+    }
+
     enum DenoiseLevel: Int, CaseIterable {
         case original = 0
         case level25 = 25
@@ -68,6 +79,16 @@ final class PlayerViewModel {
     /// 是否为视频（用于决定使用视频或音频播放器）
     var isVideo: Bool = false
 
+    /// 当前选择的媒体类型
+    var selectedMediaType: PlaybackMediaType = .video
+
+    /// 当前讲集可切换的媒体类型
+    private(set) var availableMediaTypes: [PlaybackMediaType] = []
+
+    var canSwitchMediaType: Bool {
+        availableMediaTypes.count > 1
+    }
+
     /// 解析错误信息
     var errorMessage: String?
 
@@ -98,6 +119,8 @@ final class PlayerViewModel {
     private let downloadManager = DownloadManager.shared
     private let recentPlaybackStore = RecentPlaybackStore.shared
     private var denoiseTapProcessor: AVPlayerDenoiseTapProcessor?
+    private var currentEpisode: EpisodeItem?
+    private var currentServerURL: String?
 
     init() {
         if let stored = UserDefaults.standard.object(forKey: StorageKeys.denoiseLevel) as? Int,
@@ -130,10 +153,52 @@ final class PlayerViewModel {
     ///   - serverUrl: 服务器根地址
     ///   - preferVideo: 若同时有 mp3 和 mp4，true 表示优先视频
     func preparePlayback(episode: EpisodeItem, serverUrl: String, preferVideo: Bool = true) async {
+        let preferredMediaType: PlaybackMediaType = preferVideo ? .video : .audio
+        await preparePlayback(episode: episode, serverUrl: serverUrl, preferredMediaType: preferredMediaType)
+    }
+
+    /// 统一准备播放：先解析 URL，再构建带降噪回退能力的 AVPlayer
+    /// - Parameters:
+    ///   - episode: 单集
+    ///   - serverUrl: 服务器根地址
+    ///   - preferredMediaType: 首选媒体类型
+    private func preparePlayback(
+        episode: EpisodeItem,
+        serverUrl: String,
+        preferredMediaType: PlaybackMediaType?
+    ) async {
+        currentEpisode = episode
+        currentServerURL = serverUrl
+        availableMediaTypes = supportedMediaTypes(for: episode)
+
+        guard let mediaType = initialMediaType(preferred: preferredMediaType) else {
+            stopPlayback()
+            errorMessage = L10n.string(.errorNoPlayableAddress)
+            playbackURL = nil
+            isVideo = false
+            isPreparingPlayback = false
+            return
+        }
+
+        selectedMediaType = mediaType
+        await reloadCurrentPlayback()
+    }
+
+    func switchMediaType(to mediaType: PlaybackMediaType) async {
+        guard availableMediaTypes.contains(mediaType) else { return }
+        guard mediaType != selectedMediaType || player == nil else { return }
+
+        selectedMediaType = mediaType
+        await reloadCurrentPlayback()
+    }
+
+    private func reloadCurrentPlayback() async {
+        guard let episode = currentEpisode, let serverUrl = currentServerURL else { return }
         isPreparingPlayback = true
         errorMessage = nil
         stopPlayback()
-        resolvePlaybackURL(episode: episode, serverUrl: serverUrl, preferVideo: preferVideo)
+        isPreparingPlayback = true
+        resolvePlaybackURL(episode: episode, serverUrl: serverUrl, mediaType: selectedMediaType)
         guard let url = playbackURL else {
             isPreparingPlayback = false
             return
@@ -172,62 +237,99 @@ final class PlayerViewModel {
     /// - Parameters:
     ///   - episode: 单集
     ///   - serverUrl: 服务器根地址
-    ///   - preferVideo: 若同时有 mp3 和 mp4，true 表示优先视频
-    func resolvePlaybackURL(episode: EpisodeItem, serverUrl: String, preferVideo: Bool = true) {
+    ///   - mediaType: 当前要播放的媒体类型
+    func resolvePlaybackURL(episode: EpisodeItem, serverUrl: String, mediaType: PlaybackMediaType) {
         errorMessage = nil
-        isVideo = episode.isVideo
+        isVideo = mediaType.isVideo
         playbackURL = nil
+        selectedMediaType = mediaType
 
-        if preferVideo, episode.isVideo {
-            // 视频：优先本地 mp4
-            if let localURL = verifiedLocalURL(for: episode.id, type: .mp4) {
-                playbackURL = localURL
-                return
-            }
-            if !episode.mp4Url.isEmpty {
-                let remoteURLString = serverUrl.hasSuffix("/") ? serverUrl + episode.mp4Url : serverUrl + "/" + episode.mp4Url
-                playbackURL = URL(string: remoteURLString)
-                return
-            }
-            if !episode.vodUrl.isEmpty {
-                playbackURL = URL(string: episode.vodUrl)
-                return
-            }
+        switch mediaType {
+        case .audio:
+            playbackURL = resolveAudioPlaybackURL(for: episode)
+        case .video:
+            playbackURL = resolveVideoPlaybackURL(for: episode, serverUrl: serverUrl)
         }
 
-        // 音频：优先本地 mp3
+        if playbackURL == nil {
+            errorMessage = L10n.string(.errorNoPlayableAddress)
+        }
+    }
+
+    private func initialMediaType(preferred: PlaybackMediaType?) -> PlaybackMediaType? {
+        if let preferred, availableMediaTypes.contains(preferred) {
+            return preferred
+        }
+        if availableMediaTypes.contains(.video) {
+            return .video
+        }
+        if availableMediaTypes.contains(.audio) {
+            return .audio
+        }
+        return nil
+    }
+
+    private func supportedMediaTypes(for episode: EpisodeItem) -> [PlaybackMediaType] {
+        var mediaTypes: [PlaybackMediaType] = []
+        if hasAudioSource(for: episode) {
+            mediaTypes.append(.audio)
+        }
+        if hasVideoSource(for: episode) {
+            mediaTypes.append(.video)
+        }
+        return mediaTypes
+    }
+
+    private func hasAudioSource(for episode: EpisodeItem) -> Bool {
+        if verifiedLocalURL(for: episode.id, type: .mp3) != nil {
+            return true
+        }
+        if let mp3URL = episode.mp3Url, !mp3URL.isEmpty {
+            return true
+        }
+        return false
+    }
+
+    private func hasVideoSource(for episode: EpisodeItem) -> Bool {
+        if verifiedLocalURL(for: episode.id, type: .mp4) != nil {
+            return true
+        }
+        if !episode.mp4Url.isEmpty {
+            return true
+        }
+        if !episode.vodUrl.isEmpty {
+            return true
+        }
+        return false
+    }
+
+    private func resolveAudioPlaybackURL(for episode: EpisodeItem) -> URL? {
         if let localURL = verifiedLocalURL(for: episode.id, type: .mp3) {
-            playbackURL = localURL
-            isVideo = false
-            return
+            return localURL
         }
         if let mp3 = episode.mp3Url, !mp3.isEmpty {
-            playbackURL = URL(string: mp3)
-            isVideo = false
-            return
+            return URL(string: mp3)
         }
+        return nil
+    }
 
-        // 若 preferVideo 为 false 或没有音频，再尝试视频
-        if !preferVideo || playbackURL == nil, episode.isVideo {
-            if let localURL = verifiedLocalURL(for: episode.id, type: .mp4) {
-                playbackURL = localURL
-                isVideo = true
-                return
-            }
-            if !episode.mp4Url.isEmpty {
-                let remoteURLString = serverUrl.hasSuffix("/") ? serverUrl + episode.mp4Url : serverUrl + "/" + episode.mp4Url
-                playbackURL = URL(string: remoteURLString)
-                isVideo = true
-                return
-            }
-            if !episode.vodUrl.isEmpty {
-                playbackURL = URL(string: episode.vodUrl)
-                isVideo = true
-                return
-            }
+    private func resolveVideoPlaybackURL(for episode: EpisodeItem, serverUrl: String) -> URL? {
+        if let localURL = verifiedLocalURL(for: episode.id, type: .mp4) {
+            return localURL
         }
+        if !episode.mp4Url.isEmpty {
+            return remoteVideoURL(serverUrl: serverUrl, path: episode.mp4Url)
+        }
+        if !episode.vodUrl.isEmpty {
+            return URL(string: episode.vodUrl)
+        }
+        return nil
+    }
 
-        errorMessage = L10n.string(.errorNoPlayableAddress)
+    private func remoteVideoURL(serverUrl: String, path: String) -> URL? {
+        let normalizedServerURL = serverUrl.hasSuffix("/") ? serverUrl : serverUrl + "/"
+        let normalizedPath = path.hasPrefix("/") ? String(path.dropFirst()) : path
+        return URL(string: normalizedServerURL + normalizedPath)
     }
 
     /// 二次校验本地文件存在，避免映射残留导致播放失败。
