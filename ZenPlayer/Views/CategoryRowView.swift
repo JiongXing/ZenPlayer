@@ -80,14 +80,6 @@ struct CategoryRowView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
-
-                HStack(spacing: 4) {
-                    Image(systemName: "play.circle")
-                        .font(.caption)
-                    Text(L10n.text(.contentBrowseSeries))
-                        .font(.caption)
-                }
-                .foregroundStyle(.tertiary)
             }
         }
     }
@@ -127,14 +119,6 @@ struct CategoryRowView: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 Spacer(minLength: 0)
-
-                HStack(spacing: 6) {
-                    Image(systemName: "play.circle.fill")
-                        .font(.subheadline)
-                    Text(L10n.text(.contentBrowseSeries))
-                        .font(.subheadline)
-                }
-                .foregroundStyle(.secondary)
             }
             .padding(.vertical, 8)
             .frame(height: 157.5)

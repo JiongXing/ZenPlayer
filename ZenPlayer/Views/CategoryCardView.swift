@@ -14,32 +14,63 @@ struct CategoryCardView: View {
 
     @State private var isHovered = false
 
+    private var cardBackground: Color {
+#if os(iOS)
+        Color(uiColor: .secondarySystemGroupedBackground)
+#elseif os(macOS)
+        Color(nsColor: .controlBackgroundColor)
+#else
+        Color(.systemBackground)
+#endif
+    }
+
+    private var shadowColor: Color {
+#if os(iOS)
+        .clear
+#else
+        .black.opacity(isHovered ? 0.15 : 0.08)
+#endif
+    }
+
+    private var shadowRadius: CGFloat {
+#if os(iOS)
+        0
+#else
+        isHovered ? 12 : 6
+#endif
+    }
+
+    private var shadowYOffset: CGFloat {
+#if os(iOS)
+        0
+#else
+        isHovered ? 6 : 3
+#endif
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // 封面图片
-            KFImage(URL(string: category.coverUrl))
-                .placeholder {
-                    ZStack {
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.15))
+            ZStack {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.15))
+
+                KFImage(URL(string: category.coverUrl))
+                    .placeholder {
                         ProgressView()
                             .scaleEffect(0.8)
                     }
-                }
-                .onFailureImage(PlatformImage.systemImage("photo"))
-                .fade(duration: 0.25)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-            .frame(height: 200)
+                    .onFailureImage(PlatformImage.systemImage("photo"))
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .frame(maxWidth: .infinity)
+            .aspectRatio(16 / 9, contentMode: .fit)
             .clipped()
 
             // 文字信息
             VStack(alignment: .leading, spacing: 6) {
-                Text(category.title)
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                    .lineLimit(1)
-
                 Text(category.desc)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -48,14 +79,21 @@ struct CategoryCardView: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(.background)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .background(cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(.quaternary, lineWidth: 1)
+        }
+        .compositingGroup()
         .shadow(
-            color: .black.opacity(isHovered ? 0.15 : 0.08),
-            radius: isHovered ? 12 : 6,
+            color: shadowColor,
+            radius: shadowRadius,
             x: 0,
-            y: isHovered ? 6 : 3
+            y: shadowYOffset
         )
         .scaleEffect(isHovered ? 1.02 : 1.0)
         .animation(.easeInOut(duration: 0.2), value: isHovered)

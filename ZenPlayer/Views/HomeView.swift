@@ -12,15 +12,20 @@ struct HomeView: View {
     @State private var viewModel = HomeViewModel()
     @Environment(\.horizontalSizeClass) private var sizeClass
 
+    private let columnSpacing: CGFloat = 14
+
     var body: some View {
-        Group {
-            if viewModel.isLoading && viewModel.categories.isEmpty {
-                loadingView
-            } else if let error = viewModel.errorMessage, viewModel.categories.isEmpty {
-                errorView(message: error)
-            } else {
-                contentView
+        GeometryReader { proxy in
+            Group {
+                if viewModel.isLoading && viewModel.categories.isEmpty {
+                    loadingView
+                } else if let error = viewModel.errorMessage, viewModel.categories.isEmpty {
+                    errorView(message: error)
+                } else {
+                    contentView(containerWidth: proxy.size.width)
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .animation(.easeInOut(duration: 0.3), value: viewModel.categories.isEmpty)
         .task {
@@ -32,24 +37,58 @@ struct HomeView: View {
 
     // MARK: - 内容视图
 
-    private var contentView: some View {
-        ScrollView {
+    private func contentView(containerWidth: CGFloat) -> some View {
+        let horizontalPadding = LayoutConstants.horizontalPadding(sizeClass: sizeClass)
+        let verticalPadding = LayoutConstants.verticalPadding(sizeClass: sizeClass)
+        let availableWidth = max(containerWidth - (horizontalPadding * 2), 0)
+        let columnWidth = max((availableWidth - columnSpacing) / 2, 0)
+
+        return ScrollView {
             VStack(spacing: 24) {
                 headerView
 
-                LazyVStack(spacing: 14) {
-                    ForEach(viewModel.categories) { category in
-                        NavigationLink(value: category) {
-                            CategoryRowView(category: category)
+                LazyVStack(alignment: .leading, spacing: columnSpacing) {
+                    ForEach(Array(categoryRows.enumerated()), id: \.offset) { _, row in
+                        HStack(alignment: .top, spacing: columnSpacing) {
+                            ForEach(Array(row.enumerated()), id: \.element.id) { _, category in
+                                NavigationLink(value: category) {
+                                    CategoryCardView(category: category)
+                                        .frame(width: columnWidth, alignment: .topLeading)
+                                }
+                                .buttonStyle(.plain)
+                                .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                            }
+
+                            if row.count == 1 {
+                                Color.clear
+                                    .frame(width: columnWidth, height: 1)
+                            }
                         }
-                        .buttonStyle(.plain)
-                        .transition(.opacity.combined(with: .scale(scale: 0.98)))
                     }
                 }
             }
-            .padding(.horizontal, LayoutConstants.horizontalPadding(sizeClass: sizeClass))
-            .padding(.vertical, LayoutConstants.verticalPadding(sizeClass: sizeClass))
+            .frame(width: availableWidth, alignment: .topLeading)
+            .padding(.horizontal, horizontalPadding)
+            .padding(.vertical, verticalPadding)
         }
+        .background(homeBackground)
+    }
+
+    private var categoryRows: [[CategoryItem]] {
+        stride(from: 0, to: viewModel.categories.count, by: 2).map { startIndex in
+            let endIndex = min(startIndex + 2, viewModel.categories.count)
+            return Array(viewModel.categories[startIndex..<endIndex])
+        }
+    }
+
+    private var homeBackground: Color {
+#if os(iOS)
+        Color(uiColor: .systemGroupedBackground)
+#elseif os(macOS)
+        Color(nsColor: .windowBackgroundColor)
+#else
+        Color(.systemBackground)
+#endif
     }
 
     // MARK: - 头部视图
