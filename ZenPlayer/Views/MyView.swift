@@ -12,7 +12,6 @@ struct MyView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     @State private var recentPlaybackStore = RecentPlaybackStore.shared
-
     var body: some View {
         GeometryReader { proxy in
             ScrollView {
@@ -27,6 +26,15 @@ struct MyView: View {
                             tint: Color(red: 0.77, green: 0.57, blue: 0.39)
                         ) {
                             RecentPlaybackListView()
+                        }
+
+                        featureLink(
+                            title: .myDownloadCompleted,
+                            detail: downloadCompletedDetail,
+                            systemImage: "checkmark.circle",
+                            tint: Color(red: 0.38, green: 0.62, blue: 0.56)
+                        ) {
+                            CompletedDownloadListView()
                         }
 
                         featureLink(
@@ -301,6 +309,10 @@ struct MyView: View {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "-"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "-"
         return "\(version) (\(build))"
+    }
+
+    private var downloadCompletedDetail: String {
+        L10n.string(.myDownloadCompletedSummary)
     }
 }
 

@@ -111,7 +111,7 @@ final class PlayerViewModel {
     var isVideo: Bool = false
 
     /// 当前选择的媒体类型
-    var selectedMediaType: PlaybackMediaType = .video
+    var selectedMediaType: PlaybackMediaType = .audio
 
     /// 当前讲集可切换的媒体类型
     private(set) var availableMediaTypes: [PlaybackMediaType] = []
@@ -202,7 +202,7 @@ final class PlayerViewModel {
     ///   - episode: 单集
     ///   - serverUrl: 服务器根地址
     ///   - preferVideo: 若同时有 mp3 和 mp4，true 表示优先视频
-    func preparePlayback(episode: EpisodeItem, serverUrl: String, preferVideo: Bool = true) async {
+    func preparePlayback(episode: EpisodeItem, serverUrl: String, preferVideo: Bool = false) async {
         let preferredMediaType: PlaybackMediaType = preferVideo ? .video : .audio
         await preparePlayback(episode: episode, serverUrl: serverUrl, preferredMediaType: preferredMediaType)
     }
@@ -320,11 +320,11 @@ final class PlayerViewModel {
         if let preferred, availableMediaTypes.contains(preferred) {
             return preferred
         }
-        if availableMediaTypes.contains(.video) {
-            return .video
-        }
         if availableMediaTypes.contains(.audio) {
             return .audio
+        }
+        if availableMediaTypes.contains(.video) {
+            return .video
         }
         return nil
     }
@@ -791,15 +791,15 @@ final class PlayerViewModel {
 
 extension EpisodeItem {
     var fallbackMediaType: PlaybackMediaType {
+        if let mp3Url, !mp3Url.isEmpty {
+            return .audio
+        }
         if (mp4Url as NSString).pathExtension.lowercased() == "mp3"
             || (vodUrl as NSString).pathExtension.lowercased() == "mp3" {
             return .audio
         }
         if isVideo {
             return .video
-        }
-        if let mp3Url, !mp3Url.isEmpty {
-            return .audio
         }
         return .audio
     }

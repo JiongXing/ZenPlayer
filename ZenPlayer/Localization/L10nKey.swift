@@ -51,6 +51,8 @@ enum L10nKey: String, CaseIterable {
     case myTitle = "my.title"
     case myRecentPlayback = "my.recent_playback"
     case myRecentPlaybackSummary = "my.recent_playback_summary"
+    case myDownloadCompleted = "my.download_completed"
+    case myDownloadCompletedSummary = "my.download_completed_summary"
     case myLanguage = "my.language"
     case myAbout = "my.about"
 
@@ -59,6 +61,10 @@ enum L10nKey: String, CaseIterable {
     case recentPlaybackEmptyMessage = "recent_playback.empty_message"
     case recentPlaybackProgressSummary = "recent_playback.progress_summary"
     case recentPlaybackPlayedAt = "recent_playback.played_at"
+    case downloadCompletedTitle = "download_completed.title"
+    case downloadCompletedEmptyTitle = "download_completed.empty_title"
+    case downloadCompletedEmptyMessage = "download_completed.empty_message"
+    case downloadCompletedSavedAt = "download_completed.saved_at"
 
     case aboutTitle = "about.title"
     case aboutDescription = "about.description"
