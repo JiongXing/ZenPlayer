@@ -8,10 +8,7 @@
 import SwiftUI
 
 struct MyView: View {
-    @EnvironmentObject private var languageSettings: LanguageSettings
     @Environment(\.horizontalSizeClass) private var sizeClass
-
-    @State private var recentPlaybackStore = RecentPlaybackStore.shared
     var body: some View {
         GeometryReader { proxy in
             ScrollView {
@@ -35,15 +32,6 @@ struct MyView: View {
                             tint: Color(red: 0.38, green: 0.62, blue: 0.56)
                         ) {
                             CompletedDownloadListView()
-                        }
-
-                        featureLink(
-                            title: .myLanguage,
-                            detail: currentLanguageDisplayName,
-                            systemImage: "globe",
-                            tint: Color(red: 0.48, green: 0.6, blue: 0.72)
-                        ) {
-                            LanguageSettingsView()
                         }
 
                         featureLink(
@@ -102,36 +90,6 @@ struct MyView: View {
 
                 Spacer(minLength: 0)
             }
-
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 12) {
-                    heroBadge(
-                        title: .myRecentPlayback,
-                        value: recentPlaybackCountText,
-                        systemImage: "clock.arrow.circlepath"
-                    )
-
-                    heroBadge(
-                        title: .myLanguage,
-                        value: currentLanguageDisplayName,
-                        systemImage: "globe"
-                    )
-                }
-
-                VStack(spacing: 12) {
-                    heroBadge(
-                        title: .myRecentPlayback,
-                        value: recentPlaybackCountText,
-                        systemImage: "clock.arrow.circlepath"
-                    )
-
-                    heroBadge(
-                        title: .myLanguage,
-                        value: currentLanguageDisplayName,
-                        systemImage: "globe"
-                    )
-                }
-            }
         }
         .padding(22)
         .background(
@@ -153,44 +111,6 @@ struct MyView: View {
                 .stroke(Color.white.opacity(0.7), lineWidth: 1)
         }
         .shadow(color: Color(red: 0.71, green: 0.56, blue: 0.39).opacity(0.14), radius: 18, x: 0, y: 10)
-    }
-
-    private func heroBadge(title: L10nKey, value: String, systemImage: String) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: systemImage)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color(red: 0.67, green: 0.51, blue: 0.34))
-                .frame(width: 34, height: 34)
-                .background(
-                    Circle()
-                        .fill(Color.white.opacity(0.7))
-                )
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(L10n.text(title))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Text(value)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color(red: 0.33, green: 0.25, blue: 0.17))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-            }
-
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white.opacity(0.5))
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.white.opacity(0.5), lineWidth: 1)
-        }
     }
 
     private func featureLink<Destination: View>(
@@ -284,21 +204,6 @@ struct MyView: View {
         L10n.string(.myRecentPlaybackSummary)
     }
 
-    private var recentPlaybackCountText: String {
-        "\(recentPlaybackStore.records.count)"
-    }
-
-    private var currentLanguageDisplayName: String {
-        switch languageSettings.selectedLanguage.code {
-        case "zh-Hans":
-            return L10n.string(.settingsLanguageNameZhHans)
-        case "zh-Hant":
-            return L10n.string(.settingsLanguageNameZhHant)
-        default:
-            return languageSettings.selectedLanguage.code
-        }
-    }
-
     private var appDisplayName: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
             ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String
@@ -320,5 +225,4 @@ struct MyView: View {
     NavigationStack {
         MyView()
     }
-    .environmentObject(LanguageSettings())
 }

@@ -7,7 +7,7 @@
 ## 技术方案概览
 
 - **单代码库跨端复用**：使用纯 SwiftUI 覆盖 iPhone 与 macOS，主要以 `NavigationStack` 组织导航，并在 iOS regular width 下保留双栏布局适配。
-- **本地化自动跟随系统**：当前仅支持简体中文 / 繁体中文，启动时按系统语言自动匹配，并在系统语言变更时同步刷新。
+- **界面固定繁體中文**：应用界面统一使用繁體中文显示，不再提供语言切换，也不再跟随系统语言变化。
 - **播放链路稳定优先**：本地文件优先播放，远端地址作为回退；音频处理失败时自动降级为原声直通，优先保证可播放。
 - **人声增强方案**：基于 `AVPlayerItem` Audio Tap + 本地 `RNNoise` 实现实时降噪，并支持播放中动态调节降噪强度与音量放大倍数。
 - **下载方案（iOS 完整、macOS 兼容）**：iOS 使用后台 `URLSession` + 断点续传 + 清单恢复；macOS 使用 `NSSavePanel` + 直链下载作为兼容路径。
@@ -22,7 +22,7 @@
 - 单集列表查看时长、体积，支持音频/视频下载
 - 播放页支持视频/音频播放、锁屏控制（iOS）、PiP（iOS）、人声降噪与音量增强
 - 下载完成后优先本地播放；iOS 侧可通过系统分享导出文件
-- 简体 / 繁体中文自动跟随系统语言
+- 应用界面固定为繁體中文
 
 ---
 
@@ -37,7 +37,7 @@
 - **图片加载与缓存**：Kingfisher `8.6.2`
 - **调试抓包**：Atlantis `1.34.0`（Debug）
 - **音频降噪**：RNNoise（项目内置 C 源码 + Swift 封装）
-- **本地化**：`Localizable.xcstrings` + 自定义 `L10n`
+- **本地化**：`Localizable.xcstrings` + 固定繁體中文 `L10n`
 - **最低系统版本**：iOS 17+、macOS 14+
 
 ---
@@ -50,7 +50,7 @@
 - `ViewModels`：`@MainActor + @Observable`，维护页面状态（加载、错误、数据）与业务动作。
 - `Views`：UI 组件与交互绑定，关注呈现与用户操作，不直接处理网络/下载细节。
 - `Services`：网络请求、下载服务、音频处理等可复用能力。
-- `Localization`：语言匹配、文案查找与运行时 locale 切换。
+- `Localization`：繁體中文文案访问与本地化查找封装。
 - `Utilities`：跨平台适配和布局常量。
 
 ### 2) 导航与路由
@@ -117,11 +117,11 @@ macOS 侧保留兼容路径：
 - 通过直链下载写入本地文件
 - 暂停会退化为取消，当前不做下载状态持久化恢复
 
-### 5) 本地化与语言跟随
+### 5) 本地化
 
-- 当前支持 `zh-Hans` / `zh-Hant`
-- 启动时根据 `Locale.preferredLanguages` 自动选择最佳匹配
-- 系统语言变化时通过 `NSLocale.currentLocaleDidChangeNotification` 自动刷新文案
+- 应用界面与日期格式统一使用 `zh-Hant`
+- 字符串资源由 `Localizable.xcstrings` 提供，运行时通过 `L10n` 统一读取
+- 不提供应用内语言切换，也不跟随系统语言动态变更
 
 ### 6) 脏数据与兼容性处理
 
@@ -137,7 +137,7 @@ macOS 侧保留兼容路径：
 ZenPlayer/
 ├── ZenPlayerApp.swift               # App 入口，配置 Kingfisher、导航样式、iOS AppDelegate 桥接
 ├── ContentView.swift                # 根导航容器与值路由注册
-├── Localization/                    # 语言匹配、L10n 封装与本地化配置
+├── Localization/                    # 固定繁體中文文案访问封装
 ├── Models/                          # APIResponse / Category / Series / Episode
 ├── ViewModels/                      # Home / CategoryDetail / SeriesDetail / Player / DownloadManager
 ├── Views/                           # 页面与行组件（Home、Detail、Player、EpisodeRow 等）

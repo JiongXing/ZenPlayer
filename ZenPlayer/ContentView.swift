@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct ContentView: View {
-    @EnvironmentObject private var languageSettings: LanguageSettings
     @State private var selectedTab: RootTab = .home
 
     var body: some View {
@@ -36,7 +35,7 @@ struct ContentView: View {
                 PlayerView(context: context)
             }
         }
-            .environment(\.locale, languageSettings.currentLocale)
+        .environment(\.locale, L10n.currentLocale)
         #if os(iOS)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         #endif
@@ -50,5 +49,4 @@ private enum RootTab {
 
 #Preview {
     ContentView()
-        .environmentObject(LanguageSettings())
 }

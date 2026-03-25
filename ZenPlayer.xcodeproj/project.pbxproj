@@ -105,12 +105,10 @@
 				};
 			};
 			buildConfigurationList = 966DFAAE2F3C7CF500A90038 /* Build configuration list for PBXProject "ZenPlayer" */;
-			developmentRegion = "zh-Hans";
+			developmentRegion = "zh-Hant";
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
-				en,
-				"zh-Hans",
 				"zh-Hant",
 			);
 			mainGroup = 966DFAAA2F3C7CF500A90038;

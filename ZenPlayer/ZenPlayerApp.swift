@@ -37,8 +37,6 @@ struct ZenPlayerApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     #endif
 
-    @StateObject private var languageSettings = LanguageSettings()
-
     init() {
         configureKingfisher()
         configureNavigationBarStyle()
@@ -47,8 +45,6 @@ struct ZenPlayerApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environmentObject(languageSettings)
-                .environment(\.locale, languageSettings.currentLocale)
                 #if os(iOS)
                 .tint(.secondary)
                 #endif

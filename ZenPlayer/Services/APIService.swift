@@ -85,7 +85,7 @@ final class APIService {
         request.httpMethod = "GET"
         request.setValue(userKey, forHTTPHeaderField: "userkey")
         request.setValue("*/*", forHTTPHeaderField: "Accept")
-        request.setValue("zh-Hans-CN;q=1, en-CN;q=0.9", forHTTPHeaderField: "Accept-Language")
+        request.setValue("zh-Hant-TW;q=1, zh-Hant;q=0.9, en;q=0.8", forHTTPHeaderField: "Accept-Language")
 
         logger.info("➡️ GET \(urlString)")
         let startTime = CFAbsoluteTimeGetCurrent()
