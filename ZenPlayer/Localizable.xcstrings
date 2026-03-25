@@ -249,6 +249,22 @@
         }
       }
     },
+    "common.delete" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除"
+          }
+        }
+      }
+    },
     "common.not_selected" : {
       "localizations" : {
         "zh-Hans" : {

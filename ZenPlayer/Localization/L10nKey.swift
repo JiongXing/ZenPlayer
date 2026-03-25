@@ -7,6 +7,7 @@ import Foundation
 
 enum L10nKey: String, CaseIterable {
     case commonCancel = "common.cancel"
+    case commonDelete = "common.delete"
     case commonSelected = "common.selected"
     case commonNotSelected = "common.not_selected"
 

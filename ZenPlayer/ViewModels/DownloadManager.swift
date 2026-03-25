@@ -397,6 +397,30 @@ final class DownloadManager {
         return url
     }
 
+    /// 删除已完成下载的单集，并清理对应文件与持久化记录。
+    /// - Parameter key: 下载唯一标识
+    func removeCompletedDownload(for key: String) {
+        guard let record = downloadRecords[key], record.status == .completed else { return }
+
+        if let fileURL = completedFileURLs[key] {
+            do {
+                if FileManager.default.fileExists(atPath: fileURL.path) {
+                    try FileManager.default.removeItem(at: fileURL)
+                }
+            } catch {
+                if isMissingFileError(error) {
+                    logger.warning("⚠️ 删除已下载文件时发现文件不存在 key=\(key)")
+                } else {
+                    logger.error("❌ 删除已下载文件失败 key=\(key) - \(error.localizedDescription)")
+                    return
+                }
+            }
+        }
+
+        removeRecordAndArtifacts(for: key, resetStateToIdle: true)
+        logger.info("🗑️ 已删除下载完成单集 key=\(key)")
+    }
+
     /// 取消指定单集某种类型的下载
     /// - Parameters:
     ///   - episodeId: 单集 ID
@@ -952,6 +976,11 @@ final class DownloadManager {
         if refreshList {
             refreshCompletedDownloads()
         }
+    }
+
+    private func isMissingFileError(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        return nsError.domain == NSCocoaErrorDomain && nsError.code == NSFileNoSuchFileError
     }
 
     private func progressFromState(for key: String, fallback: Double) -> Double {

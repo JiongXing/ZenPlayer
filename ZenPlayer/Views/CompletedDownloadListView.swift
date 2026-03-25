@@ -15,24 +15,18 @@ struct CompletedDownloadListView: View {
 
     var body: some View {
         GeometryReader { proxy in
+            contentView(for: proxy)
+                .background(pageBackground.ignoresSafeArea())
+        }
+        .navigationTitle(L10n.text(.downloadCompletedTitle))
+    }
+
+    @ViewBuilder
+    private func contentView(for proxy: GeometryProxy) -> some View {
+        if downloadManager.completedDownloads.isEmpty {
             ScrollView {
                 VStack(spacing: 20) {
-                    if downloadManager.completedDownloads.isEmpty {
-                        emptyStateView(containerHeight: proxy.size.height)
-                    } else {
-                        summaryCard
-
-                        LazyVStack(spacing: 14) {
-                            ForEach(downloadManager.completedDownloads) { item in
-                                NavigationLink {
-                                    PlayerView(context: item.context)
-                                } label: {
-                                    CompletedDownloadRowView(item: item)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    }
+                    emptyStateView(containerHeight: proxy.size.height)
                 }
                 .frame(maxWidth: min(max(proxy.size.width - 32, 0), 760))
                 .frame(minHeight: proxy.size.height - 1, alignment: .top)
@@ -40,9 +34,90 @@ struct CompletedDownloadListView: View {
                 .padding(.vertical, LayoutConstants.verticalPadding(sizeClass: sizeClass))
                 .frame(maxWidth: .infinity)
             }
-            .background(pageBackground.ignoresSafeArea())
+        } else {
+#if os(iOS)
+            iosCompletedListView(for: proxy)
+#else
+            macCompletedListView(for: proxy)
+#endif
         }
-        .navigationTitle(L10n.text(.downloadCompletedTitle))
+    }
+
+#if os(iOS)
+    private func iosCompletedListView(for proxy: GeometryProxy) -> some View {
+        let cardHorizontalInset = LayoutConstants.horizontalPadding(sizeClass: sizeClass)
+        let horizontalPadding = LayoutConstants.horizontalPadding(sizeClass: sizeClass)
+        let verticalPadding = LayoutConstants.verticalPadding(sizeClass: sizeClass)
+
+        return VStack(spacing: 20) {
+            summaryCard
+                .padding(.horizontal, horizontalPadding)
+                .padding(.top, verticalPadding)
+
+            List {
+                ForEach(downloadManager.completedDownloads) { item in
+                    NavigationLink {
+                        PlayerView(context: item.context)
+                    } label: {
+                        CompletedDownloadRowView(item: item)
+                    }
+                    .buttonStyle(.plain)
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) {
+                            delete(item)
+                        } label: {
+                            Label(L10n.string(.commonDelete), systemImage: "trash")
+                        }
+                    }
+                    .listRowInsets(EdgeInsets(top: 7, leading: cardHorizontalInset, bottom: 7, trailing: cardHorizontalInset))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                }
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
+            .contentMargins(.horizontal, 0, for: .scrollContent)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+#endif
+
+    private func macCompletedListView(for proxy: GeometryProxy) -> some View {
+        let cardHorizontalInset = LayoutConstants.horizontalPadding(sizeClass: sizeClass)
+
+        return ScrollView {
+            VStack(spacing: 20) {
+                summaryCard
+                    .padding(.horizontal, cardHorizontalInset)
+
+                LazyVStack(spacing: 14) {
+                    ForEach(downloadManager.completedDownloads) { item in
+                        NavigationLink {
+                            PlayerView(context: item.context)
+                        } label: {
+                            CompletedDownloadRowView(item: item)
+                        }
+                        .buttonStyle(.plain)
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                delete(item)
+                            } label: {
+                                Label(L10n.string(.commonDelete), systemImage: "trash")
+                            }
+                        }
+                        .padding(.horizontal, cardHorizontalInset)
+                    }
+                }
+            }
+            .frame(minHeight: proxy.size.height - 1, alignment: .top)
+            .padding(.vertical, LayoutConstants.verticalPadding(sizeClass: sizeClass))
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    private func delete(_ item: CompletedDownloadItem) {
+        downloadManager.removeCompletedDownload(for: item.downloadKey)
     }
 
     private var summaryCard: some View {
@@ -198,12 +273,6 @@ private struct CompletedDownloadRowView: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 8) {
                     mediaTypeBadge
-
-                    Spacer(minLength: 0)
-
-                    Image(systemName: "chevron.right")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(.tertiary)
                 }
 
                 Text(episode.title)
