@@ -156,7 +156,7 @@ struct CompletedDownloadListView: View {
 
                 Text(L10n.text(.myDownloadCompleted))
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(ReadableSurfaceStyle.bodyText)
             }
         }
         .padding(22)
@@ -165,9 +165,9 @@ struct CompletedDownloadListView: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(0.92),
-                            Color(red: 0.95, green: 0.98, blue: 0.96),
-                            Color(red: 0.89, green: 0.95, blue: 0.91)
+                            ReadableSurfaceStyle.warmSurfaceTop,
+                            Color(red: 0.957, green: 0.982, blue: 0.967),
+                            Color(red: 0.903, green: 0.952, blue: 0.919)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -176,7 +176,7 @@ struct CompletedDownloadListView: View {
         )
         .overlay {
             RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .stroke(Color.white.opacity(0.7), lineWidth: 1)
+                .stroke(ReadableSurfaceStyle.surfaceStroke, lineWidth: 1)
         }
         .shadow(color: Color(red: 0.28, green: 0.54, blue: 0.45).opacity(0.14), radius: 18, x: 0, y: 10)
     }
@@ -208,7 +208,7 @@ struct CompletedDownloadListView: View {
 
             Text(L10n.text(.downloadCompletedEmptyMessage))
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(ReadableSurfaceStyle.bodyText)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -216,11 +216,11 @@ struct CompletedDownloadListView: View {
         .padding(28)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(Color.white.opacity(0.82))
+                .fill(ReadableSurfaceStyle.neutralSurface)
         )
         .overlay {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color.white.opacity(0.72), lineWidth: 1)
+                .stroke(ReadableSurfaceStyle.surfaceStroke, lineWidth: 1)
         }
         .shadow(color: Color(red: 0.28, green: 0.54, blue: 0.45).opacity(0.1), radius: 16, x: 0, y: 10)
     }
@@ -277,7 +277,7 @@ private struct CompletedDownloadRowView: View {
 
                 Text(episode.title)
                     .font(.headline)
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(ReadableSurfaceStyle.titleText)
                     .lineLimit(2)
 
                 HStack(spacing: 10) {
@@ -303,7 +303,7 @@ private struct CompletedDownloadRowView: View {
         )
         .overlay {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.white.opacity(0.72), lineWidth: 1)
+                .stroke(ReadableSurfaceStyle.surfaceStroke, lineWidth: 1)
         }
         .shadow(color: accentColor.opacity(isHovered ? 0.16 : 0.1), radius: isHovered ? 16 : 12, x: 0, y: isHovered ? 12 : 8)
         .scaleEffect(isHovered ? 1.01 : 1)
@@ -386,7 +386,7 @@ private struct CompletedDownloadRowView: View {
     private var cardBackground: some ShapeStyle {
         LinearGradient(
             colors: [
-                Color.white.opacity(0.94),
+                ReadableSurfaceStyle.neutralSurface,
                 accentColor.opacity(0.08)
             ],
             startPoint: .topLeading,

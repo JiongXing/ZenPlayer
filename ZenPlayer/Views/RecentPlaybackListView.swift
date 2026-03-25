@@ -74,7 +74,7 @@ struct RecentPlaybackListView: View {
                 if let latestRecord = recentPlaybackStore.records.first {
                     Text(latestRecord.progressSummaryText)
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(ReadableSurfaceStyle.bodyText)
                         .lineLimit(2)
                 }
             }
@@ -88,7 +88,7 @@ struct RecentPlaybackListView: View {
 
                 Text(L10n.text(.myRecentPlayback))
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(ReadableSurfaceStyle.bodyText)
             }
         }
         .padding(22)
@@ -97,9 +97,9 @@ struct RecentPlaybackListView: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(0.92),
-                            Color(red: 0.97, green: 0.93, blue: 0.87),
-                            Color(red: 0.95, green: 0.89, blue: 0.81)
+                            ReadableSurfaceStyle.warmSurfaceTop,
+                            Color(red: 0.978, green: 0.95, blue: 0.908),
+                            ReadableSurfaceStyle.warmSurfaceBottom
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -108,7 +108,7 @@ struct RecentPlaybackListView: View {
         )
         .overlay {
             RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .stroke(Color.white.opacity(0.7), lineWidth: 1)
+                .stroke(ReadableSurfaceStyle.surfaceStroke, lineWidth: 1)
         }
         .shadow(color: Color(red: 0.71, green: 0.56, blue: 0.39).opacity(0.14), radius: 18, x: 0, y: 10)
     }
@@ -140,7 +140,7 @@ struct RecentPlaybackListView: View {
 
             Text(L10n.text(.recentPlaybackEmptyMessage))
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(ReadableSurfaceStyle.bodyText)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -148,11 +148,11 @@ struct RecentPlaybackListView: View {
         .padding(28)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(Color.white.opacity(0.82))
+                .fill(ReadableSurfaceStyle.neutralSurface)
         )
         .overlay {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color.white.opacity(0.72), lineWidth: 1)
+                .stroke(ReadableSurfaceStyle.surfaceStroke, lineWidth: 1)
         }
         .shadow(color: Color(red: 0.71, green: 0.56, blue: 0.39).opacity(0.1), radius: 16, x: 0, y: 10)
     }
@@ -210,12 +210,12 @@ private struct RecentPlaybackRowView: View {
 
                     Image(systemName: "chevron.right")
                         .font(.footnote.weight(.semibold))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(ReadableSurfaceStyle.mutedText)
                 }
 
                 Text(episode.title)
                     .font(.headline)
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(ReadableSurfaceStyle.titleText)
                     .lineLimit(2)
 
                 HStack(spacing: 10) {
@@ -228,7 +228,7 @@ private struct RecentPlaybackRowView: View {
 
                     Text(record.progressSummaryText)
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(ReadableSurfaceStyle.bodyText)
                         .lineLimit(2)
                 }
             }
@@ -241,7 +241,7 @@ private struct RecentPlaybackRowView: View {
         )
         .overlay {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.white.opacity(0.72), lineWidth: 1)
+                .stroke(ReadableSurfaceStyle.surfaceStroke, lineWidth: 1)
         }
         .shadow(color: accentColor.opacity(isHovered ? 0.16 : 0.1), radius: isHovered ? 16 : 12, x: 0, y: isHovered ? 12 : 8)
         .scaleEffect(isHovered ? 1.01 : 1)
@@ -316,7 +316,7 @@ private struct RecentPlaybackRowView: View {
     private var cardBackground: some ShapeStyle {
         LinearGradient(
             colors: [
-                Color.white.opacity(0.94),
+                ReadableSurfaceStyle.neutralSurface,
                 accentColor.opacity(0.08)
             ],
             startPoint: .topLeading,

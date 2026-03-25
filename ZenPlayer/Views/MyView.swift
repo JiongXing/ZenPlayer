@@ -84,7 +84,7 @@ struct MyView: View {
 
                     Text(L10n.text(.aboutDescription))
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(ReadableSurfaceStyle.bodyText)
                         .lineLimit(2)
                 }
 
@@ -97,9 +97,9 @@ struct MyView: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(0.92),
-                            Color(red: 0.97, green: 0.93, blue: 0.87),
-                            Color(red: 0.94, green: 0.88, blue: 0.8)
+                            ReadableSurfaceStyle.warmSurfaceTop,
+                            Color(red: 0.976, green: 0.948, blue: 0.902),
+                            ReadableSurfaceStyle.warmSurfaceBottom
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -108,7 +108,7 @@ struct MyView: View {
         )
         .overlay {
             RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .stroke(Color.white.opacity(0.7), lineWidth: 1)
+                .stroke(ReadableSurfaceStyle.surfaceStroke, lineWidth: 1)
         }
         .shadow(color: Color(red: 0.71, green: 0.56, blue: 0.39).opacity(0.14), radius: 18, x: 0, y: 10)
     }
@@ -146,11 +146,11 @@ struct MyView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(L10n.text(title))
                         .font(.headline)
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(ReadableSurfaceStyle.titleText)
 
                     Text(detail)
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(ReadableSurfaceStyle.bodyText)
                         .lineLimit(2)
                 }
 
@@ -158,17 +158,17 @@ struct MyView: View {
 
                 Image(systemName: "chevron.right")
                     .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(ReadableSurfaceStyle.mutedText)
             }
             .padding(18)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(Color.white.opacity(0.88))
+                    .fill(ReadableSurfaceStyle.neutralSurface)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .stroke(Color.white.opacity(0.72), lineWidth: 1)
+                    .stroke(ReadableSurfaceStyle.surfaceStroke, lineWidth: 1)
             }
             .shadow(color: tint.opacity(0.08), radius: 14, x: 0, y: 8)
         }
