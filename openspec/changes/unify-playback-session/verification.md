@@ -6,7 +6,7 @@
 
 | 追踪 | 自动化／集成门槛 |
 | --- | --- |
-| S1／AT-01／AT-02 | 同键不准备、不唤醒暂停；App 注入、三个入口复用；跨页和多窗口实际操作 |
+| S1／AT-01／AT-02 | 同键不准备、不唤醒暂停；App 注入、三个入口复用；跨页和 macOS 单窗口关闭／重启实际操作 |
 | S2／AT-05 | 请求修订 A/B/C、迟到回调、失败目标保持；旧进度保存 |
 | S3／AT-03／AT-04 | 完整／迷你／锁屏控制同一对象，停止释放；冷启动不出声，首页续听 M3 补 |
 | S4／AT-11／AT-12 | 即时切源暂停意图、失败保护；PiP／全屏／macOS 失焦退出实际操作 |
@@ -183,3 +183,27 @@ M1 仍 In Verification（4/6）；M0／M2～M4 原设备与总验收门槛不变
 M2／M3 补验时发现 Mac 完整页使用文字“播放／暫停”按钮，旧测试对 `pause.fill` 的不存在断言不能单独证明暂停；既有“已暫停”状态及保存位置断言仍有效。本轮改为正向要求“播放”存在、“暫停”不存在，完整 Mac 6 项回归通过（`/tmp/ZenPlayer-mac-queue-r3/tests.xcresult`）。新队列用例也验证同一会话自然推进、关闭连播后媒体时间继续增加和冷启动不自动播放，后续加强定向通过（`/tmp/ZenPlayer-mac-queue-final/tests.xcresult`）；详情见 [M2 证据](../play-series-in-order/verification.md#2026-09-26-mac-实际连播与偏好回归)。
 
 没有修改生产会话实现。S8 明确包含 VoiceOver 使用条件，现有可访问性树／大字体／几何断言不能替代实际朗读与焦点操作，因此 2.2 继续未勾选；iPhone Developer Mode 实查仍 Disabled，3.2 也未完成。M1 保持 4/6、In Verification。本次仅本地提交 `补充 Mac 连播与首页下一集实际回归`。
+
+## 2026-09-26 单窗口与主流程验证收敛
+
+用户明确不需要 macOS 多窗口，并要求测试聚焦核心主流程、不扩展极端情况。复用当前 M1 change 更新 PRD Q-01、Roadmap、proposal、specs、design 和唯一 tasks.md；历史双窗口证据保留为旧行为记录，不再作为当前门槛。macOS 改为 SwiftUI `Window("ZenPlayer", id: "main")`，iOS 仍使用 WindowGroup；App 持有唯一播放会话，沿用 willTerminate 进度保存链路。移除双窗口同步及关窗后 Command-N 重开两项旧测试，合并为单窗口正常生命周期用例。
+
+优先验证：播放／暂停、跨页、前后切集、续听、下载入口及删除后进度保留、单窗口隐藏／关闭／退出／重启。停止扩展重复切换压力、极端时序和全参数组合；现有数据安全单元回归保留。不把未运行的 iPhone 后台／锁屏／PiP、真实媒体或辅助功能记为通过，M1 仍 In Verification。
+
+### 测试启动修复的独立证据
+
+三十集旧用例的冷启动无窗口由 AppKit 将自定义参数视为文件打开请求触发；使用相同已存在进度样本（UUID `E0206D89-D6B6-4ECF-AA98-E20F68B0D8BD`）执行四次 A/B/A/B 启动，唯一变量为 `-NSTreatUnknownArgumentsAsOpen NO`：未加时两次均 0 窗口，加后两次均 1 窗口并显示原进度。`/tmp/ZenPlayer-mac-thirty-plays-r2/options-probe.xcresult`：1 通过、0 失败、27.370 秒。这只是临时启动探针，不是全阶段验收。所有 Mac UI 用例通过统一 launch 辅助方法设置该参数及 ApplePersistenceIgnoreState，移除三十集 Command-N 开窗补救；本轮未重跑完整三十集用例。
+
+### 本轮结果
+
+- 通过：首次单窗口实际 UI 测试，`/tmp/ZenPlayer-mac-single-window/tests.xcresult`，1 项、0 失败、0 跳过，41.170 秒。覆盖 S9、关闭窗口保存／退出、重启无自动播放、续听推进、隐藏继续、Command-Q 保存及再次冷启动。
+- 通过：macOS 隔离 App build-for-testing（同目录 build.xcresult）；iPhone 17／iOS 27 模拟器生产 App build（`/tmp/ZenPlayer-single-window-ios-build.log`）。日志中仅既有 RNNoise C 整型转换和无 AppIntents 元数据警告。iOS 源码分支语义未改。
+- 失败：复用构建的两项入口／连播测试，`core-regression.xcresult`，0 通过、2 失败。二者均未出现启动窗口，未进入播放链路；旧方法没有 AppKit 参数。已统一所有 Mac 用例的 launch 辅助入口，三条核心流程修复后重验通过（见下条）。生产播放器未因此修改。
+- 通过：最终 `/tmp/ZenPlayer-mac-single-window/core-fixed.xcresult`，macOS 27 arm64，3 项、0 失败、0 跳过，174.047 秒。历史／下载及删除后进度保留 73.746 秒；自然续播、手动前后切集、末集停止与偏好冷恢复 59.558 秒；单窗口关闭／退出／冷启动续听 40.743 秒。`xcresulttool get test-results summary` 确认 Passed，无 testFailures。该运行包含重新编译，使用当前统一启动辅助方法。
+- 未运行：修改启动辅助方法后的完整三十集、Mac 全套其他用例、单元测试全量及 iPhone 设备流程。本次未改变持久化／队列实现，不扩大压力和边界回归。2.2／3.2 保持未完成。
+
+命令：首次由 `python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-mac-single-window --package-cache /tmp/ZenPlayer-M0-mac/SourcePackages --only-testing testSingleWindowCloseQuitAndColdResume` 创建隔离工程。后续只把最新 MacStageUITests.swift 复制到该副本 StageUITests/StageUITests.swift，保存旧 context 并更新当前源码 SHA；使用相同 destination／derivedDataPath／package cache，关闭 parallel-testing，指定上述单窗口／testNaturalQueueAdvanceControlsAndColdPreference／testHistoryDownloadEntryAndDeletionRetainsProgress 三个 only-testing，执行 `xcodebuild test -resultBundlePath /tmp/ZenPlayer-mac-single-window/core-fixed.xcresult`。日志同目录 core-fixed.log。
+
+收尾 review：应用差异仅 ZenPlayerApp 的平台场景声明；没有改变播放器所有权、持久化或队列状态。测试统一启动参数，合并两项旧窗口用例并删除无效新建窗口补救。本轮临时压力／trace 代码未纳入提交。两项 change strict 校验、27 个 Markdown 本地文件链接、Python 解析、唯一 Mac launch 入口及 `git diff --check` 通过。未发现本轮范围内新的阻断问题；既往间歇跳集仍未定位，保留 M2 记录，不声称已修复。
+
+按既有授权本地提交，标题 `简化 macOS 为单窗口并收敛主流程验证`；提交 hash 以 `git log -1 --format='%H%n%B' --grep='^简化 macOS 为单窗口并收敛主流程验证$'` 查询。无 push／PR／发布／主规格同步／归档。本轮单窗口调整达到对应主流程条件，M1 仍 4/6、In Verification，不据此宣告全部 M1～M4 完成。

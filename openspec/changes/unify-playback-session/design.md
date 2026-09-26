@@ -8,7 +8,7 @@ Goals：复用现有 PlayerViewModel 作为 App 级媒体所有者，避免第�
 
 ## Decisions
 
-- ZenPlayerApp 的 @State 模型跨 WindowGroup 注入 Environment。页面只读取同一实例，不持有媒体资源；同键 prepare 幂等。保留 PlaybackContext 路由以减小入口改动，后续 M2 可扩展上下文。
+- ZenPlayerApp 的 @State 模型向根视图注入 Environment；macOS 使用系统 Window（单个主窗口），iOS 保留 WindowGroup。关闭 macOS 主窗口按系统单窗口语义退出，沿用现有 willTerminate 保存链路，不增加窗口协调器。页面只读取同一实例，不持有媒体资源；同键 prepare 幂等。保留 PlaybackContext 路由以减小入口改动，后续 M2 可扩展上下文。
 - 纯 PlaybackSessionState 负责目标身份、请求修订、播放意图、阶段、中断恢复资格及可控时钟无进展检测；AVPlayer／M0 progressGate 保持媒体和保存职责。采用单一意图模型，避免多个视图分别推导播放状态。
 - 完整页使用当前会话目标，传入 context 仅是单集入口选择；迷你条经独立的控制页值路由只展示当前会话，避免导航延迟重选旧目标。ContentView 只给浏览页内容应用迷你条安全区修饰器，根页继承 Tab 上方安全区、详情页继承窗口安全区；完整播放页不应用该修饰器，不再维护页面可见性 ID 集合。我的页面入口也使用绑定路径的值路由，防止从未记录在 NavigationPath 的直接目的地追加控制页时丢失原页面；退出页面不释放模型。
 - 所有暂停／继续／停止和 iOS 系统控制走相同模型方法。停止递增媒体身份并移除观察者、系统命令、音频会话；中断前记录是否在播放，手动暂停撤销恢复资格；系统中断导致的原生暂停观察不撤销资格，重复开始通知幂等。
@@ -19,7 +19,7 @@ Goals：复用现有 PlayerViewModel 作为 App 级媒体所有者，避免第�
 ## Risks / Trade-offs
 
 - 原生暂停、系统中断及缓冲 rate==0 需区分 → 依据 timeControlStatus 与显式意图测试，设备路径另验。
-- 窗口／全屏／PiP 的 SwiftUI 可见性差异 → 多窗口共享媒体但窗口可见性局部保存；不以模拟器单元测试冒充设备验证。
+- 窗口／全屏／PiP 的 SwiftUI 可见性差异 → macOS 只维护一个主窗口，验证关闭／退出保存与重新启动续听；不以模拟器单元测试冒充设备验证。
 - M0 阶段的设备缺口 → 保留原状态，M1 集成测试覆盖相关行为但不提前标为 Done。
 
 ## Migration Plan

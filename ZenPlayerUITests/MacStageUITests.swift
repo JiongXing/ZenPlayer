@@ -12,7 +12,7 @@ final class StageUITests: XCTestCase {
         let arguments = ["--stage-resume-case", "thirty-plays", "--stage-resume-run", UUID().uuidString,
                          "--stage-primary-window"]
         app.launchArguments = arguments
-        app.launch()
+        launch(app)
         var window = thirtyWindowAfterLaunch(app)
         openThirtySeries(app)
         enterJump("1", app: app)
@@ -71,7 +71,7 @@ final class StageUITests: XCTestCase {
 
         // 验证三十条均由真实播放产生、最近恰为 30…21，并保存只读进度的证据副本。
         app.launchArguments = arguments + ["--stage-verify-resume", "--stage-thirty-first-position", String(firstPosition)]
-        app.launch()
+        launch(app)
         window = thirtyWindowAfterLaunch(app)
         XCTAssertTrue(window.staticTexts["Mac 三十集-30"].waitForExistence(timeout: 15))
         XCTAssertFalse(window.buttons["pause.fill"].exists)
@@ -95,7 +95,7 @@ final class StageUITests: XCTestCase {
 
         app.launchArguments = arguments + ["--stage-verify-resume", "--stage-thirty-resumed",
                                            "--stage-thirty-first-position", String(resumedPosition)]
-        app.launch()
+        launch(app)
         window = thirtyWindowAfterLaunch(app)
         XCTAssertTrue(window.staticTexts["Mac 三十集-1"].waitForExistence(timeout: 15))
         XCTAssertEqual(queuePosition(in: window), resumedPosition, accuracy: 1)
@@ -103,16 +103,18 @@ final class StageUITests: XCTestCase {
         capture(app, name: "mac-thirty-first-retained-other-twenty-nine-unchanged")
     }
 
-    private func thirtyWindowAfterLaunch(_ app: XCUIApplication) -> XCUIElement {
-        // 本机 Mac/XCTest 冷启动可能只启动进程；明确执行用户的新建窗口动作，不改 App 生命周期。
-        if !app.windows.firstMatch.waitForExistence(timeout: 5) {
-            XCTAssertEqual(app.windows.count, 0)
-            let evidence = XCTAttachment(string: "冷启动后无窗口；本次继续通过 Command-N 新建窗口检查持久化进度，不证明自动打开窗口。")
-            evidence.name = "mac-thirty-cold-launch-no-window"
-            evidence.lifetime = .keepAlways
-            add(evidence)
-            app.typeKey("n", modifierFlags: .command)
+    private func launch(_ app: XCUIApplication) {
+        // 样本参数不是待打开文件；所有冷启动使用同一 AppKit 参数约定。
+        for (key, value) in [("-NSTreatUnknownArgumentsAsOpen", "NO"),
+                             ("-ApplePersistenceIgnoreState", "YES")]
+            where !app.launchArguments.contains(key) {
+            app.launchArguments += [key, value]
         }
+        app.launch()
+    }
+
+    private func thirtyWindowAfterLaunch(_ app: XCUIApplication) -> XCUIElement {
+        // 自定义样本参数必须按选项处理；直接断言冷启动开窗，不发送新建窗口补救动作。
         XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10))
         return app.windows.firstMatch
     }
@@ -171,7 +173,7 @@ final class StageUITests: XCTestCase {
         let arguments = ["--stage-resume-case", "long-history", "--stage-resume-run", UUID().uuidString,
                          "--stage-primary-window"]
         app.launchArguments = arguments
-        app.launch()
+        launch(app)
         var window = app.windows.firstMatch
         XCTAssertTrue(window.staticTexts["Mac 新近歷史-12"].waitForExistence(timeout: 15))
         clickCenter(window.descendants(matching: .tab).matching(identifier: "person").firstMatch, in: window)
@@ -203,7 +205,7 @@ final class StageUITests: XCTestCase {
 
         // 同一目录只读核验所有 14 条原始字节；定位不能把旧记录抬回最近十条。
         app.launchArguments = arguments + ["--stage-verify-resume"]
-        app.launch()
+        launch(app)
         window = app.windows.firstMatch
         XCTAssertTrue(window.staticTexts["Mac 新近歷史-12"].waitForExistence(timeout: 15))
         XCTAssertFalse(window.buttons["pause.fill"].exists)
@@ -240,7 +242,7 @@ final class StageUITests: XCTestCase {
 
         // 实际收听才允许更新目标；其余 13 条逐字节不变，长期记录仍为 14 条。
         app.launchArguments = arguments + ["--stage-verify-resume", "--stage-verify-long-history-played"]
-        app.launch()
+        launch(app)
         window = app.windows.firstMatch
         XCTAssertTrue(window.staticTexts["Mac 長期保留-12"].waitForExistence(timeout: 15))
         XCTAssertEqual(queuePosition(in: window), paused, accuracy: 1)
@@ -295,7 +297,7 @@ final class StageUITests: XCTestCase {
                          "--stage-primary-window", "--stage-category-failure"]
         for coldRead in [false, true] {
             app.launchArguments = arguments + (coldRead ? ["--stage-verify-resume"] : [])
-            app.launch()
+            launch(app)
             let window = app.windows.firstMatch
             let error = window.staticTexts.matching(NSPredicate(format: "value CONTAINS %@", "Mac 分類請求失敗驗證")).firstMatch
             XCTAssertTrue(error.waitForExistence(timeout: 15))
@@ -333,7 +335,7 @@ final class StageUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["--stage-seed-catalog", "--stage-primary-window"]
-        app.launch()
+        launch(app)
         let window = app.windows.firstMatch
         XCTAssertTrue(window.staticTexts["Mac 定位驗證-12"].waitForExistence(timeout: 15))
         clickCenter(window.descendants(matching: .tab).matching(identifier: "person").firstMatch, in: window)
@@ -363,7 +365,7 @@ final class StageUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["--stage-seed-queue", "--stage-queue-catalog", "--stage-primary-window"]
-        app.launch()
+        launch(app)
         let window = app.windows.firstMatch
         XCTAssertTrue(window.staticTexts["Mac 連播驗證-1"].waitForExistence(timeout: 15))
         clickCenter(window.descendants(matching: .tab).matching(identifier: "person").firstMatch, in: window)
@@ -415,7 +417,7 @@ final class StageUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["--stage-seed-catalog", "--stage-catalog-edge-cases", "--stage-primary-window"]
-        app.launch()
+        launch(app)
         let window = app.windows.firstMatch
         XCTAssertTrue(window.staticTexts["Mac 定位驗證-12"].waitForExistence(timeout: 15))
         clickCenter(window.descendants(matching: .tab).matching(identifier: "person").firstMatch, in: window)
@@ -466,7 +468,7 @@ final class StageUITests: XCTestCase {
         app.typeKey("q", modifierFlags: .command)
         XCTAssertTrue(wait { app.state == .notRunning })
         app.launchArguments = ["--stage-verify-catalog", "--stage-catalog-edge-cases", "--stage-primary-window"]
-        app.launch()
+        launch(app)
         XCTAssertTrue(app.windows.firstMatch.staticTexts["Mac 定位驗證-12"].waitForExistence(timeout: 15))
         XCTAssertEqual(queuePosition(in: app.windows.firstMatch), 42)
     }
@@ -475,7 +477,7 @@ final class StageUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["--stage-seed", "--stage-category-failure", "--stage-primary-window"]
-        app.launch()
+        launch(app)
         let window = app.windows.firstMatch
         let error = window.staticTexts["网络错误：Mac 分類請求失敗驗證"]
         XCTAssertTrue(error.waitForExistence(timeout: 15), "必须实际经过注入的分类请求失败路径")
@@ -499,7 +501,7 @@ final class StageUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["--stage-seed-catalog", "--stage-primary-window"]
-        app.launch()
+        launch(app)
         let window = app.windows.firstMatch
         XCTAssertTrue(window.staticTexts["Mac 定位驗證-12"].waitForExistence(timeout: 15))
         XCTAssertFalse(window.buttons["pause.fill"].exists)
@@ -544,7 +546,7 @@ final class StageUITests: XCTestCase {
         XCTAssertTrue(wait { app.state == .notRunning })
         // 只读原始字节比对，防止导航／定位静默刷新收听时间、修订或位置。
         app.launchArguments = ["--stage-verify-catalog", "--stage-primary-window"]
-        app.launch()
+        launch(app)
         XCTAssertTrue(app.windows.firstMatch.staticTexts["Mac 定位驗證-12"].waitForExistence(timeout: 15))
         XCTAssertEqual(queuePosition(in: app.windows.firstMatch), 42)
         XCTAssertFalse(app.windows.firstMatch.buttons["pause.fill"].exists)
@@ -555,7 +557,7 @@ final class StageUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["--stage-seed-queue", "--stage-auto-off", "--stage-primary-window"]
-        app.launch()
+        launch(app)
         let window = app.windows.firstMatch
         XCTAssertTrue(window.staticTexts["Mac 連播驗證-1"].waitForExistence(timeout: 15))
         clickCenter(window.buttons["繼續收聽"].firstMatch, in: window)
@@ -581,7 +583,7 @@ final class StageUITests: XCTestCase {
         app.typeKey("q", modifierFlags: .command)
         XCTAssertTrue(wait { app.state == .notRunning })
         app.launchArguments = ["--stage-verify-queue-off", "--stage-primary-window"]
-        app.launch()
+        launch(app)
         XCTAssertTrue(app.windows.firstMatch.staticTexts["Mac 連播驗證-2"].waitForExistence(timeout: 15))
         XCTAssertFalse(queueMini(in: app.windows.firstMatch, episode: 2).exists)
         capture(app, name: "mac-home-next-cold-progress-preserved")
@@ -591,7 +593,7 @@ final class StageUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["--stage-seed-queue", "--stage-primary-window"]
-        app.launch()
+        launch(app)
         let window = app.windows.firstMatch
         XCTAssertTrue(window.staticTexts["Mac 連播驗證-1"].waitForExistence(timeout: 15))
         clickCenter(window.buttons["繼續收聽"].firstMatch, in: window)
@@ -636,7 +638,7 @@ final class StageUITests: XCTestCase {
 
         // 冷启动只读核验上一集 completed、第二集有效进度、末集 completed、快照和关闭偏好。
         app.launchArguments = ["--stage-verify-queue", "--stage-primary-window"]
-        app.launch()
+        launch(app)
         let reopened = app.windows.firstMatch
         XCTAssertTrue(reopened.staticTexts["Mac 連播驗證-2"].waitForExistence(timeout: 15))
         XCTAssertFalse(queueMini(in: reopened, episode: 2).exists)
@@ -663,7 +665,7 @@ final class StageUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["--stage-seed", "--stage-primary-window"]
-        app.launch()
+        launch(app)
         let window = app.windows.firstMatch
         XCTAssertTrue(window.waitForExistence(timeout: 15))
         XCTAssertTrue(wait { window.frame.minX >= 0 && window.frame.minY >= 0 })
@@ -745,7 +747,7 @@ final class StageUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["--stage-seed", "--stage-primary-window"]
-        app.launch()
+        launch(app)
         let window = app.windows.firstMatch
         XCTAssertTrue(window.waitForExistence(timeout: 15))
         window.buttons["繼續收聽"].firstMatch.click()
@@ -798,7 +800,7 @@ final class StageUITests: XCTestCase {
         XCTAssertTrue(wait { app.state == .notRunning })
         // 临时 App 启动只读核实实际文件已删／进度文件仍在，不重新播种。
         app.launchArguments = ["--stage-verify-deleted"]
-        app.launch()
+        launch(app)
         let reopened = app.windows.firstMatch
         XCTAssertTrue(reopened.buttons["繼續收聽"].firstMatch.waitForExistence(timeout: 15))
         XCTAssertEqual(position(in: reopened), paused, accuracy: 1)
@@ -813,89 +815,62 @@ final class StageUITests: XCTestCase {
         capture(app, name: "mac-deleted-media-reopen-failed")
         app.typeKey("q", modifierFlags: .command)
         XCTAssertTrue(wait { app.state == .notRunning })
-        app.launch() // 仍为只读验证参数。
+        launch(app) // 仍为只读验证参数。
         XCTAssertTrue(app.windows.firstMatch.buttons["繼續收聽"].firstMatch.waitForExistence(timeout: 15))
         XCTAssertEqual(position(in: app.windows.firstMatch), paused, accuracy: 1)
     }
 
-    func testClosingLastWindowKeepsSessionUntilQuit() throws {
+    func testSingleWindowCloseQuitAndColdResume() throws {
         continueAfterFailure = false
         let app = XCUIApplication()
-        app.launchArguments = ["--stage-seed", "--stage-primary-window"]
-        app.launch()
+        let options = ["--stage-primary-window"]
+        app.launchArguments = ["--stage-seed"] + options
+        launch(app)
         let window = app.windows.firstMatch
         XCTAssertTrue(window.waitForExistence(timeout: 15))
-        window.buttons["繼續收聽"].firstMatch.click()
+        XCTAssertEqual(app.windows.count, 1)
+        XCTAssertEqual(position(in: window), 30)
+        XCTAssertFalse(mini(in: window).exists)
+        clickCenter(window.buttons["繼續收聽"].firstMatch, in: window)
         waitForPosition(in: window, greaterThan: 31)
-        let before = position(in: window)
-        window.buttons["_XCUI:CloseWindow"].click()
-        XCTAssertTrue(wait { app.windows.count == 0 })
-        XCTAssertNotEqual(app.state, .notRunning)
+        // 单窗口场景不提供 Command-N 新建窗口。
         app.typeKey("n", modifierFlags: .command)
+        XCTAssertEqual(app.windows.count, 1)
+        clickCenter(window.buttons["pause.fill"], in: window)
+        XCTAssertTrue(wait { self.mini(in: window).label.contains("已暫停") })
+        let paused = position(in: window)
+        clickCenter(window.buttons["_XCUI:CloseWindow"], in: window)
+        XCTAssertTrue(wait { app.state == .notRunning })
+
+        app.launchArguments = options // 冷启动绝不重新播种进度。
+        launch(app)
         let reopened = app.windows.firstMatch
-        XCTAssertTrue(reopened.waitForExistence(timeout: 5))
-        XCTAssertTrue(mini(in: reopened).label.contains("正在收聽"))
-        waitForPosition(in: reopened, greaterThan: before + 2)
-        capture(app, name: "mac-session-after-last-window-reopen")
-    }
-
-    func testSharedWindowsFocusCloseQuitAndColdResume() throws {
-        continueAfterFailure = false
-        let app = XCUIApplication()
-        app.launchArguments = ["--stage-seed", "--stage-primary-window"]
-        app.launch()
-        let first = app.windows.firstMatch
-        XCTAssertTrue(first.waitForExistence(timeout: 15))
-        let firstID = first.identifier
-        XCTAssertEqual(position(in: first), 30)
-        XCTAssertFalse(mini(in: first).exists)
-        first.buttons["繼續收聽"].firstMatch.click()
-        waitForPosition(in: first, greaterThan: 31)
-        let originalWindow = app.windows.matching(NSPredicate(format: "identifier == %@", firstID)).firstMatch
-        app.typeKey("n", modifierFlags: .command)
-        XCTAssertTrue(wait { app.windows.count == 2 })
-        let second = app.windows.matching(NSPredicate(format: "identifier != %@", firstID)).firstMatch
-        XCTAssertTrue(mini(in: second).waitForExistence(timeout: 5))
-        XCTAssertTrue(mini(in: second).label.contains("正在收聽"))
-        capture(app, name: "mac-two-windows-playing")
-        let pause = second.buttons["pause.fill"]
-        XCTAssertTrue(pause.exists)
-        XCTAssertTrue(second.frame.contains(pause.frame))
-        // 外接屏上 XCTest 的自动 hit point 计算失败；点击实际窗口内的控件中心并核实结果。
-        pause.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
-        XCTAssertTrue(wait { self.mini(in: originalWindow).label.contains("已暫停") })
-        XCTAssertTrue(mini(in: second).label.contains("已暫停"))
-        capture(app, name: "mac-two-windows-paused")
-        let paused = position(in: second)
-        second.buttons["_XCUI:CloseWindow"].click()
-        XCTAssertTrue(wait { app.windows.count == 1 })
-        XCTAssertTrue(mini(in: originalWindow).label.contains("已暫停"))
-        XCTAssertEqual(position(in: originalWindow), paused, accuracy: 1)
-
-        originalWindow.buttons["繼續收聽"].firstMatch.click()
-        waitForPosition(in: originalWindow, greaterThan: paused + 2)
-        let beforeHide = position(in: originalWindow)
+        XCTAssertTrue(reopened.buttons["繼續收聽"].firstMatch.waitForExistence(timeout: 15))
+        XCTAssertEqual(app.windows.count, 1)
+        XCTAssertFalse(mini(in: reopened).exists)
+        XCTAssertEqual(position(in: reopened), paused, accuracy: 1)
+        clickCenter(reopened.buttons["繼續收聽"].firstMatch, in: reopened)
+        waitForPosition(in: reopened, greaterThan: paused + 2)
+        let beforeHide = position(in: reopened)
         app.typeKey("h", modifierFlags: .command)
         XCTAssertTrue(wait { app.state == .runningBackground })
-        // 隐藏期间让真实 AVPlayer 推进，再激活检查位置；不用播放意图冒充媒体进展。
         let delay = expectation(description: "hidden playback interval")
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) { delay.fulfill() }
         wait(for: [delay], timeout: 6)
         app.activate()
-        waitForPosition(in: originalWindow, greaterThan: beforeHide + 2)
-        capture(app, name: "mac-after-focus-loss")
-        let beforeQuit = position(in: originalWindow)
+        waitForPosition(in: reopened, greaterThan: beforeHide + 2)
+        let beforeQuit = position(in: reopened)
         app.typeKey("q", modifierFlags: .command)
         XCTAssertTrue(wait { app.state == .notRunning })
-        app.launchArguments = [] // 冷启动绝不重新播种进度。
-        app.launch()
-        let reopened = app.windows.firstMatch
-        XCTAssertTrue(reopened.buttons["繼續收聽"].firstMatch.waitForExistence(timeout: 15))
-        XCTAssertFalse(mini(in: reopened).exists)
-        XCTAssertGreaterThanOrEqual(position(in: reopened), beforeQuit)
-        capture(app, name: "mac-cold-launch-saved-progress")
-        reopened.buttons["繼續收聽"].firstMatch.click()
-        waitForPosition(in: reopened, greaterThan: beforeQuit + 2)
+        launch(app)
+        let finalWindow = app.windows.firstMatch
+        XCTAssertTrue(finalWindow.buttons["繼續收聽"].firstMatch.waitForExistence(timeout: 15))
+        XCTAssertEqual(app.windows.count, 1)
+        XCTAssertFalse(mini(in: finalWindow).exists)
+        XCTAssertGreaterThanOrEqual(position(in: finalWindow), beforeQuit)
+        capture(app, name: "mac-single-window-cold-resume")
+        clickCenter(finalWindow.buttons["繼續收聽"].firstMatch, in: finalWindow)
+        waitForPosition(in: finalWindow, greaterThan: beforeQuit + 2)
     }
 
     private func mini(in window: XCUIElement) -> XCUIElement {

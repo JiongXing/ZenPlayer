@@ -110,3 +110,20 @@ python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-mac-queue-r3 -
 本轮重新查询用户 iPhone 16 Pro，Developer Mode 仍 Disabled，命令明确无法返回完整信息（`/tmp/ZenPlayer-device-search-review.json`）；没有安装或改变真实设备。AT-09 的上述 Mac 本地样本子断言已获得证据，真实音视频／iPhone 生命周期、网络回退、VoiceOver／Reduce Motion、端到端性能和旧能力仍未齐备。3.2 保持未勾选，M2 仍 In Verification。
 
 交付检查通过：M1／M2／M3／M4 四个 change strict 校验、Python AST／CLI help、14 个相对 Markdown 文件链接（不含锚点）、已跟踪差异与新增 fixture 行尾检查。Git 范围为 12 个测试 Harness／说明和现有 change 记录；116 个生产 App 文件与工程 hash 均未变化。
+
+## 2026-09-26 相邻切集事件追踪
+
+基线 `main @ c4150d645a668a0a1a235cca6aa32a8f263ce213`，起始工作区干净。继续 3.2／S3，并调查 [M3 三十集测试](../surface-listening-progress/verification.md#2026-09-26-三十集实际播放与首集冷启动恢复) 的一次 3→5 现象。CodeGraph 核对：手动按钮调用 playAdjacent 后选取当前队列邻项；自然结束另经有效媒体／队列门控；迷你条仅打开 controls 路由，selectsOnAppear 为 false。静态调用链未证明异常发生在哪一层，不据此添加防抖或改变手动指令语义。
+
+本轮曾临时增加 24 次相邻切换及事件追踪用于诊断；用户随后要求核心主流程优先，已移除本轮新增压力用例、trace 注入、额外 600 秒素材模式。诊断源码保留在 `/tmp/ZenPlayer-discarded-stress-source`，既有产物不删除。没有为未定位的现象加入防抖或新产品状态。
+
+| 轮次 | 实际结果 | 证据与边界 |
+| --- | --- | --- |
+| adjacent-trace-r1 | 0 通过、1 失败，275.346 秒 | `/tmp/ZenPlayer-mac-adjacent-trace-r1/tests.xcresult`；120 秒素材被反复续播耗尽，等待播放中失败，未复现此前 3→5 |
+| adjacent-trace-r2 | 0 通过、1 失败，26.004 秒 | `/tmp/ZenPlayer-mac-adjacent-trace-r2/tests.xcresult`；素材延长但测试仍按 2:00 查位置，读取 -1；属用例错误 |
+| adjacent-trace-r3 | 1 通过、0 失败，286.831 秒 | `/tmp/ZenPlayer-mac-adjacent-trace-r3/tests.xcresult`；97 条事件对应首次选择与 24 组 mini／按钮／相邻选择／目标选择，无额外选择；追踪 I/O 可能影响时序 |
+| adjacent-final（无 trace） | 执行成功 | `/tmp/ZenPlayer-mac-adjacent-final/tests.xcresult`；新指示处理时进程已结束，非取消，未再重跑 |
+
+以上不证明此前间歇跳集已修复；保留为已知未定位现象，不继续压力诊断。后续验证以正常上一集／下一集、自然续播、首页续听及进度保留为主，不要求穷举极端时序。3.2 的未验证设备路径仍未勾选。
+
+单窗口整合后的核心连播回归：`/tmp/ZenPlayer-mac-single-window/core-fixed.xcresult` 内 testNaturalQueueAdvanceControlsAndColdPreference 通过（59.558 秒），覆盖真实 AVPlayer 自然续播、手动前后切集、末集停止及偏好冷恢复；同批 3 项共 0 失败。首次缺少 AppKit 启动参数的失败及修复详见 [M1 记录](../unify-playback-session/verification.md#2026-09-26-单窗口与主流程验证收敛)。不关闭其他设备缺口。

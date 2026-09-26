@@ -44,16 +44,19 @@ struct ZenPlayerApp: App {
     }
 
     var body: some Scene {
+        #if os(macOS)
+        Window("ZenPlayer", id: "main") {
+            ContentView()
+                .environment(playbackSession)
+        }
+        .defaultSize(width: 1024, height: 768)
+        .windowResizability(.automatic)
+        #else
         WindowGroup {
             ContentView()
                 .environment(playbackSession)
-                #if os(iOS)
                 .tint(.secondary)
-                #endif
         }
-        #if os(macOS)
-        .defaultSize(width: 1024, height: 768)
-        .windowResizability(.automatic)
         #endif
     }
 

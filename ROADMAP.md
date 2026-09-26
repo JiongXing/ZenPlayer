@@ -14,7 +14,9 @@
 
 阶段状态：`Planned → In Progress → In Verification → Done`；规划状态另记，阻塞另列。规划文档齐全、OpenSpec artifact done 都不等于业务 Done。只在阶段状态变化时更新本页，详细日志留在当前变更内。
 
-PRD 来源：用户附件 `/Users/jxing/Desktop/ZenPlayer_PRD_v1.0.md`，原样复制到仓库，字节 SHA-256 为 `c0f4c5b31d66dd1adf19daf4d4fd3eb978e1a5c4627192ff8b653e0d30d52eea`。后续只维护仓库版本。启动依据为用户附件 `ZenPlayer_Codex_OpenSpec_Bootstrap.md`；其安装步骤是首次接入任务，不是每次开发重跑的规则。
+PRD 来源：用户附件 `/Users/jxing/Desktop/ZenPlayer_PRD_v1.0.md`，首次原样复制到仓库时的字节 SHA-256 为 `c0f4c5b31d66dd1adf19daf4d4fd3eb978e1a5c4627192ff8b653e0d30d52eea`。后续只维护仓库版本。启动依据为用户附件 `ZenPlayer_Codex_OpenSpec_Bootstrap.md`；其安装步骤是首次接入任务，不是每次开发重跑的规则。
+
+2026-09-26 用户决策：macOS 不要求多窗口，M1 改为单主窗口；验证聚焦播放、暂停、切集、续听、下载及正常退出等主流程，不扩展重复切换压力或极端组合。已有失败与未验证项继续如实记录；详见 M1／M2 verification.md。
 
 ## Now · M0 先保住进度
 
@@ -33,9 +35,9 @@ PRD 来源：用户附件 `/Users/jxing/Desktop/ZenPlayer_PRD_v1.0.md`，原样�
 - 问题／价值：页面持有播放器，返回可能停播；让浏览和控制页面共享唯一会话。
 - 包含：全入口会话路由、跨页面播放、迷你条、完整页／iOS 系统控制一致、暂停／停止／中断、请求版本隔离、平台生命周期。
 - 不包含：系列自动连播、首页续听卡和搜索；不只删除 onDisappear 停止逻辑。
-- 依赖：集成 M0 进度接口；核对 macOS 多窗口，保持本地优先与降噪回退。
+- 依赖：集成 M0 进度接口；macOS 采用单主窗口，保持本地优先与降噪回退。
 - PRD：F1-01～F1-04、D-02、Q-01～Q-03；验收 AT-01～AT-06、AT-11，AT-12 的跨页／PiP／窗口部分；AT-04 首页续听整合留 M3。
-- 状态：**In Verification**；代码 review／修复与两端自动化完成，本轮授权本地提交，3/6 项满足完成条件。跨页／多窗口操作、迷你条 UI、真实 iPhone 生命周期待验；M0 设备验收缺口继续保留。
+- 状态：**In Verification**；代码 review／修复与两端自动化完成，本轮授权本地提交，4/6 项满足完成条件。跨页与主要迷你条 UI 已有局部证据；单窗口关闭／重启、可访问性及真实 iPhone 生命周期见当前验证记录；M0 设备验收缺口继续保留。
 - 变更：[unify-playback-session](openspec/changes/unify-playback-session/proposal.md)；[验证记录](openspec/changes/unify-playback-session/verification.md)。
 
 ## 后续 · M2 系列连播
