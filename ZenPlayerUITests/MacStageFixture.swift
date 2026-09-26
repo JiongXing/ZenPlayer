@@ -1,8 +1,11 @@
 import Foundation
+import AppKit
 
 /// 仅由验证脚本复制到临时 App；不编入生产 target。
 @MainActor
 enum MacStageFixture {
+    private static var windowObserver: NSObjectProtocol?
+
     static func seedIfRequested() {
         let arguments = ProcessInfo.processInfo.arguments
         let shouldSeed = arguments.contains("--stage-seed")
@@ -11,6 +14,26 @@ enum MacStageFixture {
         let bundle = "com.jxing.ZenPlayer.MacStageValidation"
         precondition(Bundle.main.bundleIdentifier == bundle)
         precondition(NSHomeDirectory().contains("/Library/Containers/\(bundle)/Data"))
+        if arguments.contains("--stage-primary-window") {
+            // 只调整验证 App 的首个窗口；负坐标外接屏会令本机 XCTest 输入失效。
+            windowObserver = NotificationCenter.default.addObserver(
+                forName: NSWindow.didBecomeMainNotification, object: nil, queue: .main
+            ) { notification in
+                MainActor.assumeIsolated {
+                    guard let window = notification.object as? NSWindow,
+                          let screen = NSScreen.screens.first else { return }
+                    if let observer = windowObserver {
+                        NotificationCenter.default.removeObserver(observer)
+                        windowObserver = nil
+                    }
+                    let visible = screen.visibleFrame
+                    let size = NSSize(width: min(window.frame.width, visible.width),
+                                      height: min(window.frame.height, visible.height))
+                    window.setFrame(NSRect(x: visible.minX, y: visible.maxY - size.height,
+                                           width: size.width, height: size.height), display: true)
+                }
+            }
+        }
         do {
             let support = URL.applicationSupportDirectory
             let directory = support.appendingPathComponent("StageValidation")

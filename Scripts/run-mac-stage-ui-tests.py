@@ -6,8 +6,10 @@ import importlib.util
 import json
 from pathlib import Path
 import plistlib
+import re
 import shutil
 import subprocess
+import xml.etree.ElementTree as ET
 
 BUNDLE_ID = "com.jxing.ZenPlayer.MacStageValidation"
 
@@ -16,8 +18,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True, help="仓库外不存在的输出目录")
     parser.add_argument("--package-cache", type=Path, help="可复用的 Xcode SourcePackages 路径")
+    parser.add_argument("--only-testing", help="只运行指定的 MacStageUITests 测试方法")
+    parser.add_argument("--jump-input", choices=("12", "0012", "第１２集"), default="0012",
+                        help="搜索用例的第 12 集输入形式；Unicode 形式在本机 Xcode 存在事件合成超时")
     args = parser.parse_args()
     repo = Path(__file__).resolve().parents[1]
+    if args.only_testing and args.only_testing not in re.findall(
+            r"func (test\w+)\(", (repo / "ZenPlayerUITests/MacStageUITests.swift").read_text()):
+        parser.error("only-testing 必须是现有 Mac UI 测试方法名")
     output = args.output.expanduser().resolve()
     if output == repo or repo in output.parents:
         parser.error("输出必须在仓库外")
@@ -52,6 +60,18 @@ def main():
     path.write_bytes(plistlib.dumps(project, sort_keys=False))
     shutil.copy2(repo / "ZenPlayerUITests/MacStageUITests.swift", work / "StageUITests/StageUITests.swift")
     shutil.copy2(repo / "ZenPlayerUITests/MacStageFixture.swift", work / "ZenPlayer/MacStageFixture.swift")
+    scheme_path = work / "ZenPlayer.xcodeproj/xcshareddata/xcschemes/ZenPlayer.xcscheme"
+    scheme = ET.parse(scheme_path)
+    test_action = scheme.getroot().find("TestAction")
+    if test_action is None:
+        raise RuntimeError("临时 scheme 缺少 TestAction")
+    test_action.set("shouldUseLaunchSchemeArgsEnv", "NO")
+    variables = test_action.find("EnvironmentVariables")
+    if variables is None:
+        variables = ET.SubElement(test_action, "EnvironmentVariables")
+    ET.SubElement(variables, "EnvironmentVariable", key="ZENPLAYER_JUMP_INPUT",
+                  value=args.jump_input, isEnabled="YES")
+    scheme.write(scheme_path, encoding="utf-8", xml_declaration=True)
     app_source = work / "ZenPlayer/ZenPlayerApp.swift"
     original = app_source.read_text()
     marker = "@State private var playbackSession = PlayerViewModel()"
@@ -65,6 +85,8 @@ def main():
     (output / "context.json").write_text(json.dumps({
         "head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip(),
         "destination": "platform=macOS", "bundleID": BUNDLE_ID,
+        "onlyTesting": args.only_testing,
+        "jumpInput": args.jump_input,
         "bootstrap": "temporary App initializer seeds its own sandbox before creating PlayerViewModel",
         "projectSHA256": hashlib.sha256((repo / "ZenPlayer.xcodeproj/project.pbxproj").read_bytes()).hexdigest(),
         "sha256": {str(p.relative_to(repo)): hashlib.sha256(p.read_bytes()).hexdigest()
@@ -76,6 +98,8 @@ def main():
                "-parallel-testing-enabled", "NO", "-collect-test-diagnostics", "never"]
     if cache:
         command += ["-clonedSourcePackagesDirPath", str(cache)]
+    if args.only_testing:
+        command += ["-only-testing:StageUITests/StageUITests/" + args.only_testing]
     runner.run_logged(command + ["-resultBundlePath", str(output / "build.xcresult"), "build-for-testing"], work, output / "build.log")
     app = output / "derived-data/Build/Products/Debug/ZenPlayer.app"
     info = plistlib.loads((app / "Contents/Info.plist").read_bytes())

@@ -204,3 +204,59 @@ python3 Scripts/run-stage-ui-tests.py --destination 'platform=iOS Simulator,id=F
 重新执行两平台 App 构建与 XCTest：各 86 项、0 失败（`/tmp/ZenPlayer-avkit-review-{mac,ios}.xcresult`）；macOS Release 构建和二进制 AVKit 链接检查通过（`/tmp/ZenPlayer-avkit-release.xcresult`），Release UI 未运行。M1 1.2 已达工程条件，4/6；M4 3.2 仍未完成，整轮仍 In Verification。iPhone Developer Mode 再查仍 Disabled；后台／锁屏／PiP 和既有可访问性、性能、旧能力、升级迁移缺口未被豁免。
 
 本轮仅本地提交 `修复 macOS 完整播放页崩溃并验证下载删除保留进度`，不 push／PR／sync／archive／发布。
+
+
+## 2026-09-26 Mac 搜索、排序与键盘 review
+
+基线 `main @ ba6c710`；起始只有 Mac UI 测试与运行脚本的未提交改动。本轮按当前阶段 review／本地提交授权收尾。生产 App 源码、工程、签名、依赖和数据格式未改；仅补充隔离验证 Harness 和当前 change 的证据。
+
+### Review 改进
+
+- 搜索用例读取真实分类，检查编号升降序、清词保留降序、零结果清词和日期菜单选中值。日期项只验证实际切换，不据此宣称所有日期格式排序正确。
+- 系列先筛选第 21 集，明确断言第 12 集不在结果中；Escape 取消及非法／不存在输入保持筛选，成功提交再检查清词、收起面板、目标位于迷你条上方及原暂停位置不变。没有以可见目标替代“筛选隐藏目标”条件。
+- 运行器增加 `--only-testing`，仅接受源码中现有测试方法，创建输出前拒绝无效名称；使用参数数组调用 xcodebuild，并记录实际选择。省略参数仍运行全部用例。
+- 外接屏负坐标下，测试出现点击未获搜索焦点／Tab 未选中。显式激活、等待布局及拖窗均未解决。最终 fixture 只在独立验证 App 内、收到首个窗口成为主窗口通知时放到主屏可见区域，立即解除观察者；没有改生产窗口行为、系统显示或输入法设置。
+
+### 失败历史（不改记为通过）
+
+| 运行／结果 | 实际观察 |
+| --- | --- |
+| `/tmp/ZenPlayer-mac-search-r1/tests.xcresult`：2 通过、2 失败 | 搜索用例 Unicode 事件合成超时；历史用例点击“我的”后仍在首页，未进入后续断言。不能据此判定 Unicode 解析或历史数据损坏。 |
+| `mac-search-r2`：0 通过、1 失败 | 定向运行生效，但搜索框未获得键盘焦点，尚未到 Unicode 分支。 |
+| `mac-search-r3`：2 通过、2 失败 | 显式激活后搜索焦点和 Tab 问题仍在。 |
+| `mac-search-r4`：0 通过、1 失败 | 等待目录／控件布局后仍为搜索焦点失败。 |
+| `mac-search-r5`：0 通过、1 失败 | 外接屏坐标拖窗未把窗口移到主屏，前置断言失败，搜索主体未运行。 |
+
+以上路径除第一行已写全外均位于 `/tmp/ZenPlayer-<运行名>/tests.xcresult`，各轮构建通过，测试命令退出 65，均无跳过。失败现场与日志保留；临时文件可能被系统清理，不将路径存在等同于永久证据归档。
+
+主屏后的 Unicode 尝试：`/tmp/ZenPlayer-mac-search-r6/test.log` 到达 `Type 第１２集 into TextField`，该输入框位于主屏，但仍在事件合成 30 秒后超时；没有将此解释为 parser 接受或拒绝输入。该轮最终 3 通过、1 失败、0 跳过；原历史／下载、关闭最后窗口和双窗口／退出用例已重新通过。本轮增加 `--jump-input`，默认 `0012`，保留 `第１２集` 的显式重现入口。测试从临时 scheme 的 TestAction 读取实际输入，缺少配置直接失败，不静默回退。Unicode UI 输入继续是未通过项，且没有修改 PRD／规格降低要求。
+
+
+`/tmp/ZenPlayer-mac-search-final` 的批量 ASCII 输入尝试也记录失败：发送 `ZenPlayerNoMatch987654321` 后实际字段为 `ZenPlayerNoMat987654321`。精确断言没有把少字输入当成功；该轮最终 3 通过、1 失败、0 跳过。静态复核 `CatalogSearchHeader` 的原始 Binding 和 `CategoryDetailViewModel.applySearch`：检索只更新 visibleSeries，没有回写／截断 searchQuery；仍无法判定这是 XCTest 连续事件合成还是 App 在快速输入下的问题。回归 Harness 改成每键发送、等待 XCTest idle 并核对完整累计值，继续验证搜索与定位行为；不能用此配置证明高速连续输入可靠或输入到画面的 P95。这个风险继续保留，不宣称已修复业务输入。
+
+
+`/tmp/ZenPlayer-mac-search-keywise/tests.xcresult`：0 通过、1 失败（84.587 秒）。逐键输入和 `0012` 提交已到达清筛选／收面板，但测试按独立 StaticText 查询 Mac 行失败。修正查询为实际 NavigationLink 的组合 Button，并在筛选前后记录窗口树；第 21 集必须存在、第 12 集必须先被隐藏，避免用永不存在的节点满足前置条件。
+
+### 最终证据与边界
+
+| 检查 | 实际结果 | 证据 |
+| --- | --- | --- |
+| Mac 搜索／排序／键盘定向回归 | **1 通过、0 失败、0 跳过，75.022 秒**；逐键搜索，成功跳集输入为 `0012` | `/tmp/ZenPlayer-mac-search-row/tests.xcresult`、`test.log` |
+| Mac 原有三项生命周期／历史／下载回归 | **3 项通过**；所在完整轮次另有上述搜索输入失败，不能称整轮通过 | `/tmp/ZenPlayer-mac-search-final/tests.xcresult`；核对 14 个既有测试／helper 方法和 fixture 与当前逐字相同 |
+| 最新临时 App／UI target 构建、签名／sandbox | 通过，build-for-testing／test-without-building 均 exit 0 | `/tmp/ZenPlayer-mac-search-row/build.xcresult`、`build.log`、`entitlements.plist` |
+| 原两平台 App／XCTest | **复用各 86 项、0 失败**；本轮未重跑 | `/tmp/ZenPlayer-avkit-review-{mac,ios}.xcresult`；已重读 summary，生产源码／工程 hash 未变 |
+| 静态／文档／范围 | 通过 | Python AST／help、无效 method 和 jump-input 均 exit 2 且未创建目录、M4 strict 校验、相关 4 个相对文件链接（不含锚点）、Git diff 检查 |
+
+最新定向运行的 77 个 Swift／Python／xcstrings 文件及生产工程 SHA-256 与待提交内容一致；文档记录不属于可执行输入。筛选前树只有第 21 集；跳转后第 12 集 Button frame 为 `(6, 419, 995, 66)`，底部 485 小于暂停迷你条顶部 747；日期 Popup 值为“日期”。导出的 4 份窗口树位于 `/tmp/ZenPlayer-mac-search-row-attachments/`。这是几何与可访问性树证据，不是截图目视／VoiceOver 朗读证据，也未测两秒高亮持续时间。xcresult 含一次内部 QoS 等待警告，没有将其解释成已测出的延迟或已修复的性能问题。
+
+复现默认已通过路径（重跑需换不存在的 output）：
+
+```sh
+python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-mac-search-row --package-cache /tmp/ZenPlayer-M0-mac/SourcePackages --only-testing testCatalogSortingAndKeyboardJumpPreservePausedSession
+```
+
+Unicode 变体需另加 `--jump-input '第１２集'`；新参数的解析／临时 scheme 配置可用，最终参数化脚本没有再次运行 Unicode 失败路径，之前两次硬编码 Unicode 的事件合成失败继续保留。此次没有再次执行完整四项套件，以未变化的三项已有通过证据加定向修复回归交付；不得报告为同一次四项全通过。
+
+未关闭：Unicode 实际输入、连续快速输入少字原因、VoiceOver／Reduce Motion、参考机端到端性能、真机后台／锁屏／PiP、真实下载／分享／降噪／音量听感及升级迁移等既有门槛。未操作真实设备，未刷新 Developer Mode 状态。任务 3.2 不勾选，M0～M4 仍 In Verification，不建议标记 Done。
+
+本次本地提交标题：`补充 macOS 搜索键盘回归并记录输入验证边界`；实际身份可用 `git log -1 --format='%H%n%B' --grep='^补充 macOS 搜索键盘回归并记录输入验证边界$'` 查询。只提交本轮 6 个 Harness／文档文件，不 push／PR／sync／archive／发布。

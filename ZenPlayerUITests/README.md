@@ -39,14 +39,23 @@ python3 Scripts/run-mac-stage-ui-tests.py \
 
 脚本仍复制工程，改为独立 `com.jxing.ZenPlayer.MacStageValidation` bundle，包括清除原工程 macOS 条件 bundle 覆盖；保持 App sandbox、验证签名和 entitlement 后才启动。生产工程／源码不修改，不需要从终端读取受 macOS 隐私保护的容器元数据。
 
+可追加 `--only-testing testCatalogSortingAndKeyboardJumpPreservePausedSession` 定向运行现有方法；脚本在创建输出前校验方法名，并在 `context.json` 记录选择。省略时运行全部 Mac 用例。每次使用新的 output 目录。
+
+跳集输入默认 `0012`。`--jump-input '第１２集'` 可重现 Unicode UI 输入路径，也接受 `12`；参数只写入临时 scheme 的 TestAction 环境并记录到 `context.json`。本机 Xcode 27 的 Unicode `typeText` 在事件合成时超时，当前不能将此路径算通过；纯解析单测通过不替代该 UI 缺口。默认运行通过仅证明实际使用的输入形式，不能推及所有变体。
+
 `MacStageFixture.swift` 只复制进临时 App，并在临时 App 初始化播放器前加入播种调用；该文件不编入生产 target。只有 `--stage-seed` 启动时才创建自己的 180 秒静音 WAV、单条 30 秒进度和完成下载索引，且先断言 bundle 与 sandbox home。样本远端为不可解析的 `.invalid` 地址，必须通过真实 DownloadManager 的本地完成索引播放。它验证本容器内文件，不证明下载传输或外部文件的 security-scoped bookmark 授权。冷启动检查移除播种参数，读取上次实际保存的进度。删除场景的 `--stage-verify-deleted` 只读断言实际样本文件已删除、进度文件可解码且仍至少 30 秒；失败会使验证 App 启动失败，从而让测试失败。
 
-`MacStageUITests.swift` 使用实际窗口、快捷键和控件，覆盖三个用例：
+测试启动参数 `--stage-primary-window` 让临时 fixture 在首个窗口成为主窗口时将其放到主屏可见区域，随即移除通知观察者。本机外接屏负坐标下曾出现点击未选中 Tab、搜索框未获焦点和拖窗失败；此设置只影响独立验证 App，不修改系统显示设置或生产 App 窗口。此配置不代表任意外接屏组合均已验收。
+
+`MacStageUITests.swift` 使用实际窗口、快捷键和控件，覆盖四个用例：
 
 - 两窗口暂停同步、关闭其中一个窗口保持会话、隐藏／失焦后媒体进度增加、Command-Q 退出、重开不自动播放并从已保存位置恢复。
 - 最后一个窗口关闭后进程仍在，Command-N 重开继续同一会话并实际推进位置。
 - 迷你条／完整页／历史／下载同集往返保持暂停，完整页无重复迷你条；停止并删除下载后冷启动，实际文件已删但进度保留；再次从历史打开，远端失败后重启也不清掉原位置。
+- 暂停本地会话后检查分类编号升降序、清词保留降序、零结果和日期排序选中状态；系列过滤后用 Escape 取消、Return 提交非法／缺失集数，成功跳到被筛选隐藏的第 12 集并清词、收起面板，会话和位置保持暂停。
 
 显式附件只记录本 App 各窗口的可访问性树，避免输出系统菜单中的无关最近项目。本机外接屏上窗口截图失败，App 截图只返回另一屏桌面，所以脚本不将截图作为窗口验收证据。它会临时将验证 App 带到前台，结束时终止验证 App；保留独立容器和 `/tmp` 构建／测试证据。`context.json` 同时记录生产工程 SHA-256，便于核对链接设置等工程修改。
 
 本项仍不证明真实媒体听感、PiP／全屏、耳机／中断、异常强杀数据安全或所有 macOS 版本／窗口尺寸。完整矩阵以 change 的 verification.md 为准。
+
+Mac 搜索框逐键发送并核对累计值，以区分输入是否送达与搜索结果是否正确。本机曾在批量 `typeText` 长 ASCII 文本时丢两个字符；原因尚未确定，逐键回归不覆盖连续快速输入可靠性或性能目标。

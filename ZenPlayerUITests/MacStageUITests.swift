@@ -6,10 +6,92 @@ final class StageUITests: XCTestCase {
         XCUIApplication().terminate()
     }
 
+    func testCatalogSortingAndKeyboardJumpPreservePausedSession() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--stage-seed", "--stage-primary-window"]
+        app.launch()
+        let window = app.windows.firstMatch
+        XCTAssertTrue(window.waitForExistence(timeout: 15))
+        XCTAssertTrue(wait { window.frame.minX >= 0 && window.frame.minY >= 0 })
+        window.buttons["繼續收聽"].firstMatch.click()
+        waitForPosition(in: window, greaterThan: 31)
+        clickCenter(window.buttons["pause.fill"], in: window)
+        XCTAssertTrue(wait { self.mini(in: window).label.contains("已暫停") })
+        let paused = position(in: window)
+        let category = window.buttons.matching(NSPredicate(format: "label CONTAINS %@", "淨宗學人修學")).firstMatch
+        XCTAssertTrue(category.waitForExistence(timeout: 30))
+        clickCenter(category, in: window)
+        let search = window.textFields["catalogSearchField"]
+        XCTAssertTrue(search.waitForExistence(timeout: 30))
+        XCTAssertTrue(window.popUpButtons.firstMatch.waitForExistence(timeout: 30))
+        replaceText(search, with: "01-00", in: window)
+        let ascending = courseNumbers(in: window)
+        XCTAssertGreaterThan(ascending.count, 1)
+        XCTAssertEqual(ascending, ascending.sorted())
+        clickCenter(window.buttons["目前為升序，點擊切換為降序"], in: window)
+        let descending = courseNumbers(in: window)
+        XCTAssertEqual(descending, descending.sorted(by: >))
+        XCTAssertNotEqual(descending.first, ascending.first)
+        clickCenter(window.buttons["清除關鍵詞"], in: window)
+        XCTAssertTrue(window.buttons["目前為降序，點擊切換為升序"].exists)
+        replaceText(search, with: "ZenPlayerNoMatch987654321", in: window)
+        XCTAssertTrue(window.staticTexts["已載入內容中沒有符合的結果"].waitForExistence(timeout: 5))
+        clickCenter(window.buttons["清除關鍵詞"], in: window)
+        let sort = window.popUpButtons.firstMatch
+        clickCenter(sort, in: window)
+        let date = app.menuItems["日期"]
+        XCTAssertTrue(date.waitForExistence(timeout: 5))
+        date.click()
+        XCTAssertEqual(sort.value as? String, "日期")
+        capture(app, name: "mac-category-date-sort")
+        replaceText(search, with: "01-001", in: window)
+        XCTAssertTrue(window.staticTexts["找到 1 門課程"].waitForExistence(timeout: 5))
+        let course = window.buttons.matching(NSPredicate(format: "label CONTAINS %@", "編號：01-001")).firstMatch
+        clickCenter(course, in: window)
+        XCTAssertTrue(window.buttons["跳至集數"].waitForExistence(timeout: 30))
+        replaceText(search, with: "21", in: window)
+        XCTAssertTrue(window.staticTexts["找到 1 集"].waitForExistence(timeout: 5))
+        capture(app, name: "mac-series-filtered-before-jump")
+        XCTAssertTrue(window.buttons.matching(NSPredicate(format: "label CONTAINS %@", "第 21 集")).firstMatch.exists)
+        let target = window.buttons.matching(NSPredicate(format: "label CONTAINS %@", "第 12 集")).firstMatch
+        XCTAssertFalse(target.exists)
+
+        enterJump("99999", app: app, cancel: true)
+        XCTAssertTrue(window.staticTexts["找到 1 集"].exists)
+        XCTAssertFalse(window.staticTexts["找不到此集，請確認集數"].exists)
+        for invalid in ["-1", "1.5"] {
+            enterJump(invalid, app: app)
+            XCTAssertTrue(window.staticTexts["請輸入非負整數集數，例如 12 或第12集"].waitForExistence(timeout: 5))
+            XCTAssertTrue(window.staticTexts["找到 1 集"].exists)
+        }
+        enterJump("99999", app: app)
+        XCTAssertTrue(window.staticTexts["找不到此集，請確認集數"].waitForExistence(timeout: 5))
+        XCTAssertTrue(window.staticTexts["找到 1 集"].exists)
+        // 可通过临时 TestAction 指定 Unicode 变体，保留事件合成故障的复现入口。
+        let jumpInput = try XCTUnwrap(ProcessInfo.processInfo.environment["ZENPLAYER_JUMP_INPUT"])
+        XCTAssertTrue(["12", "0012", "第１２集"].contains(jumpInput))
+        enterJump(jumpInput, app: app)
+        XCTAssertTrue(window.staticTexts["找到 21 集"].waitForExistence(timeout: 5))
+        XCTAssertFalse(window.buttons["清除關鍵詞"].exists)
+        capture(app, name: "mac-series-after-jump")
+        XCTAssertTrue(wait {
+            guard target.exists else { return false }
+            let frame = target.frame
+            return !frame.isEmpty && window.frame.contains(frame)
+                && frame.maxY < self.mini(in: window).frame.minY
+        })
+        XCTAssertTrue(mini(in: window).label.contains("已暫停"))
+        capture(app, name: "mac-keyboard-jump-with-paused-session")
+        goBack(window)
+        goBack(window)
+        XCTAssertEqual(position(in: window), paused, accuracy: 1)
+    }
+
     func testHistoryDownloadEntryAndDeletionRetainsProgress() throws {
         continueAfterFailure = false
         let app = XCUIApplication()
-        app.launchArguments = ["--stage-seed"]
+        app.launchArguments = ["--stage-seed", "--stage-primary-window"]
         app.launch()
         let window = app.windows.firstMatch
         XCTAssertTrue(window.waitForExistence(timeout: 15))
@@ -86,7 +168,7 @@ final class StageUITests: XCTestCase {
     func testClosingLastWindowKeepsSessionUntilQuit() throws {
         continueAfterFailure = false
         let app = XCUIApplication()
-        app.launchArguments = ["--stage-seed"]
+        app.launchArguments = ["--stage-seed", "--stage-primary-window"]
         app.launch()
         let window = app.windows.firstMatch
         XCTAssertTrue(window.waitForExistence(timeout: 15))
@@ -107,7 +189,7 @@ final class StageUITests: XCTestCase {
     func testSharedWindowsFocusCloseQuitAndColdResume() throws {
         continueAfterFailure = false
         let app = XCUIApplication()
-        app.launchArguments = ["--stage-seed"]
+        app.launchArguments = ["--stage-seed", "--stage-primary-window"]
         app.launch()
         let first = app.windows.firstMatch
         XCTAssertTrue(first.waitForExistence(timeout: 15))
@@ -187,6 +269,39 @@ final class StageUITests: XCTestCase {
 
     private func goBack(_ window: XCUIElement) {
         clickCenter(window.toolbars.buttons.firstMatch, in: window)
+    }
+
+    private func replaceText(_ field: XCUIElement, with text: String, in window: XCUIElement) {
+        clickCenter(field, in: window)
+        field.typeKey("a", modifierFlags: .command)
+        // 逐键等待 XCTest idle 并核对值，不将批量合成输入的丢字符视作搜索结果。
+        var expected = ""
+        for character in text {
+            field.typeText(String(character))
+            expected.append(character)
+            XCTAssertEqual(field.value as? String, expected)
+        }
+    }
+
+    private func courseNumbers(in window: XCUIElement) -> [String] {
+        window.buttons.matching(NSPredicate(format: "label CONTAINS %@", "編號：01-00"))
+            .allElementsBoundByIndex.compactMap { button in
+                guard let range = button.label.range(of: #"01-00\d"#, options: .regularExpression) else { return nil }
+                return String(button.label[range])
+            }
+    }
+
+    private func enterJump(_ text: String, app: XCUIApplication, cancel: Bool = false) {
+        let window = app.windows.firstMatch
+        clickCenter(window.buttons["跳至集數"], in: window)
+        let sheet = window.sheets.firstMatch
+        XCTAssertTrue(sheet.waitForExistence(timeout: 5))
+        // 不点击输入框；typeText 要求已有键盘焦点，因此同时核实默认焦点。
+        app.typeKey("a", modifierFlags: .command)
+        sheet.textFields.firstMatch.typeText(text)
+        XCTAssertEqual(sheet.textFields.firstMatch.value as? String, text)
+        app.typeKey(cancel ? .escape : .return, modifierFlags: [])
+        XCTAssertTrue(wait { !sheet.exists })
     }
 
     private func position(in window: XCUIElement) -> Double {
