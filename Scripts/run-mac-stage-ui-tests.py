@@ -61,6 +61,8 @@ def main():
     shutil.copy2(repo / "ZenPlayerUITests/MacStageUITests.swift", work / "StageUITests/StageUITests.swift")
     shutil.copy2(repo / "ZenPlayerUITests/MacStageFixture.swift", work / "ZenPlayer/MacStageFixture.swift")
     shutil.copy2(repo / "ZenPlayerUITests/MacQueueFixture.swift", work / "ZenPlayer/MacQueueFixture.swift")
+    shutil.copy2(repo / "ZenPlayerUITests/MacCatalogFixture.swift", work / "ZenPlayer/MacCatalogFixture.swift")
+    shutil.copy2(repo / "ZenPlayerUITests/MacCatalogURLProtocol.swift", work / "ZenPlayer/MacCatalogURLProtocol.swift")
     scheme_path = work / "ZenPlayer.xcodeproj/xcshareddata/xcschemes/ZenPlayer.xcscheme"
     scheme = ET.parse(scheme_path)
     test_action = scheme.getroot().find("TestAction")
@@ -82,6 +84,13 @@ def main():
         MacStageFixture.seedIfRequested()
         return PlayerViewModel()
     }()"""))
+    api_source = work / "ZenPlayer/Services/APIService.swift"
+    api_original = api_source.read_text()
+    api_marker = "let config = URLSessionConfiguration.default"
+    if api_original.count(api_marker) != 1:
+        raise RuntimeError("APIService 配置结构变化，拒绝猜测协议注入位置")
+    api_source.write_text(api_original.replace(api_marker, api_marker + "\n" +
+        "        config.protocolClasses = [MacCatalogURLProtocol.self] + (config.protocolClasses ?? [])"))
     # 只在临时副本里添加播种入口；生产源码和签名配置不变。
     (output / "context.json").write_text(json.dumps({
         "head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip(),
@@ -89,6 +98,7 @@ def main():
         "onlyTesting": args.only_testing,
         "jumpInput": args.jump_input,
         "bootstrap": "temporary App initializer seeds its own sandbox before creating PlayerViewModel",
+        "networkFixture": "temporary APIService config adds a URLProtocol limited to explicit fixture flags and URLs",
         "projectSHA256": hashlib.sha256((repo / "ZenPlayer.xcodeproj/project.pbxproj").read_bytes()).hexdigest(),
         "sha256": {str(p.relative_to(repo)): hashlib.sha256(p.read_bytes()).hexdigest()
                    for directory in ("ZenPlayer", "ZenPlayerUITests", "Scripts")

@@ -47,7 +47,7 @@ python3 Scripts/run-mac-stage-ui-tests.py \
 
 测试启动参数 `--stage-primary-window` 让临时 fixture 在首个窗口成为主窗口时将其放到主屏可见区域，随即移除通知观察者。本机外接屏负坐标下曾出现点击未选中 Tab、搜索框未获焦点和拖窗失败；此设置只影响独立验证 App，不修改系统显示设置或生产 App 窗口。此配置不代表任意外接屏组合均已验收。
 
-`MacStageUITests.swift` 使用实际窗口、快捷键和控件，覆盖六个用例：
+`MacStageUITests.swift` 使用实际窗口、快捷键和控件，覆盖八个用例（下列四个，加后文两项连播和两项分类／定位）：
 
 - 两窗口暂停同步、关闭其中一个窗口保持会话、隐藏／失焦后媒体进度增加、Command-Q 退出、重开不自动播放并从已保存位置恢复。
 - 最后一个窗口关闭后进程仍在，Command-N 重开继续同一会话并实际推进位置。
@@ -69,3 +69,12 @@ Mac 搜索框逐键发送并核对累计值，以区分输入是否送达与搜�
 - `testAutoAdvanceOffOffersNextWithItsOwnProgress`：连播关闭时首集自然结束不自动启动第二集；首页显示“繼續下一集”和第二集自身 7 秒进度，点击后直接播放并保留队列／关闭偏好；停止、退出后冷启动核实进度保留且未误播末集。
 
 `--stage-verify-queue`／`--stage-verify-queue-off` 仅在重启时读取专属进度文件、快照与偏好并断言，失败会阻止验证 App 启动；不重新播种，不从测试直接发送结束通知。各用例仍可用 `--only-testing <方法名>` 独立重跑，实际结果写入 M2／M3／M4 的 verification.md。此样本不证明真实音视频听感、网络类型回退、物理断网、PiP 或锁屏换集。
+
+## Mac 分类失败与历史定位
+
+`MacCatalogURLProtocol.swift`／`MacCatalogFixture.swift` 仅复制进临时验证 App。脚本在副本的 `APIService` URLSession 配置中加入测试协议，继续运行真实请求、解码、错误处理和页面；协议只接管显式参数指定的精确分类 URL 或专属 `.invalid/series` URL，其他请求照常处理。未改生产 APIService、系统网络、代理或远端数据。临时配置注入记录在 `context.json`，匹配不到现有配置结构时脚本拒绝猜测位置。
+
+- `testCategoryFailureKeepsLocalResumePlayable`：`--stage-seed --stage-category-failure` 播种原本的 30 秒本地媒体，并令分类请求返回带唯一文字的网络错误。实际首页同时显示错误与其上方续听卡，单击后不经完整页启动本地 WAV，媒体时间继续推进，错误仍独立保留。它验证注入网络失败下的实际 App UI，不等同物理断网或真实下载传输。
+- `testHistorySeriesAndLatestLocationClearFilterWithoutPlayback`：`--stage-seed-catalog` 写入固定 21 集完整快照及专属原键 `900212|https://mac-catalog-validation.invalid/`（42 秒、最新收听）、`900218|https://mac-catalog-validation.invalid/`（较早完成）。历史返回系列后第 12 集滚入窗口；筛选展示第 18 集已听完、第 21 集未收听，再点“定位上次收聽”清筛选并回到第 12 集，始终不开播。退出后的 `--stage-verify-catalog` 只读比较两条进度文件与播种时的原始字节，涵盖位置、状态、修订和收听时间。
+
+目录样本只写两个归它所有的进度键、固定快照 `8B1F35A0-DBA6-4465-9970-0B562ED97DAD` 和验证基线，不清空其他历史／下载，不读取生产容器。系列请求返回确定的 21 集响应；不是实际目录网络服务验收。窗口可访问性树和几何断言不替代 VoiceOver、缩短动画或高亮持续时间测量。

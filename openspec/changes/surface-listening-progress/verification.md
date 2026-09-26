@@ -52,3 +52,39 @@ M4 整合期间运行真实 SwiftUI／AVPlayer 的 iPhone 17／iOS 27 模拟器 
 夹具身份／数据边界、失败尝试、review 修正和复现命令见 [M2 记录](../play-series-in-order/verification.md#2026-09-26-mac-实际连播与偏好回归)。未改生产 App 代码与数据格式；复用未变化源码两端各 86 项测试证据。仍未覆盖无候选隐藏、紧邻下一集已完成的实际画面、分类失败实景、真实上次收听／历史返回定位、VoiceOver／Reduce Motion、真机和旧能力门槛。任务 3.2 保持未勾选、M3 仍 5/6／In Verification；不标 Done。
 
 交付标题 `补充 Mac 连播与首页下一集实际回归`；仅本地提交。
+
+## 2026-09-26 分类失败与历史定位 review
+
+本轮基线 `main @ c5a17af`，开始时工作区干净。继续任务 3.2 的隔离 Mac UI 子断言，生产 App 文件／工程不变；没有修改真实数据容器、系统网络或远端 API。
+
+新增两项测试：分类请求失败时本地续听，以及历史返回系列／上次收听定位。`MacCatalogURLProtocol` 只通过脚本加入临时 App 的 URLSession 配置，并按启动参数接管精确分类地址和专属 `.invalid/series`；分类返回唯一错误文字，系列返回 21 集确定数据。它保留真实 APIService 请求／解码／错误处理和 SwiftUI 页面，不证明物理断网或目录服务故障。`MacCatalogFixture` 只播种两个专属进度原键（第 12 集 42 秒、较早的第 18 集 completed）、固定快照和只读核验基线，保留其他历史／下载。
+
+### 失败及 review 修正
+
+- `/tmp/ZenPlayer-mac-catalog-r1/tests.xcresult`：1 失败、0 通过、0 跳过（17.289 秒）。全局 `URLProtocol.registerClass` 没有接管此会话，窗口树仍是成功的真实分类；不能算分类失败验收。改为临时 APIService 配置显式 `protocolClasses`，生产源文件不修改。
+- `/tmp/ZenPlayer-mac-catalog-r2/tests.xcresult`：1 失败、0 通过、0 跳过（17.460 秒）。窗口已显示 `网络错误：Mac 分類請求失敗驗證`，但 Mac StaticText 的内容位于 value，测试误用 label 条件而未找到。改为完整文字匹配，保留错误与续听按钮上下位置断言。上述两次 build-for-testing 均通过，测试退出 65。
+
+- `/tmp/ZenPlayer-mac-catalog-r3/tests.xcresult`：完整 8 项中 **7 通过、1 失败、0 跳过**。分类失败用例通过（10.812 秒），原有六项也通过；历史返回用例已进入系列页，但查询组合行标签失败（25.101 秒），后续定位与冷启动核验未运行。不能称整轮通过。修正测试对标签逗号分隔符的假设，并在系列加载后先保存窗口树，定向重跑历史用例。
+
+### 最终通过证据
+
+`/tmp/ZenPlayer-mac-catalog-r4/tests.xcresult`：历史／定位定向 **1 通过、0 失败、0 跳过，25.698 秒**；临时 App 与 UI target 构建、签名／sandbox 检查、测试均 exit 0。它与 r3 的其余 7 项通过结果共同覆盖当前 8 个用例，**不是同一轮 8 项全部通过**。r3 之后仅修改此测试方法和它独用的 `catalogEpisode` helper，其余 21 个方法逐字相同；最终 80 个 Swift／Python／xcstrings 文件与工程 hash 均匹配 r4 输入。
+
+- **AT-14／S3 子断言通过**：首页同时显示分类网络错误与上方本地卡，30 秒起点一击播放到 32 秒，仍显示分类错误，未跳转完整页。窗口树 `/tmp/ZenPlayer-mac-catalog-r3-attachments/58DD2527-0B4F-4067-B815-561B6AA9942E.txt`。属于注入网络失败＋本地静音媒体的实际 UI，物理断网未运行。
+- **AT-19／S5／S6 子断言通过**：带引用的最新历史返回实际系列，第 12 集完整行 frame `(6,451,995,66)` 位于窗口内且显示 `已聽 0:42`；筛第 18 集显示已聽完，第 21 集显示未收聽。筛选只剩 21、隐藏 12 后，点击“定位上次收聽”清词、恢复 21 集计数并滚回 12；无迷你播放／暂停或完整页停止控件。窗口树 `/tmp/ZenPlayer-mac-catalog-r4-attachments/4156DACE-1ED1-48FF-91C5-6F896F287D64.txt`、`2251CDFC-0ABC-4210-8059-682AB8BAD243.txt`、`B564B18E-9EE1-4CA9-9AE7-FE3C51FCAD87.txt`。实际组合标签使用“、”，原测试的英文逗号假设已被该证据否定。
+- **仅定位不写进度通过**：正常退出后以 `--stage-verify-catalog` 重开，不重新播种；两条专属进度文件与播种时原始字节一致，位置、completed、修订及收听时间均未变。冷启动仍显示 42 秒且无活动播放。
+
+复现（重跑使用新的 output）：
+
+```sh
+python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-mac-catalog-r3 --package-cache /tmp/ZenPlayer-M0-mac/SourcePackages
+python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-mac-catalog-r4 --package-cache /tmp/ZenPlayer-M0-mac/SourcePackages --only-testing testHistorySeriesAndLatestLocationClearFilterWithoutPlayback
+```
+
+Review：没有发现本轮需要修改生产实现的缺陷，修正集中于请求注入和 UI 测试选择器。116 个生产文件及工程 hash 与上一轮回归一致；两平台各 86 项、0 失败的 `/tmp/ZenPlayer-avkit-review-{mac,ios}.xcresult` 已重读 summary，**本轮复用、未重跑**。构建仍有 RNNoise 既有整数精度警告与 AppIntents 元数据提示；r3 有一条内部 QoS 警告，未将其当作已测的输入延迟。r3 附件首次并发读取与 summary 竞争数据库迁移而导出失败，随后顺序导出成功；未手工修改原始测试结果。
+
+交付检查通过：M3／M4 两个 change 的 `openspec validate <change> --strict --no-interactive`、运行器 Python AST／`--help`、相关文档 9 个相对文件链接（不含锚点）、Git diff／新增文件／暂存范围审查。Roadmap 阶段状态未变化，因此不更新其历史摘要。
+
+未运行／限制：不是 VoiceOver 朗读或截图目视验收，未断言“目前定位”的约 2 秒持续时间；未验 Reduce Motion、旧于最近 10 条的实际 UI 定位、其他历史行入口和参考机性能。无候选隐藏／紧邻已完成下一集、真实断网下载内容、iPhone 生命周期／锁屏／PiP、真实音效／分享／下载传输和迁移过程仍按既有矩阵待验。本轮未刷新设备状态。3.2 保持未勾选，M3 仍 5/6／In Verification。
+
+本次本地提交标题：`补充分类失败续听与历史定位隔离回归`；实际身份用 `git log -1 --format='%H%n%B' --grep='^补充分类失败续听与历史定位隔离回归$'` 查询。只提交本轮 Harness／文档，不 push／PR／sync／archive／发布。
