@@ -97,4 +97,16 @@ python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-mac-queue-r3 -
 
 任务 3.2 继续未勾选，M2 仍 5/6、In Verification。交付标题 `补充 Mac 连播与首页下一集实际回归`；仅本地提交，不 push／PR／主规格同步／归档／发布。
 
+## 2026-09-26 搜索结果携带完整队列
+
+本轮基线 `b56de9a`。M4 新增实际 Mac UI 用例 `testFilteredEpisodeNaturallyAdvancesThroughFullSeries`：历史返回真实系列页，输入 `1` 后只显示首集，点击该行进入播放；返回仍保留 `1` 筛选，10 秒本地 WAV 自然完成后进入隐藏的第 2 集，首集显示已听完。暂停、清词后仍是同一暂停会话，手动下一集到实际第 5 集，末集下一按钮禁用。证明真实搜索行入口传入完整 1／2／5；没有将手动 2→5 算自然连播。
+
+样本复用三个既有专属原键／本地文件，媒体和注入目录响应来自同一份 EpisodeItem 数组；启动参数 `--stage-queue-catalog` 仅控制独立验证 App 的精确目录请求。生产队列／会话代码、原键和格式未变。
+
+首轮 `/tmp/ZenPlayer-mac-search-queue-r1/tests.xcresult` 发送 `1` 后文本仍为空，测试在点击播放前失败；同一构建不改代码复跑 `retry.xcresult` **1 通过、0 失败、0 跳过，43.503 秒**。首次输入事件失败仍保留，不归因于队列且不宣称已解决输入可靠性。最终全套结果和复现命令见 [M4 本轮记录](../search-loaded-catalog/verification.md#2026-09-26-搜索入口连播与目录边界)。
+
+最终 `/tmp/ZenPlayer-mac-search-integration-final/tests.xcresult` 完整 **10 通过、0 失败、0 跳过，439.518 秒**；搜索连播在此轮再次通过（44.498 秒），原有两项队列／首页用例也重跑通过。构建、签名／sandbox 和测试命令均 exit 0；生产源码／工程未变，两端各 86 项既有证据复用。本地提交标题 `补充搜索入口连播与目录边界 UI 回归`。
+
+本轮重新查询用户 iPhone 16 Pro，Developer Mode 仍 Disabled，命令明确无法返回完整信息（`/tmp/ZenPlayer-device-search-review.json`）；没有安装或改变真实设备。AT-09 的上述 Mac 本地样本子断言已获得证据，真实音视频／iPhone 生命周期、网络回退、VoiceOver／Reduce Motion、端到端性能和旧能力仍未齐备。3.2 保持未勾选，M2 仍 In Verification。
+
 交付检查通过：M1／M2／M3／M4 四个 change strict 校验、Python AST／CLI help、14 个相对 Markdown 文件链接（不含锚点）、已跟踪差异与新增 fixture 行尾检查。Git 范围为 12 个测试 Harness／说明和现有 change 记录；116 个生产 App 文件与工程 hash 均未变化。

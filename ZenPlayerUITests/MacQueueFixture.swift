@@ -3,9 +3,30 @@ import Foundation
 /// 仅复制到独立 Mac 验证 App，播种磁盘输入；不替换队列、AVPlayer 或界面实现。
 @MainActor
 enum MacQueueFixture {
-    private static let server = "https://mac-queue-validation.invalid/"
+    nonisolated private static let server = "https://mac-queue-validation.invalid/"
+    nonisolated static let detailURL = server + "series"
     private static let snapshotID = "70C79620-F65D-4FC7-A41A-B76FC0B14125"
-    private static let episodeIDs = [900101, 900102, 900105]
+    nonisolated private static let episodeIDs = [900101, 900102, 900105]
+    nonisolated private static let durations = [10, 120, 15]
+
+    nonisolated private static var episodes: [EpisodeItem] {
+        zip([1, 2, 5], durations).enumerated().map { index, item in
+            EpisodeItem(id: episodeIDs[index], num: "MAC-QUEUE", title: "Mac 連播驗證-\(item.0)",
+                        episode: String(item.0), mp4Url: "", vodUrl: "", mp3Url: server + "\(item.0).wav",
+                        coverUrl: "", textUrl: "", filesize: item.1 * 16_000 + 44, duration: item.1 * 1_000)
+        }
+    }
+
+    nonisolated static func responseData() throws -> Data {
+        let detail: [String: Any] = [
+            "serverUrl": server, "updateTime": 0, "series": "全3集", "totalCount": 3,
+            "speechTitle": "Mac 連播驗證系列", "speechAuthor": "", "speechAddress": "",
+            "speechDate": "", "speechDesc": "隔離連播目錄", "cateCoverUrl": "", "cateId": "900100",
+            "albumNum": "MAC-QUEUE", "pathTitle": "Mac 連播驗證系列", "type": "mp3",
+            "rows": try JSONSerialization.jsonObject(with: JSONEncoder().encode(episodes))
+        ]
+        return try JSONSerialization.data(withJSONObject: ["code": 1, "msg": "ok", "data": detail])
+    }
 
     static func run(arguments: [String]) throws {
         let bundle = "com.jxing.ZenPlayer.MacStageValidation"
@@ -33,17 +54,11 @@ enum MacQueueFixture {
         precondition(arguments.contains("--stage-seed-queue"))
         let mediaDirectory = support.appendingPathComponent("StageValidation/queue")
         try FileManager.default.createDirectory(at: mediaDirectory, withIntermediateDirectories: true)
-        let numbers = [1, 2, 5]
-        let durations = [10, 120, 15]
-        let episodes = zip(numbers, durations).enumerated().map { index, item in
-            EpisodeItem(id: episodeIDs[index], num: "MAC-QUEUE", title: "Mac 連播驗證-\(item.0)",
-                        episode: String(item.0), mp4Url: "", vodUrl: "", mp3Url: server + "\(item.0).wav",
-                        coverUrl: "", textUrl: "", filesize: item.1 * 16_000 + 44, duration: item.1 * 1_000)
-        }
+        let episodes = Self.episodes
         // 固定且只归此样本所有的版本，避免每次回归积累新快照。
         let snapshotObject: [String: Any] = [
             "schemaVersion": 1, "id": snapshotID, "seriesID": 900100, "title": "Mac 連播驗證系列",
-            "detailURL": server + "series", "serverURL": server, "isComplete": true,
+            "detailURL": detailURL, "serverURL": server, "isComplete": true,
             "createdAt": 0, "episodes": try JSONSerialization.jsonObject(with: JSONEncoder().encode(episodes))
         ]
         let snapshot = try JSONDecoder().decode(QueueSnapshot.self, from: JSONSerialization.data(withJSONObject: snapshotObject))

@@ -6,6 +6,118 @@ final class StageUITests: XCTestCase {
         XCUIApplication().terminate()
     }
 
+    func testFilteredEpisodeNaturallyAdvancesThroughFullSeries() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--stage-seed-queue", "--stage-queue-catalog", "--stage-primary-window"]
+        app.launch()
+        let window = app.windows.firstMatch
+        XCTAssertTrue(window.staticTexts["Mac 連播驗證-1"].waitForExistence(timeout: 15))
+        clickCenter(window.descendants(matching: .tab).matching(identifier: "person").firstMatch, in: window)
+        clickCenter(window.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "最近播放")).firstMatch,
+                    in: window)
+        clickCenter(window.buttons["返回系列並定位此集"].firstMatch, in: window)
+        let search = window.textFields["catalogSearchField"]
+        XCTAssertTrue(search.waitForExistence(timeout: 15))
+        XCTAssertTrue(window.staticTexts["找到 3 集"].exists)
+        replaceText(search, with: "1", in: window)
+        XCTAssertTrue(window.staticTexts["找到 1 集"].waitForExistence(timeout: 5))
+        let first = queueEpisode(in: window, number: 1)
+        XCTAssertTrue(first.exists)
+        XCTAssertFalse(queueEpisode(in: window, number: 2).exists)
+        XCTAssertFalse(queueEpisode(in: window, number: 5).exists)
+        XCTAssertFalse(window.buttons["pause.fill"].exists, "搜索本身不开播")
+        capture(app, name: "mac-queue-filter-only-first-before-play")
+        clickCenter(first, in: window)
+        XCTAssertTrue(window.staticTexts["Mac 連播驗證-1"].waitForExistence(timeout: 5))
+        XCTAssertTrue(window.buttons["暫停"].waitForExistence(timeout: 5))
+        XCTAssertTrue(window.buttons["下一集"].isEnabled, "仅一个搜索结果也必须保留完整队列")
+        goBack(window)
+        XCTAssertEqual(search.value as? String, "1")
+        XCTAssertTrue(window.staticTexts["找到 1 集"].exists)
+        // 不手动切集、不 seek、不发送结束通知；等待真实 10 秒 WAV 自然结束。
+        let second = queueMini(in: window, episode: 2)
+        XCTAssertTrue(second.waitForExistence(timeout: 20))
+        XCTAssertTrue(wait { second.label.contains("正在收聽") })
+        XCTAssertFalse(queueEpisode(in: window, number: 2).exists)
+        XCTAssertTrue(first.label.contains("已聽完"))
+        capture(app, name: "mac-filter-still-one-natural-next-is-hidden-two")
+        clickCenter(window.buttons["pause.fill"], in: window)
+        XCTAssertTrue(wait { second.label.contains("已暫停") })
+        clickCenter(window.buttons["清除關鍵詞"], in: window)
+        XCTAssertTrue(window.staticTexts["找到 3 集"].waitForExistence(timeout: 5))
+        XCTAssertTrue(second.label.contains("已暫停"), "清筛选不改变播放状态")
+        XCTAssertTrue(queueEpisode(in: window, number: 2).exists)
+        clickCenter(second, in: window)
+        XCTAssertTrue(window.buttons["上一集"].isEnabled)
+        XCTAssertTrue(window.buttons["下一集"].isEnabled)
+        clickCenter(window.buttons["下一集"], in: window)
+        XCTAssertTrue(window.staticTexts["Mac 連播驗證-5"].waitForExistence(timeout: 5))
+        XCTAssertFalse(window.buttons["下一集"].isEnabled)
+        capture(app, name: "mac-filtered-entry-keeps-last-episode-five")
+        clickCenter(window.buttons["停止播放"], in: window)
+    }
+
+    func testPartialCatalogAndDuplicateOrZeroEpisodeLocation() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--stage-seed-catalog", "--stage-catalog-edge-cases", "--stage-primary-window"]
+        app.launch()
+        let window = app.windows.firstMatch
+        XCTAssertTrue(window.staticTexts["Mac 定位驗證-12"].waitForExistence(timeout: 15))
+        clickCenter(window.descendants(matching: .tab).matching(identifier: "person").firstMatch, in: window)
+        clickCenter(window.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "最近播放")).firstMatch,
+                    in: window)
+        clickCenter(window.buttons["返回系列並定位此集"].firstMatch, in: window)
+        let search = window.textFields["catalogSearchField"]
+        XCTAssertTrue(search.waitForExistence(timeout: 15))
+        let limited = window.staticTexts["僅搜尋已載入內容"]
+        XCTAssertTrue(limited.exists)
+        capture(app, name: "mac-partial-catalog-loaded-21-of-24")
+        replaceText(search, with: "9999", in: window)
+        XCTAssertTrue(window.staticTexts["已載入內容中沒有符合的結果"].waitForExistence(timeout: 5))
+        XCTAssertTrue(limited.exists, "零结果不能隐藏已加载范围")
+        clickCenter(window.buttons["清除關鍵詞"], in: window)
+        XCTAssertTrue(window.staticTexts["找到 21 集"].waitForExistence(timeout: 5))
+        replaceText(search, with: "21", in: window)
+        XCTAssertTrue(window.staticTexts["找到 1 集"].waitForExistence(timeout: 5))
+        enterJump("12", app: app)
+        let duplicates = window.staticTexts["此集數有多個條目，請選擇要定位的內容"]
+        XCTAssertTrue(duplicates.waitForExistence(timeout: 5))
+        let firstCandidate = window.buttons["第 12 集 · Mac 定位驗證-12 · MAC-CATALOG"]
+        let secondCandidate = window.buttons["第 12 集 · Mac 定位驗證-18 · MAC-CATALOG"]
+        XCTAssertTrue(firstCandidate.exists)
+        XCTAssertTrue(secondCandidate.exists)
+        XCTAssertEqual(search.value as? String, "21", "重复集数须等待选择，不能自动清筛选定位第一条")
+        XCTAssertTrue(window.staticTexts["找到 1 集"].exists)
+        capture(app, name: "mac-duplicate-episode-waits-for-choice")
+        clickCenter(secondCandidate, in: window)
+        XCTAssertTrue(wait { !duplicates.exists && !firstCandidate.exists && !secondCandidate.exists })
+        XCTAssertTrue(window.staticTexts["找到 21 集"].exists)
+        XCTAssertEqual(search.value as? String, "")
+        let selected = window.buttons.matching(NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@",
+                                                          "Mac 定位驗證-18", "第 12 集")).firstMatch
+        XCTAssertTrue(wait { selected.exists && !selected.frame.isEmpty && window.frame.contains(selected.frame) })
+        XCTAssertTrue(selected.label.contains("已聽完"))
+        capture(app, name: "mac-duplicate-choice-locates-second-id")
+        enterJump("0", app: app)
+        let zero = window.buttons.matching(NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@",
+                                                      "Mac 定位驗證-1", "第 0 集")).firstMatch
+        XCTAssertTrue(wait { zero.exists && !zero.frame.isEmpty && window.frame.contains(zero.frame) })
+        XCTAssertTrue(zero.label.contains("未收聽"))
+        XCTAssertTrue(limited.exists)
+        XCTAssertFalse(window.buttons["pause.fill"].exists)
+        XCTAssertFalse(window.buttons["play.fill"].exists)
+        XCTAssertFalse(window.buttons["停止播放"].exists)
+        capture(app, name: "mac-existing-episode-zero-located-without-playback")
+        app.typeKey("q", modifierFlags: .command)
+        XCTAssertTrue(wait { app.state == .notRunning })
+        app.launchArguments = ["--stage-verify-catalog", "--stage-catalog-edge-cases", "--stage-primary-window"]
+        app.launch()
+        XCTAssertTrue(app.windows.firstMatch.staticTexts["Mac 定位驗證-12"].waitForExistence(timeout: 15))
+        XCTAssertEqual(queuePosition(in: app.windows.firstMatch), 42)
+    }
+
     func testCategoryFailureKeepsLocalResumePlayable() throws {
         continueAfterFailure = false
         let app = XCUIApplication()
@@ -474,6 +586,11 @@ final class StageUITests: XCTestCase {
 
     private func queueMini(in window: XCUIElement, episode: Int) -> XCUIElement {
         window.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Mac 連播驗證-\(episode), \(episode), ")).firstMatch
+    }
+
+    private func queueEpisode(in window: XCUIElement, number: Int) -> XCUIElement {
+        window.buttons.matching(NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@",
+                                           "Mac 連播驗證-\(number)", "第 \(number) 集")).firstMatch
     }
 
     private func catalogEpisode(in window: XCUIElement, number: Int) -> XCUIElement {

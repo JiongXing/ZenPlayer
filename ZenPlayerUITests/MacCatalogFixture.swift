@@ -5,18 +5,21 @@ nonisolated enum MacCatalogFixture {
     private static let server = "https://mac-catalog-validation.invalid/"
     static let detailURL = server + "series"
     private static let snapshotID = "8B1F35A0-DBA6-4465-9970-0B562ED97DAD"
+    private static var edgeCases: Bool { ProcessInfo.processInfo.arguments.contains("--stage-catalog-edge-cases") }
 
     private static var episodes: [EpisodeItem] {
         (1...21).map { number in
-            EpisodeItem(id: 900200 + number, num: "MAC-CATALOG", title: "Mac 定位驗證-\(number)",
-                        episode: String(number), mp4Url: "", vodUrl: "", mp3Url: server + "\(number).wav",
-                        coverUrl: "", textUrl: "", filesize: 0, duration: 120_000)
+            let episodeNumber = edgeCases ? (number == 1 ? 0 : (number == 18 ? 12 : number)) : number
+            return EpisodeItem(id: 900200 + number, num: "MAC-CATALOG", title: "Mac 定位驗證-\(number)",
+                               episode: String(episodeNumber), mp4Url: "", vodUrl: "", mp3Url: server + "\(number).wav",
+                               coverUrl: "", textUrl: "", filesize: 0, duration: 120_000)
         }
     }
 
     static func responseData() throws -> Data {
         let detail: [String: Any] = [
-            "serverUrl": server, "updateTime": 0, "series": "全21集", "totalCount": 21,
+            "serverUrl": server, "updateTime": 0, "series": edgeCases ? "全24集" : "全21集",
+            "totalCount": edgeCases ? 24 : 21,
             "speechTitle": "Mac 歷史定位驗證系列", "speechAuthor": "", "speechAddress": "",
             "speechDate": "", "speechDesc": "隔離目錄樣本", "cateCoverUrl": "", "cateId": "900200",
             "albumNum": "MAC-CATALOG", "pathTitle": "Mac 歷史定位驗證系列", "type": "mp3",
@@ -45,7 +48,7 @@ nonisolated enum MacCatalogFixture {
         precondition(arguments.contains("--stage-seed-catalog"))
         let snapshotObject: [String: Any] = [
             "schemaVersion": 1, "id": snapshotID, "seriesID": 900200, "title": "Mac 歷史定位驗證系列",
-            "detailURL": detailURL, "serverURL": server, "isComplete": true, "createdAt": 0,
+            "detailURL": detailURL, "serverURL": server, "isComplete": !edgeCases, "createdAt": 0,
             "episodes": try JSONSerialization.jsonObject(with: JSONEncoder().encode(episodes))
         ]
         let snapshot = try JSONDecoder().decode(QueueSnapshot.self, from: JSONSerialization.data(withJSONObject: snapshotObject))

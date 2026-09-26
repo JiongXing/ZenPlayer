@@ -10,6 +10,10 @@ nonisolated final class MacCatalogURLProtocol: URLProtocol {
             return arguments.contains("--stage-category-failure")
                 || arguments.contains("--stage-seed-catalog")
                 || arguments.contains("--stage-verify-catalog")
+                || arguments.contains("--stage-queue-catalog")
+        }
+        if request.url?.absoluteString == MacQueueFixture.detailURL {
+            return arguments.contains("--stage-queue-catalog")
         }
         return request.url?.absoluteString == MacCatalogFixture.detailURL
             && (arguments.contains("--stage-seed-catalog") || arguments.contains("--stage-verify-catalog"))
@@ -25,7 +29,8 @@ nonisolated final class MacCatalogURLProtocol: URLProtocol {
             return
         }
         do {
-            let data = try MacCatalogFixture.responseData()
+            let data = try request.url?.absoluteString == MacQueueFixture.detailURL
+                ? MacQueueFixture.responseData() : MacCatalogFixture.responseData()
             let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: "HTTP/1.1",
                                            headerFields: ["Content-Type": "application/json"])!
             client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)

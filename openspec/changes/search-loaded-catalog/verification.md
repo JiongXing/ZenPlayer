@@ -66,7 +66,7 @@ M4 新增 15 项：6 个检索／解析、7 个页面模型、1 个完整队列�
 | 06 | 中断恢复资格、手动暂停不唤醒的状态测试 | 耳机拔出、来电、系统通知实际顺序 |
 | 07 | 模型／真实 AVPlayer 的 2→5、重复结束；实际 Mac App 本地 WAV 自然 1→2，手动 2→5 | 真机音视频系列连续播放、实际系列页入口 |
 | 08 | 实际 Mac 开关关闭后媒体时间继续推进、关闭时自然结束不切集、开启时末集不循环、首尾禁用、冷启动偏好保留 | iPhone／真实音视频控制路径 |
-| 09 | **M4 联调通过**：过滤第 2 集，真实 AVPlayer 结束进入完整快照第 5 集 | 实际搜索输入／点击到连播 UI |
+| 09 | 模型过滤 2→5；实际 Mac 搜索只显示 1 后点击播放，自然结束进入隐藏的 2，清筛选保持暂停，手动下一集到 5 | iPhone／真实音视频与其他目录样本 |
 | 10 | 类型／离线策略、坏媒体失败保留目标、手动重试恢复位置 | 实际网络断开、下载文件与远端失败路径 |
 | 11 | 暂停切源保存即时位置、失败不覆零 | 原生手势／不同真实音视频时间轴和切换失败 |
 | 12 | 编译／所有权／回调门控；实际 macOS 双窗口暂停同步、关闭其中一个窗口及最后窗口重开、完整页往返、隐藏后位置推进、正常退出保存和冷启动恢复（静音样本） | iPhone 后台／锁屏／PiP／全屏；Mac 原生全屏／真实媒体听感及更广导航路径 |
@@ -81,9 +81,9 @@ M4 新增 15 项：6 个检索／解析、7 个页面模型、1 个完整队列�
 | 21 | 单条损坏隔离、写失败／重试、旧文件不清空 | 真实错误提示／重试交互与设备空间受限路径 |
 | 22 | 模拟器零结果／清词；实际 Mac 编号升降序、清词保留方向、日期菜单选中值 | 其他分类、全部日期格式排序及真机 |
 | 23 | 简繁／全半角／多词、前导零数字精确优先、原标题保持 | 实际输入法交互 |
-| 24 | 模拟器和 Mac 的 0012 定位第 12 集；Mac 先筛第 21 集隐藏目标，成功清词／收面板且保留暂停位置 | 2 秒高亮时序、全角／中文输入法实景及真机 |
-| 25 | 模拟器零结果／清词、99999 保留筛选；Mac Escape 取消、-1／1.5 非法、99999 缺集反馈 | 重复候选按钮及更广非法输入实际 UI |
-| 26 | 范围／错误模型和计算 P95；模拟器标准与最大辅助字体下的键盘／Tab／长标题及末集可达，深色单集信息可读 | 真机端到端 P95／反馈，VoiceOver／Reduce Motion、其他字号／窗口组合和更广列表样本 |
+| 24 | 模拟器和 Mac 的 0012 定位第 12 集；Mac 清词／收面板保留暂停；实际已有第 0 集定位且不开播 | 2 秒高亮时序、全角／中文输入法实景及真机 |
+| 25 | 模拟器零结果／清词；Mac Escape、非法／缺集反馈；两个第 12 集明确等待选择，选第二项后按其 id 滚动，不播放／改进度 | 更广非法输入、更多重复项／长候选及真机 |
+| 26 | 范围／错误模型和计算 P95；Mac 21／24 部分加载时零结果仍保留范围说明、清词恢复 21 集；模拟器标准／最大辅助字体及深色列表可达 | 真机端到端 P95／反馈，VoiceOver／Reduce Motion、其他字号／窗口组合和更广列表样本 |
 
 原功能回归：分类排序已由真实 ViewModel 测试覆盖；地址／本地优先／源回退和处理器失败保留原声有策略／播放器隔离证据；下载暂停／恢复／删除、文件分享、实际 RNNoise 降噪听感、音量增强与两平台完整播放界面操作均**未运行**。处理器替身的失败测试不等于真实算法听感回归。没有静默删除这些发布门槛。
 
@@ -279,3 +279,48 @@ Review 修正测试对 NSNumber 复选框值及完整页文字按钮的读取；
 补充 AT-14／19 的矩阵子断言：真实首页错误区与本地续听同时可用；历史引用返回目标，12 集 42 秒／18 集完成／21 集未听状态显示正确，筛 21 后上次定位清词、滚回 12 且不播放，退出重启只读证明两条进度字节未变。API 故障和目录响应来自独立验证 App 的 URLProtocol；保留真实请求处理与 UI，不把它算物理断网或远端目录服务验收。
 
 生产 App／工程未变，两端 86 项证据复用。3.2 保持未勾选；约 2 秒高亮、VoiceOver／Reduce Motion、Unicode／连续快速输入、真机生命周期、端到端性能、无候选 UI、真实下载／分享／音效与迁移门槛继续保留。阶段状态不变，本次只本地提交 `补充分类失败续听与历史定位隔离回归`。
+
+## 2026-09-26 搜索入口连播与目录边界
+
+基线 `main @ b56de9a`，开始时工作区干净。继续任务 3.2 的 AT-09／24／25／26 UI 子断言。复用独立 Mac bundle 和临时工程协议：新增 `--stage-queue-catalog` 将现有三集本地媒体的相同元数据作为 API 响应，实际 UI 从搜索结果进入播放器；`--stage-catalog-edge-cases` 在原目录样本内构造 21／24 部分加载、真实第 0 集及两个同集数不同 id 的第 12 集。专属记录身份与隔离边界不变；没有修改生产代码、网络设置或真实 App 数据。
+
+### 初次失败与同构建复跑
+
+`/tmp/ZenPlayer-mac-search-queue-r1/tests.xcresult`：**1 失败、0 通过、0 跳过，21.570 秒**，build-for-testing 成功。发送搜索 `1` 后字段实际仍为空，精确输入断言失败，尚未点击播放；不能算搜索队列失败或通过，也不能将此前输入可靠性风险关闭。
+
+不改代码、不重编译，使用同一 App／UI 二进制执行：
+
+```sh
+xcodebuild -project /tmp/ZenPlayer-mac-search-queue-r1/project/ZenPlayer.xcodeproj -scheme ZenPlayer -destination 'platform=macOS' -derivedDataPath /tmp/ZenPlayer-mac-search-queue-r1/derived-data -parallel-testing-enabled NO -collect-test-diagnostics never -clonedSourcePackagesDirPath /tmp/ZenPlayer-M0-mac/SourcePackages -only-testing:StageUITests/StageUITests/testFilteredEpisodeNaturallyAdvancesThroughFullSeries -resultBundlePath /tmp/ZenPlayer-mac-search-queue-r1/retry.xcresult test-without-building
+```
+
+该复跑 **1 通过、0 失败、0 跳过，43.503 秒**。真实筛选只剩 1，点击进入完整页并返回仍保留筛选；真实 AVPlayer 自然 1→2，第二集在列表仍被隐藏、第一集显示已听完；暂停后清词保留暂停，手动下一集到 5 且末集下一按钮禁用。此时第 2 集不是用户点击切入，也没有伪造结束通知或 seek。首次输入失败未复现不等于根因已解决，XCTest 事件合成／真实快速输入边界继续保留。
+
+### 最终完整回归
+
+`/tmp/ZenPlayer-mac-search-integration-final/tests.xcresult`：**10 通过、0 失败、0 跳过，439.518 秒**。其中搜索入口连播 44.498 秒，目录边界 43.991 秒；包含原有全部八项的本次重新运行。临时 App／UI target build-for-testing、签名／sandbox 检查和 test-without-building 均 exit 0，日志及构建结果与测试结果同目录。
+
+```sh
+python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-mac-search-integration-final --package-cache /tmp/ZenPlayer-M0-mac/SourcePackages
+```
+
+复跑须使用新的 output；可用 `--only-testing testFilteredEpisodeNaturallyAdvancesThroughFullSeries` 或 `--only-testing testPartialCatalogAndDuplicateOrZeroEpisodeLocation` 单独执行新增路径。默认跳集仍为 0012，旧搜索采用逐键核对；不能据此宣布 Unicode／连续输入问题已解决。
+
+| 新增子断言 | 实际结果／证据 |
+| --- | --- |
+| AT-09 搜索行点击到自然连播 | 保留 `找到 1 集` 与首集 completed，迷你条已经是第 2 集“正在收聽”；`7B6E9760-6FCD-4EEA-BD1E-BC33B2A38C74.txt` |
+| AT-26 部分加载和零结果 | 返回 21 条、totalCount 24；零命中仍显示“僅搜尋已載入內容”，清词恢复 21；自动化断言通过 |
+| AT-25 重复集数 | 保留原筛选 21，两个第 12 集候选同时出现，等待选择；两个按钮均 52pt 高；`A35FA8B0-ADD6-41F0-815C-8C2A4FF1DF04.txt` |
+| AT-25 按所选 id 定位 | 选第二候选后窗口内显示 `Mac 定位驗證-18、已聽完、第 12 集`，frame `(6,501,995,66)`；`075AA4A8-D8DD-4DD0-9200-642296582903.txt` |
+| AT-24 已有第 0 集 | 实际定位 `Mac 定位驗證-1、未收聽、第 0 集`，frame `(6,441,995,66)`；`BA92FA3B-389A-477C-B9C4-C003F32A2C56.txt` |
+| 定位不写长期进度 | 无活动播放，正常退出后只读启动比较两条专属进度文件与原始字节，位置、状态、修订和收听时间均未改变 |
+
+表中文件均位于 `/tmp/ZenPlayer-mac-search-integration-final-attachments/`，已导出并复核窗口树。这是实际 UI／几何证据，非 VoiceOver 朗读、截图目视或约两秒高亮时序测量。
+
+Review 没有发现需要修改生产实现的新缺陷；新增逻辑均在临时验证夹具／测试中。检查目录响应与本地 WAV 使用相同 EpisodeItem 元数据，所有变体须显式启动参数启用，原有测试起点保持原语义。最终 80 个 Swift／Python／xcstrings 文件及工程 hash 与运行输入一致；116 个生产文件及工程 hash 相对上一轮未变，两平台各 86 项测试／App 构建证据**复用、未重跑**。构建仍有既有 RNNoise 整数精度和 AppIntents 提示，测试结果含两条内部 QoS 警告；不将它们解释成已测的端到端性能。
+
+设备复查：`/tmp/ZenPlayer-device-search-review.json` 显示用户 iPhone 16 Pro 已连接／配对但 Developer Mode Disabled，工具明确未能取得完整信息，没有安装或修改设备。本轮不关闭首次输入丢失、Unicode／连续输入、两秒高亮、VoiceOver／Reduce Motion、真实 iPhone 后台／锁屏／PiP、参考机性能、无候选 UI、真实下载／分享／音效及迁移过程等门槛。3.2 仍未勾选，M0～M4 仍 In Verification，不建议 Done。
+
+本地交付标题：`补充搜索入口连播与目录边界 UI 回归`。只提交当前 Harness／文档改动，不 push／PR／sync／archive／发布；提交身份以 `git log -1 --format='%H%n%B' --grep='^补充搜索入口连播与目录边界 UI 回归$'` 查询。
+
+交付检查：M2／M4 两个 change strict 校验通过；相关 9 个相对文件链接（不含锚点）、最终源文件 hash、Git diff／暂存范围检查通过。无新文件或生产工程改动，Roadmap 阶段状态未变化。

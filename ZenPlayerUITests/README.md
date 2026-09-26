@@ -47,7 +47,7 @@ python3 Scripts/run-mac-stage-ui-tests.py \
 
 测试启动参数 `--stage-primary-window` 让临时 fixture 在首个窗口成为主窗口时将其放到主屏可见区域，随即移除通知观察者。本机外接屏负坐标下曾出现点击未选中 Tab、搜索框未获焦点和拖窗失败；此设置只影响独立验证 App，不修改系统显示设置或生产 App 窗口。此配置不代表任意外接屏组合均已验收。
 
-`MacStageUITests.swift` 使用实际窗口、快捷键和控件，覆盖八个用例（下列四个，加后文两项连播和两项分类／定位）：
+`MacStageUITests.swift` 使用实际窗口、快捷键和控件，覆盖十个用例（下列四个，加后文六项连播／分类／定位整合）：
 
 - 两窗口暂停同步、关闭其中一个窗口保持会话、隐藏／失焦后媒体进度增加、Command-Q 退出、重开不自动播放并从已保存位置恢复。
 - 最后一个窗口关闭后进程仍在，Command-N 重开继续同一会话并实际推进位置。
@@ -78,3 +78,10 @@ Mac 搜索框逐键发送并核对累计值，以区分输入是否送达与搜�
 - `testHistorySeriesAndLatestLocationClearFilterWithoutPlayback`：`--stage-seed-catalog` 写入固定 21 集完整快照及专属原键 `900212|https://mac-catalog-validation.invalid/`（42 秒、最新收听）、`900218|https://mac-catalog-validation.invalid/`（较早完成）。历史返回系列后第 12 集滚入窗口；筛选展示第 18 集已听完、第 21 集未收听，再点“定位上次收聽”清筛选并回到第 12 集，始终不开播。退出后的 `--stage-verify-catalog` 只读比较两条进度文件与播种时的原始字节，涵盖位置、状态、修订和收听时间。
 
 目录样本只写两个归它所有的进度键、固定快照 `8B1F35A0-DBA6-4465-9970-0B562ED97DAD` 和验证基线，不清空其他历史／下载，不读取生产容器。系列请求返回确定的 21 集响应；不是实际目录网络服务验收。窗口可访问性树和几何断言不替代 VoiceOver、缩短动画或高亮持续时间测量。
+
+## Mac 搜索结果连播与目录边界
+
+- `testFilteredEpisodeNaturallyAdvancesThroughFullSeries`：组合 `--stage-seed-queue --stage-queue-catalog`，协议把现有 1／2／5 本地媒体对应的完整目录返回给真实系列页。实际输入 `1` 后只显示首集，点击此结果进入播放；返回列表保留筛选，真实 10 秒 WAV 自然结束后迷你条进入被隐藏的第 2 集，首集显示已听完。暂停并清筛选仍保持暂停，完整页手动下一集到 5，证明从搜索入口带入的是完整队列。没有 seek 或伪造结束通知，手动 2→5 与自然 1→2 分开断言。
+- `testPartialCatalogAndDuplicateOrZeroEpisodeLocation`：`--stage-seed-catalog --stage-catalog-edge-cases` 仍只拥有原目录样本的两个进度键；响应声明 24 集但只返回 21 条，第一条的真实 episode 为 0，第 18 条的 episode 改为 12（与第 12 条同集数、不同 id）。实际 UI 验证部分加载及零结果保留范围说明、清词恢复全部已加载条目、重复集数等待用户选择而不自动跳第一条、选择第二候选后按其 id 定位，以及存在的第 0 集可达。退出冷启继续逐字节核实进度未被浏览／定位修改。
+
+这些参数仅用于临时验证 App，不注入生产可执行文件。目录和媒体来自同一份夹具元数据，默认已有用例的 1／2／5、时长、进度和完整性均不变；边界变体仅在显式参数存在时启用。已有 Unicode／连续输入异常仍以 verification.md 的实际记录为准，单次绿色测试不代表输入可靠性或端到端性能门槛已关闭。
