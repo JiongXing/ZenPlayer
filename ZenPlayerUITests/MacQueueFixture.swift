@@ -109,7 +109,7 @@ enum MacQueueFixture {
         directory.appendingPathComponent(FileProgressPersistence.digest(Data("\(id)|\(server)".utf8)) + ".json")
     }
 
-    private static func silence(seconds: Int) -> Data {
+    static func silence(seconds: Int) -> Data {
         let byteCount = seconds * 16_000
         var data = Data("RIFF".utf8)
         func append<T: FixedWidthInteger>(_ number: T) {

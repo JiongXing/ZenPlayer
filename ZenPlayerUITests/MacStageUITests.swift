@@ -6,6 +6,126 @@ final class StageUITests: XCTestCase {
         XCUIApplication().terminate()
     }
 
+    func testEvictedHistoryStillLocatesAndResumesFromSeries() throws {
+        try verifyEvictedHistory(resumeFromDownload: false)
+    }
+
+    func testEvictedHistoryResumesFromDownload() throws {
+        try verifyEvictedHistory(resumeFromDownload: true)
+    }
+
+    private func verifyEvictedHistory(resumeFromDownload: Bool) throws {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        let arguments = ["--stage-resume-case", "long-history", "--stage-resume-run", UUID().uuidString,
+                         "--stage-primary-window"]
+        app.launchArguments = arguments
+        app.launch()
+        var window = app.windows.firstMatch
+        XCTAssertTrue(window.staticTexts["Mac 新近歷史-12"].waitForExistence(timeout: 15))
+        clickCenter(window.descendants(matching: .tab).matching(identifier: "person").firstMatch, in: window)
+        clickCenter(window.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "最近播放")).firstMatch, in: window)
+        XCTAssertTrue(window.staticTexts["10"].waitForExistence(timeout: 5))
+        let oldRows = window.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Mac 長期保留-"))
+        XCTAssertEqual(oldRows.count, 0)
+        let lastRecent = window.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Mac 新近歷史-3")).firstMatch
+        for _ in 0..<4 {
+            if lastRecent.exists && window.frame.contains(lastRecent.frame) { break }
+            window.scrollViews.firstMatch.scroll(byDeltaX: 0, deltaY: -650)
+        }
+        capture(app, name: "mac-long-history-recent-ten-excludes-old-series")
+        XCTAssertTrue(lastRecent.exists && window.frame.contains(lastRecent.frame))
+        XCTAssertEqual(oldRows.count, 0)
+        goBack(window)
+        clickCenter(window.descendants(matching: .tab).matching(identifier: "house").firstMatch, in: window)
+        openLongHistorySeries(app)
+        let search = window.textFields["catalogSearchField"]
+        replaceText(search, with: "18", in: window)
+        XCTAssertTrue(window.staticTexts["找到 1 集"].waitForExistence(timeout: 5))
+        XCTAssertTrue(longHistoryRow(in: window, number: 18).label.contains("已聽完"))
+        replaceText(search, with: "21", in: window)
+        XCTAssertTrue(window.staticTexts["找到 1 集"].waitForExistence(timeout: 5))
+        XCTAssertFalse(longHistoryRow(in: window, number: 12).exists)
+        locateLongHistory(app)
+        app.typeKey("q", modifierFlags: .command)
+        XCTAssertTrue(wait { app.state == .notRunning })
+
+        // 同一目录只读核验所有 14 条原始字节；定位不能把旧记录抬回最近十条。
+        app.launchArguments = arguments + ["--stage-verify-resume"]
+        app.launch()
+        window = app.windows.firstMatch
+        XCTAssertTrue(window.staticTexts["Mac 新近歷史-12"].waitForExistence(timeout: 15))
+        XCTAssertFalse(window.buttons["pause.fill"].exists)
+        if resumeFromDownload {
+            clickCenter(window.descendants(matching: .tab).matching(identifier: "person").firstMatch, in: window)
+            clickCenter(window.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "下載完成")).firstMatch, in: window)
+            let download = window.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Mac 長期保留-12")).firstMatch
+            XCTAssertTrue(download.waitForExistence(timeout: 5))
+            clickCenter(download, in: window)
+        } else {
+            openLongHistorySeries(app)
+            locateLongHistory(app)
+            clickCenter(longHistoryRow(in: window, number: 12), in: window)
+        }
+        XCTAssertTrue(window.buttons["暫停"].waitForExistence(timeout: 10))
+        goBack(window)
+        if resumeFromDownload {
+            goBack(window)
+            clickCenter(window.descendants(matching: .tab).matching(identifier: "house").firstMatch, in: window)
+        } else {
+            goBack(window)
+            goBack(window)
+        }
+        XCTAssertTrue(window.staticTexts["Mac 長期保留-12"].waitForExistence(timeout: 5))
+        capture(app, name: "mac-long-history-active-home-before-position-check")
+        XCTAssertTrue(wait { self.queuePosition(in: window) >= 44 })
+        clickCenter(window.buttons["pause.fill"], in: window)
+        let paused = queuePosition(in: window)
+        XCTAssertGreaterThanOrEqual(paused, 44)
+        XCTAssertLessThan(paused, 65, "必须恢复 42 秒附近，不能从零播放到阈值或错误跳尾")
+        capture(app, name: "mac-long-history-\(resumeFromDownload ? "download" : "series")-resumed-old-position")
+        app.typeKey("q", modifierFlags: .command)
+        XCTAssertTrue(wait { app.state == .notRunning })
+
+        // 实际收听才允许更新目标；其余 13 条逐字节不变，长期记录仍为 14 条。
+        app.launchArguments = arguments + ["--stage-verify-resume", "--stage-verify-long-history-played"]
+        app.launch()
+        window = app.windows.firstMatch
+        XCTAssertTrue(window.staticTexts["Mac 長期保留-12"].waitForExistence(timeout: 15))
+        XCTAssertEqual(queuePosition(in: window), paused, accuracy: 1)
+        XCTAssertFalse(window.buttons["pause.fill"].exists)
+        capture(app, name: "mac-long-history-cold-updated-target-other-thirteen-unchanged")
+    }
+
+    private func openLongHistorySeries(_ app: XCUIApplication) {
+        let window = app.windows.firstMatch
+        capture(app, name: "mac-long-history-before-category-entry")
+        let category = window.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Mac 長歷史分類")).firstMatch
+        XCTAssertTrue(category.waitForExistence(timeout: 10))
+        clickCenter(category, in: window)
+        let series = window.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Mac 長期保留系列")).firstMatch
+        XCTAssertTrue(series.waitForExistence(timeout: 10))
+        clickCenter(series, in: window)
+        XCTAssertTrue(window.staticTexts["找到 21 集"].waitForExistence(timeout: 10))
+    }
+
+    private func locateLongHistory(_ app: XCUIApplication) {
+        let window = app.windows.firstMatch
+        clickCenter(window.buttons["定位上次收聽"], in: window)
+        XCTAssertEqual(window.textFields["catalogSearchField"].value as? String, "")
+        let old = longHistoryRow(in: window, number: 12)
+        XCTAssertTrue(wait { old.exists && !old.frame.isEmpty && window.frame.contains(old.frame) })
+        XCTAssertTrue(old.label.contains("已聽 0:42"))
+        XCTAssertFalse(window.buttons["pause.fill"].exists)
+        XCTAssertFalse(window.buttons["play.fill"].exists)
+        capture(app, name: "mac-long-history-locate-old-twelve-without-playback")
+    }
+
+    private func longHistoryRow(in window: XCUIElement, number: Int) -> XCUIElement {
+        window.buttons.matching(NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@",
+                                           "Mac 長期保留-\(number)", "第 \(number) 集")).firstMatch
+    }
+
     func testEmptyHistoryHidesResumeCard() throws {
         try verifyHomeResumeCase("empty")
     }

@@ -9,7 +9,7 @@ enum MacResumeFixture {
         guard let index = arguments.firstIndex(of: "--stage-resume-case") else { return nil }
         precondition(arguments.indices.contains(index + 1))
         let value = arguments[index + 1]
-        precondition(["empty", "next", "blocked", "fallback"].contains(value))
+        precondition(["empty", "next", "blocked", "fallback", "long-history"].contains(value))
         return value
     }
 
@@ -35,6 +35,10 @@ enum MacResumeFixture {
 
     static func run() throws {
         guard let scenario, let root else { preconditionFailure("缺少候选场景") }
+        if scenario == "long-history" {
+            try MacLongHistoryFixture.run(root: root, arguments: arguments)
+            return
+        }
         let baselineURL = root.appendingPathComponent("baseline.json")
         if arguments.contains("--stage-verify-resume") {
             let baseline = try JSONDecoder().decode([String: Data].self, from: Data(contentsOf: baselineURL))

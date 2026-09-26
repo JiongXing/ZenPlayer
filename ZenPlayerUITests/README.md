@@ -107,3 +107,11 @@ python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-native-new --n
 - `testCompletedImmediateNextIsNotSkipped`：三个独立目录场景均首次启动和冷启动。`next` 正对照为最近完成第 1 集、紧邻第 2 集未完成，首页显示“繼續下一集”和第 2 集自身 7 秒；`blocked` 把紧邻第 2 集也设为已完成，虽第 3 集未听也不得跳过推荐，无其他记录则隐藏卡片；`fallback` 增加较早的另一条未完成记录，首页显示其 42 秒和“總時長未知”，不显示下一集按钮。
 
 测试不播放媒体；完成状态只是固定起点，真实自然完成另由现有队列测试验证。共享仓库从真实文件读入，候选计算和 UI 未替换。`--stage-verify-resume` 冷启动只读比较播种时的所有进度／快照字节与进度条数，不能重新播种掩盖变更。窗口树供结果核对；两秒无卡片断言是该观察窗口的证据，不等同异步任意时序、真实输入法或可访问性验收。
+
+## Mac 超出最近十条的旧进度
+
+`MacLongHistoryFixture.swift` 在 `--stage-resume-case long-history` 的独占 UUID 目录内播种 14 条长期记录：旧系列第 12 集 42 秒、第 18 集较早已完成，再加 12 条较新的无系列记录。最近页应仅显示较新的第 12～3 条，旧系列两项均不在其中。分类／系列／单集响应仅在此模式下由 URLProtocol 接管三条精确 URL；仍运行真实请求、解析、值路由、检索和定位。
+
+`testEvictedHistoryStillLocatesAndResumesFromSeries` 与 `testEvictedHistoryResumesFromDownload` 各用全新目录，均先检查最近页的 10 条和底部第 3 条、旧系列记录不可见；再经首页分类进入旧系列，检查旧完成状态，筛选 21 隐藏 12 后定位上次收听，清词／滚回 12 且保持 42 秒、不播放。第一次冷启动以 `--stage-verify-resume` 比较全部 14 条原始进度字节，定位不能抬升最近次序。
+
+随后分别从系列行、下载完成行打开旧第 12 集，使用真实 120 秒本地 WAV 恢复位置，返回首页读取活动会话时间并暂停。第二次冷启动增加 `--stage-verify-long-history-played`，仅允许目标同原键的状态／修订／位置随真实收听更新，其余 13 条字节不变，总记录仍 14 条；首页显示更新后的旧目标且不开播。此处下载清单只合并夹具自己的 `910012_mp3` 键，保留其他下载，样本媒体在本次 UUID 目录中；不代表真实下载传输或物理离线验收。WAV 生成复用现有 MacQueueFixture。

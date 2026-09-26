@@ -130,3 +130,44 @@ AT-15 对应的上述 Mac UI 子断言通过；未知时长仅为记录展示，
 M3／M4 strict 校验、Python AST／help／无效方法参数拒绝、Git diff 与新增文件审查通过。3.2 仍未勾选，M3 5/6、M4 5/6；阶段状态不变。下一步为长历史实际定位／旧集续听及其余矩阵门槛，不能把本轮通过扩展成阶段 Done。
 
 本地提交标题：`补充首页候选边界与未知时长 UI 回归`；身份以 `git log -1 --format='%H%n%B' --grep='^补充首页候选边界与未知时长 UI 回归$'` 查询。只提交本轮 Harness／文档，不 push／PR／sync／archive／发布。
+
+## 2026-09-26 长历史定位与旧集入口续听
+
+基线 `main @ 373ac2d9039f4bbe077d2d0a21cf39fcf72fcde0`，起始工作区干净。继续 3.2 的 S5／AT-16／AT-19 子断言。新增独占目录 long-history 变体，14 条长期记录中旧系列两条均被另外 12 条挤出最近十条；目录响应经精确 URL 测试协议进入真实分类／系列页面。没有改生产 App、工程、共享仓库实现或真实数据容器。
+
+两条测试各自执行三次启动：首次从最近页确认 10 条边界，进入旧系列检查第 18 集 completed 和第 12 集 42 秒，筛 21 后“定位上次收聽”清筛选／滚动且不播放；首次冷启动逐字节核对全部 14 条，随后从系列行或下载行续听旧目标；第二次冷启动只允许该目标原键更新，其他 13 条字节不变、总数仍 14。下载媒体使用真实 120 秒 WAV，合并单个自有下载键 `910012_mp3`，保留其他下载。此样本不证明下载传输、物理离线或真实媒体听感。
+
+初次 `/tmp/ZenPlayer-mac-long-history-series-r1/tests.xcresult`：**1 失败、0 通过／跳过，22.500 秒**，构建成功。最近页 10 条／底部第 3 条／旧记录缺席断言已执行，分类入口查询失败；CodeGraph 证实现有 CategoryCardView 显示 desc 而非 title，测试错误地按未呈现的标题查找。修正隔离分类样本的可见描述为明确名称，补入口前窗口树；未修改产品分类卡。该失败轮次不算定位或续听通过。
+
+第二次 `/tmp/ZenPlayer-mac-long-history-series-r2/tests.xcresult`：**1 失败、0 通过／跳过，60.713 秒**，构建成功。旧系列状态、筛选隐藏目标后的定位和首次冷启动全部 14 条字节不变核验通过；进入播放页并返回后，测试误在系列页查找首页进度文案，未取得时间，后续暂停与播放后冷启动未执行。CodeGraph 确认迷你条只显示标题／状态，不显示时间；修正测试为返回首页读取活动会话位置，再暂停／退出核验，没有修改生产 UI 或恢复逻辑。
+
+范围核对：PRD AT-16 的完整操作是“依次播放 30 个单集后回到第 1 个，重开 App”。本轮 14 条播种样本针对 M3 S5 的“超出最近十条仍能定位”以及旧入口恢复子断言；不能用它替代真实依次播放 30 集的完整 AT-16。该操作门槛继续保留，既有 30 条存储单测也不替代实际入口验收。
+
+### 最终完整回归与 review
+
+`/tmp/ZenPlayer-mac-long-history-final/tests.xcresult`：**15 项通过、0 失败、0 跳过，552.872 秒**。新增下载入口 49.989 秒、系列入口 55.614 秒；包含全部既有十三项。构建、签名／sandbox 核验和 test-without-building 均 exit 0。默认 Unicode 跳集输入仍为 0012，独立原生 Unicode 诊断未在本轮重跑。
+
+```sh
+python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-mac-long-history-final --package-cache /tmp/ZenPlayer-M0-mac/SourcePackages
+```
+
+重跑使用新的 output；可指定 `--only-testing testEvictedHistoryStillLocatesAndResumesFromSeries` 或 `--only-testing testEvictedHistoryResumesFromDownload` 单跑新入口。
+
+| 新增实际证据 | 窗口树／结果 |
+| --- | --- |
+| 最近十条排除旧系列 | series 附件 `CD230E94-FB48-46A7-967A-F10B5182FB4C.txt`：摘要为 10，滚到底部显示新近第 3 条，两个旧系列项不在最近行中 |
+| 被筛选隐藏的旧第 12 集仍可定位 | series 附件 `A34F98C8-5945-4715-9D75-9E9355A43E76.txt`：`Mac 長期保留-12、已聽 0:42、目前定位、第 12 集`，frame `(6,444,995,80)`；无活动播放 |
+| 定位不重写／抬升旧记录 | 第一次只读冷启动全部 14 条进度与原始字节一致，最近十条仍无旧第 12 集 |
+| 系列入口恢复后暂停／冷启 | series 附件 `9B0D171C-E0B0-4E56-BC4D-02C487537B16.txt`、`D5709D24-EAA7-4586-A719-8CAB92DB26C5.txt`：暂停及冷启动均显示 0:51 / 2:00，冷启动不自动播放 |
+| 下载入口恢复后暂停／冷启 | download 附件 `E724ED50-0125-4E59-B80E-200EBC16CFB8.txt`、`BDF409A2-475A-4F24-A95D-80E44912AD6A.txt`：同样保留 0:51 / 2:00，冷启动无活动播放 |
+| 播放后长期数据保护 | 两条入口各自通过第二次只读启动：目标原键更新、有效未完成状态／位置／收听时间／修订保留，其余 13 条字节不变，总记录仍 14，目标重新进入最近十条 |
+
+表中 series／download 文件分别位于 `/tmp/ZenPlayer-mac-long-history-final-series/`、`/tmp/ZenPlayer-mac-long-history-final-download/`，已顺序导出并核实窗口树。恢复位置断言要求返回首页后 15 秒内达到至少 44 秒，暂停低于 65 秒；这是此实际流程的位置检查，不是恢复精度或启动时延测量。窗口树不是 VoiceOver、真实听感或约两秒高亮时序验收。
+
+Review 未发现需要修改生产实现的新缺陷，修正均为隔离样本和测试测量位置。当前源码／工程与最终结果输入 hash 一致（构建后仅编辑文档）；116 个生产文件及工程与上一轮不变，两端各 86 项生产测试／构建**复用，未重跑**。结果含三条内部 QoS 警告，未把测试总耗时作为端到端性能证据。
+
+完整实际 30 集操作、真机生命周期／锁屏／PiP、VoiceOver／Reduce Motion、参考机性能、真实下载／分享／音效与迁移过程等缺口继续保留。M3／M4 均 5/6，3.2 未勾选，阶段不标 Done。下一步优先补 PRD AT-16 的真实依次播放 30 集及回到第 1 集的操作证据。本轮未重新查询设备状态，最近一次 Developer Mode Disabled 记录仍只是先前检查结果。
+
+本地交付标题：`补充长历史定位与旧集入口续听回归`，身份以 `git log -1 --format='%H%n%B' --grep='^补充长历史定位与旧集入口续听回归$'` 查询；只本地提交，不 push／PR／sync／archive／发布。
+
+交付检查通过：M3／M4 strict 校验，Python AST／CLI help，11 个相对文件链接（不含锚点），84 个 Swift／Python／xcstrings 与工程输入 hash，Git diff／新增文件及暂存范围 review。Roadmap 阶段状态未改变。
