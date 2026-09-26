@@ -6,6 +6,157 @@ final class StageUITests: XCTestCase {
         XCUIApplication().terminate()
     }
 
+    func testThirtyActualPlaysPreserveFirstProgressAfterRestart() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        let arguments = ["--stage-resume-case", "thirty-plays", "--stage-resume-run", UUID().uuidString,
+                         "--stage-primary-window"]
+        app.launchArguments = arguments
+        app.launch()
+        var window = thirtyWindowAfterLaunch(app)
+        openThirtySeries(app)
+        enterJump("1", app: app)
+        clickCenter(thirtyRow(in: window, number: 1), in: window)
+        XCTAssertTrue(window.buttons["暫停"].waitForExistence(timeout: 10))
+        returnFromSeriesPlayerToHome(window)
+        var firstPosition = -1.0
+        for number in 1...30 {
+            XCTAssertTrue(window.staticTexts["Mac 三十集-\(number)"].waitForExistence(timeout: 10))
+            XCTAssertTrue(wait { window.buttons["pause.fill"].exists && self.queuePosition(in: window) >= (number == 1 ? 12 : 2) })
+            if number == 1 || number == 30 {
+                clickCenter(window.buttons["pause.fill"], in: window)
+                XCTAssertTrue(wait { self.thirtyMini(in: window, number: number).label.contains("已暫停") })
+            }
+            if number == 1 {
+                firstPosition = queuePosition(in: window)
+                XCTAssertGreaterThanOrEqual(firstPosition, 12)
+                XCTAssertLessThan(firstPosition, 30)
+            }
+            capture(app, name: "mac-thirty-actual-play-\(number)")
+            if number < 30 {
+                clickCenter(thirtyMini(in: window, number: number), in: window)
+                let next = window.buttons["下一集"]
+                XCTAssertTrue(next.isEnabled)
+                clickCenter(next, in: window)
+                let advanced = window.staticTexts["Mac 三十集-\(number + 1)"].waitForExistence(timeout: 10)
+                if !advanced { capture(app, name: "mac-thirty-next-failed-from-\(number)") }
+                XCTAssertTrue(advanced)
+                goBack(window)
+            }
+        }
+        clickCenter(thirtyMini(in: window, number: 30), in: window)
+        XCTAssertFalse(window.buttons["下一集"].isEnabled)
+        clickCenter(window.buttons["停止播放"], in: window)
+        goBack(window)
+        clickCenter(window.descendants(matching: .tab).matching(identifier: "person").firstMatch, in: window)
+        clickCenter(window.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "最近播放")).firstMatch, in: window)
+        XCTAssertTrue(window.staticTexts["10"].waitForExistence(timeout: 5))
+        XCTAssertFalse(thirtyRow(in: window, number: 1).exists)
+        let last = thirtyRow(in: window, number: 21)
+        for _ in 0..<4 {
+            if last.exists && window.frame.contains(last.frame) { break }
+            window.scrollViews.firstMatch.scroll(byDeltaX: 0, deltaY: -650)
+        }
+        XCTAssertTrue(last.exists && window.frame.contains(last.frame))
+        XCTAssertFalse(thirtyRow(in: window, number: 1).exists)
+        capture(app, name: "mac-thirty-recent-only-thirty-through-twenty-one")
+        goBack(window)
+        clickCenter(window.descendants(matching: .tab).matching(identifier: "house").firstMatch, in: window)
+        openThirtySeries(app)
+        enterJump("1", app: app)
+        XCTAssertEqual(listenedSeconds(in: thirtyRow(in: window, number: 1).label), firstPosition, accuracy: 1)
+        capture(app, name: "mac-thirty-return-to-first-original-position")
+        app.typeKey("q", modifierFlags: .command)
+        XCTAssertTrue(wait { app.state == .notRunning })
+
+        // 验证三十条均由真实播放产生、最近恰为 30…21，并保存只读进度的证据副本。
+        app.launchArguments = arguments + ["--stage-verify-resume", "--stage-thirty-first-position", String(firstPosition)]
+        app.launch()
+        window = thirtyWindowAfterLaunch(app)
+        XCTAssertTrue(window.staticTexts["Mac 三十集-30"].waitForExistence(timeout: 15))
+        XCTAssertFalse(window.buttons["pause.fill"].exists)
+        openThirtySeries(app)
+        enterJump("1", app: app)
+        XCTAssertEqual(listenedSeconds(in: thirtyRow(in: window, number: 1).label), firstPosition, accuracy: 1)
+        let selectedAt = Date()
+        clickCenter(thirtyRow(in: window, number: 1), in: window)
+        XCTAssertTrue(window.buttons["暫停"].waitForExistence(timeout: 10))
+        returnFromSeriesPlayerToHome(window)
+        XCTAssertTrue(window.staticTexts["Mac 三十集-1"].waitForExistence(timeout: 5))
+        let restored = queuePosition(in: window)
+        XCTAssertGreaterThan(restored - Date().timeIntervalSince(selectedAt), firstPosition - 4,
+                             "必须带原位置恢复，不能靠从零持续播放到阈值")
+        clickCenter(window.buttons["pause.fill"], in: window)
+        XCTAssertTrue(wait { self.thirtyMini(in: window, number: 1).label.contains("已暫停") })
+        let resumedPosition = queuePosition(in: window)
+        capture(app, name: "mac-thirty-first-resumed-after-cold-start")
+        app.typeKey("q", modifierFlags: .command)
+        XCTAssertTrue(wait { app.state == .notRunning })
+
+        app.launchArguments = arguments + ["--stage-verify-resume", "--stage-thirty-resumed",
+                                           "--stage-thirty-first-position", String(resumedPosition)]
+        app.launch()
+        window = thirtyWindowAfterLaunch(app)
+        XCTAssertTrue(window.staticTexts["Mac 三十集-1"].waitForExistence(timeout: 15))
+        XCTAssertEqual(queuePosition(in: window), resumedPosition, accuracy: 1)
+        XCTAssertFalse(window.buttons["pause.fill"].exists)
+        capture(app, name: "mac-thirty-first-retained-other-twenty-nine-unchanged")
+    }
+
+    private func thirtyWindowAfterLaunch(_ app: XCUIApplication) -> XCUIElement {
+        // 本机 Mac/XCTest 冷启动可能只启动进程；明确执行用户的新建窗口动作，不改 App 生命周期。
+        if !app.windows.firstMatch.waitForExistence(timeout: 5) {
+            XCTAssertEqual(app.windows.count, 0)
+            let evidence = XCTAttachment(string: "冷启动后无窗口；本次继续通过 Command-N 新建窗口检查持久化进度，不证明自动打开窗口。")
+            evidence.name = "mac-thirty-cold-launch-no-window"
+            evidence.lifetime = .keepAlways
+            add(evidence)
+            app.typeKey("n", modifierFlags: .command)
+        }
+        XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10))
+        return app.windows.firstMatch
+    }
+
+    private func openThirtySeries(_ app: XCUIApplication) {
+        let window = app.windows.firstMatch
+        let category = window.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Mac 三十集分類")).firstMatch
+        XCTAssertTrue(category.waitForExistence(timeout: 15))
+        capture(app, name: "mac-thirty-before-category-entry")
+        // 有续听卡时分类卡会落到窗口底部，先实际滚动再保留完整可见断言。
+        for _ in 0..<3 {
+            if window.frame.contains(category.frame) { break }
+            window.scrollViews.firstMatch.scroll(byDeltaX: 0, deltaY: -200)
+        }
+        capture(app, name: "mac-thirty-category-ready-for-entry")
+        clickCenter(category, in: window)
+        let series = window.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Mac 三十集系列")).firstMatch
+        XCTAssertTrue(series.waitForExistence(timeout: 10))
+        clickCenter(series, in: window)
+        XCTAssertTrue(window.staticTexts["找到 30 集"].waitForExistence(timeout: 10))
+    }
+
+    private func returnFromSeriesPlayerToHome(_ window: XCUIElement) {
+        goBack(window)
+        goBack(window)
+        goBack(window)
+    }
+
+    private func thirtyRow(in window: XCUIElement, number: Int) -> XCUIElement {
+        window.buttons.matching(NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@",
+                                           "Mac 三十集-\(number)", "第 \(number) 集")).firstMatch
+    }
+
+    private func thirtyMini(in window: XCUIElement, number: Int) -> XCUIElement {
+        window.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Mac 三十集-\(number), \(number),")).firstMatch
+    }
+
+    private func listenedSeconds(in label: String) -> Double {
+        guard let range = label.range(of: #"已聽 \d+:\d+"#, options: .regularExpression) else { return -1 }
+        let parts = label[range].dropFirst(3).split(separator: ":")
+        guard parts.count == 2, let minutes = Double(parts[0]), let seconds = Double(parts[1]) else { return -1 }
+        return minutes * 60 + seconds
+    }
+
     func testEvictedHistoryStillLocatesAndResumesFromSeries() throws {
         try verifyEvictedHistory(resumeFromDownload: false)
     }

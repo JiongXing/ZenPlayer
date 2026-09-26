@@ -71,6 +71,7 @@ def main():
     shutil.copy2(repo / "ZenPlayerUITests/MacNativeInputProbe.swift", work / "ZenPlayer/MacNativeInputProbe.swift")
     shutil.copy2(repo / "ZenPlayerUITests/MacResumeFixture.swift", work / "ZenPlayer/MacResumeFixture.swift")
     shutil.copy2(repo / "ZenPlayerUITests/MacLongHistoryFixture.swift", work / "ZenPlayer/MacLongHistoryFixture.swift")
+    shutil.copy2(repo / "ZenPlayerUITests/MacThirtyPlayFixture.swift", work / "ZenPlayer/MacThirtyPlayFixture.swift")
     # 空历史测试不能清空其他验证记录；统一共享仓库的临时根目录，保持各 UI 入口同源。
     for source, replacements in {
         "Services/PlaybackProgressStore.swift": {

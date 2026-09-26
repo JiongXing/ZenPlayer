@@ -240,3 +240,9 @@ xcodebuild -project ZenPlayer.xcodeproj -scheme ZenPlayer -destination 'platform
 最终 `/tmp/ZenPlayer-mac-entry-final-r4/tests.xcresult` **3 项、0 失败、118.909 秒**，其中 `testHistoryDownloadEntryAndDeletionRetainsProgress` 73.411 秒。构建、原生完整页崩溃修复、两端 86 项回归及复现／限制详见 [M1 记录](../unify-playback-session/verification.md#2026-09-26-mac-完整播放页崩溃与入口回归)。样本只在独立 bundle／sandbox 中生成，没有修改真实用户数据。
 
 该证据不覆盖 iPhone 删除下载、外部目录书签授权、实际传输／分享、强杀／升级中断或真实媒体听感。5.1 及整个 M0 保持未完成验收，不因一个数据安全子断言通过改为 Done。
+
+## 2026-09-26 三十集实际播放与首集恢复补验
+
+M3／M4 整合回归补充 M0 AT-16：独立 macOS 验证容器从空进度开始实际播放 30 集，最近仅显示 10 条；返回系列首集时原 14 秒保留，正常退出后实际从原位置恢复，暂停 22 秒再启动仍可展示，其他 29 条进度原始字节不变。`/tmp/ZenPlayer-mac-thirty-plays-r4/tests.xcresult` **1 通过、0 失败／跳过，351.809 秒**，构建／签名／sandbox 检查通过；生产持久化、迁移和工程未改。
+
+完整数据边界、先前三轮失败、临时诊断及附件见 [M3 记录](../surface-listening-progress/verification.md#2026-09-26-三十集实际播放与首集冷启动恢复)。最后启动无窗口后明确使用 Command-N，因此不证明自动开窗；一次 3→5 间歇跳集未定因，不能用最终通过抹去。该用例只准备媒体和目录，没有播种进度，首次验证将实际文件字节另存为证据副本。iPhone Developer Mode 仍关闭，升级／中断／保存失败恢复／真实下载分享及媒体回归等门槛保留。3.2／5.1 继续未勾选，M0 仍 6/13、In Verification。

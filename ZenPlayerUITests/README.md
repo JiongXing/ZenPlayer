@@ -115,3 +115,15 @@ python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-native-new --n
 `testEvictedHistoryStillLocatesAndResumesFromSeries` 与 `testEvictedHistoryResumesFromDownload` 各用全新目录，均先检查最近页的 10 条和底部第 3 条、旧系列记录不可见；再经首页分类进入旧系列，检查旧完成状态，筛选 21 隐藏 12 后定位上次收听，清词／滚回 12 且保持 42 秒、不播放。第一次冷启动以 `--stage-verify-resume` 比较全部 14 条原始进度字节，定位不能抬升最近次序。
 
 随后分别从系列行、下载完成行打开旧第 12 集，使用真实 120 秒本地 WAV 恢复位置，返回首页读取活动会话时间并暂停。第二次冷启动增加 `--stage-verify-long-history-played`，仅允许目标同原键的状态／修订／位置随真实收听更新，其余 13 条字节不变，总记录仍 14 条；首页显示更新后的旧目标且不开播。此处下载清单只合并夹具自己的 `910012_mp3` 键，保留其他下载，样本媒体在本次 UUID 目录中；不代表真实下载传输或物理离线验收。WAV 生成复用现有 MacQueueFixture。
+
+## Mac 实际播放三十集后恢复首集
+
+`testThirtyActualPlaysPreserveFirstProgressAfterRestart` 对应 PRD AT-16 的操作顺序，加入默认 Mac 阶段套件，也可通过 `--only-testing` 单跑。`--stage-resume-case thirty-plays` 仍要求全新 UUID 目录；`MacThirtyPlayFixture.swift` 只准备 30 集目录快照、每集 120 秒的本地静音 WAV 和自有下载键 `911001_mp3`～`911030_mp3`，保留其他下载，断言初始进度仓库为空。目录响应复用 `MacLongHistoryFixture`，只在该显式模式返回专属 `.invalid` URL／标题／单集；原 long-history 变体保留。
+
+用例从系列行开始，通过完整页“下一集”依次实际播放 1～30 集。每集核对标题、播放状态及媒体时间推进，首集暂停记录至少 12 秒，其余各集至少 2 秒；不 seek、不伪造结束事件、不写入样本进度。随后最近页摘要为 10，滚到底部第 21 集，首集不在最近列表；返回系列首集确认原位置，再正常退出重开。首页不自动播放，从系列行恢复首集，使用“媒体位置减去操作经过时间”的下限断言排除从零播放到阈值的假通过。暂停后再次重开，首集位置保留且没有自动播放。
+
+第一次 `--stage-verify-resume --stage-thirty-first-position <UI 观察秒数>` 冷启动读取真实 30 条进度及最近 30～21 顺序，并把文件字节另存为 `thirty-before-resume.json` 证据副本；它不向进度仓库重新播种。第二次增加 `--stage-thirty-resumed`，核对首集实际新位置、最近次序及其他 29 条进度逐字节未变。样本和证据写入仅在验证容器中；测试串行运行并保留目录。
+
+首页出现续听卡后，分类卡可能部分落在窗口外；用例会实际滚动到完整可见再点击，并保存前后窗口树。本测试证明所述 macOS 本地媒体和正常退出路径，不替代实际下载传输、真实媒体听感、iPhone／锁屏／PiP、异常强杀或升级迁移验收。各次通过、失败及未运行项以 change 的 verification.md 为准。
+
+本机曾出现进程冷启动后无窗口；单独对照通过 Command-N 新建窗口后可显示原进度。用例等待窗口 5 秒后，如确认窗口数为 0，保留 `mac-thirty-cold-launch-no-window` 文本附件，再实际发送 Command-N，等待窗口出现后继续核验。这个分支不修改生产生命周期、不重新播种，也不证明冷启动必定自动开窗；具体触发情况与尚未确定的根因保留在验证记录中。

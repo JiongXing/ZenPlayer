@@ -170,4 +170,59 @@ Review 未发现需要修改生产实现的新缺陷，修正均为隔离样本�
 
 本地交付标题：`补充长历史定位与旧集入口续听回归`，身份以 `git log -1 --format='%H%n%B' --grep='^补充长历史定位与旧集入口续听回归$'` 查询；只本地提交，不 push／PR／sync／archive／发布。
 
+## 2026-09-26 三十集实际播放与首集冷启动恢复
+
+基线 `main @ 9325c2646a10e66968499cb32ddf014b702b108f`。本次审查未提交的 AT-16 回归测试及夹具；生产 App 和工程未改。样本从空进度仓库开始，只准备 30 集目录快照／本地静音 WAV／自有下载键，进度由真实 SwiftUI 入口和 AVPlayer 播放产生。每集保留标题／状态／时间的窗口树，第一集至少 12 秒，其余至少 2 秒；正常退出后恢复第一集，并在再次冷启动核对其他 29 条进度原始字节不变。数据和运行方式见 [UI 测试说明](../../../ZenPlayerUITests/README.md#mac-实际播放三十集后恢复首集)。
+
+### 首轮失败与 review 修正
+
+`/tmp/ZenPlayer-mac-thirty-plays-r1/tests.xcresult`：**0 通过、1 失败、0 跳过，298.692 秒**，构建通过。已执行全部 30 集实际播放、首集暂停位置记录和最近 10 条／底部第 21 集／首集不在最近列表断言；返回首页后点击分类卡前，`clickCenter` 的完整可见性断言失败，返回首集及冷启动未执行，不能记 AT-16 通过。
+
+窗口树 `/tmp/ZenPlayer-mac-thirty-plays-r1-trees/6E4EAE12-9310-4E7B-A5C0-07B2F4D2296B.txt` 显示：窗口 `(0,33,1024,768)`，续听卡下方分类卡 `(28,436,477,409)`，底部超出窗口。修正仅在新用例的 `openThirtySeries` 中加入有限次数的实际滚动和前后窗口树，仍保留完整可见检查，没有放宽点击断言或修改生产布局。恢复断言使用媒体位置减去实际经过时间，避免从零播放到阈值造成误判。
+
+### 第二轮与无窗口对照
+
+`/tmp/ZenPlayer-mac-thirty-plays-r2/tests.xcresult`：**0 通过、1 失败、0 跳过，353.857 秒**，构建通过。滚动、回到首集、第一次冷启动及实际从原位置恢复均通过；暂停时窗口树 `AD763180-FD16-4515-AAED-34326604BF61.txt`（位于 `/tmp/ZenPlayer-mac-thirty-plays-r2-trees/`）显示首集 `已聽 0:22 / 2:00`。最后启动未找到首页标题，整条用例仍失败。
+
+只读检查该独立目录 `resume-E0206D89-D6B6-4ECF-AA98-E20F68B0D8BD`：30 条记录保留，首集实际 22.830014125 秒，其他 29 条与 `thirty-before-resume.json` 逐字节一致。没有回写这些进度。临时测试副本追加仅重开该样本的诊断方法，`probe.xcresult` **1 失败，17.973 秒**，窗口数为 0；手动启动相同隔离 bundle 后 `sample` 显示主线程处于正常事件循环，未发现崩溃／主线程阻塞证据。AppleScript 读取界面因缺少辅助访问失败，未修改权限设置。
+
+同一临时诊断再明确断言窗口数为 0，并发送 Command-N：`probe-window.xcresult` **1 通过，4.133 秒**，真实仓库校验及首集标题展示通过。两份 probe 结果在 `/tmp/ZenPlayer-mac-thirty-plays-r2/`；仅用于故障定位，不计入阶段套件通过数，临时诊断方法未保存到仓库。正式用例增加局部启动窗口检查：等待 5 秒后若无窗口，保存文本证据并实际新建窗口，再核对进度。尚不能断言缺窗由 XCTest、SwiftUI 或系统恢复状态中的哪一层引起；不声称已修复生产生命周期，也不把该分支作为自动开窗证据。
+
+第三轮 `/tmp/ZenPlayer-mac-thirty-plays-r3/tests.xcresult`：**0 通过、1 失败、0 跳过，68.687 秒**，构建通过。在第 3 集进入完整页并点击下一集后，未取得第 4 集标题；独占目录 `resume-74774AF0-5F76-476D-9992-3D790AA1F134` 实际保留第 1／2／3／5 集进度，第 5 集约 9 秒，没有第 4 集记录。因此不能只描述成“标题选择器失效”或宣称该轮依次播放成功。此前两轮相同路径均走完 30 集；本次尚不能区分额外输入事件、导航交互或切集逻辑原因。新增失败时完整窗口树采集，保持原断言，不添加自动补点／跳过／降低集数门槛；间歇切集现象保留为待调查风险。
+
+### 最终定向通过证据
+
+`/tmp/ZenPlayer-mac-thirty-plays-r4/tests.xcresult`：**1 通过、0 失败、0 跳过，351.809 秒**。macOS 27.0／MacBook Pro arm64；构建、验证 bundle 签名与 sandbox 检查、test-without-building 均 exit 0。结果有一条内部 QoS 警告，测试耗时不作为产品反馈或搜索性能证据。
+
+```sh
+python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-mac-thirty-plays-r4 --package-cache /tmp/ZenPlayer-M0-mac/SourcePackages --only-testing testThirtyActualPlaysPreserveFirstProgressAfterRestart
+```
+
+重跑需另选不存在的 output。以下窗口树均位于 `/tmp/ZenPlayer-mac-thirty-plays-r4-trees/`，已从结果中导出并核对：
+
+| 子断言 | 实际证据 |
+| --- | --- |
+| 首集初始播放并暂停 | `F0D115E1-A00F-466F-8479-53135EB2A8A9.txt`：首集 0:14 / 2:00，已暂停 |
+| 实际播放到第 30 集、最近仅 10 条 | 每集标题／播放／时间检查均通过；`E66F3D4A-D6A5-44E4-AF17-E0A636734869.txt`：摘要 10，滚到底部为第 21 集，首集不在最近行中 |
+| 回首集原位置未被挤掉 | `4D1A6418-CBB9-4639-929C-AD83156307C0.txt`：系列首集仍为已听 0:14；首次冷启动读取全部 30 条并核对最近顺序 30～21 |
+| 冷启动后实际续播 | 媒体位置减去经过时间的下限断言通过；`E1C7076B-45E9-457C-A558-5CC2C5CBE9F6.txt`：恢复后暂停为 0:22 / 2:00 |
+| 再次启动保留实际新位置 | `6338608A-6BC7-48D1-9B9D-D1B3CB3B5F61.txt`：首页首集 0:22 / 2:00，无自动播放；仓库仍 30 条，首集进入最近第一项，其他 29 条逐字节不变 |
+| 启动窗口边界 | 最后一次启动触发无窗口分支，`77BC07A7-44C5-4E3F-9956-38893AE0F34A.txt` 明确记录 Command-N；这是新建窗口后的展示证据，不是自动开窗通过 |
+
+本轮实现输入为 85 个 Swift／Python／xcstrings 文件及工程，已与 r4 `context.json` 的 SHA-256 核对。116 个生产文件及工程未变；两端各 86 项 `/tmp/ZenPlayer-avkit-review-{mac,ios}.xcresult` 的结果摘要重新核对为通过，**复用、未重跑**。默认 Mac 阶段套件现为 16 项，本轮先定向执行新用例；不得把它称为完整 16 项同轮通过。
+
+### 未验证项与剩余风险
+
+AT-16 增加真实 30 集 macOS 操作证据，但第三轮间歇跳集原因和自动开窗差异未解决，不能用 r4 通过覆盖历史失败。参考机性能、VoiceOver／Reduce Motion、真实下载／分享／媒体音效、异常强杀与升级迁移仍需执行。当前 iPhone 16 Pro／iOS 26.6.2 已连接配对，但 Developer Mode disabled，设备工具返回信息不完整警告；本轮只读复查记录为 `/tmp/ZenPlayer-device-thirty-review-details.json`／`.log`，未安装或修改设备。
+
+M3／M4 仍 5/6，3.2 未勾选，M0 仍 6/13，阶段保持 In Verification。下一步继续调查间歇切集与启动窗口差异，并完成剩余设备／辅助功能等门槛；不建议标 Done。
+
+### 受影响旧入口回归与本地交付
+
+复用 r4 的同一构建，串行定向运行 `testEvictedHistoryResumesFromDownload`／`testEvictedHistoryStillLocatesAndResumesFromSeries`：`/tmp/ZenPlayer-mac-thirty-plays-r4/legacy-regression.xcresult` **2 通过、0 失败／跳过，106.232 秒**（下载 50.379 秒，系列 55.853 秒）。`legacy-regression.log` 保存命令输出。它验证目录响应复用后的原 long-history 分支：14 条样本、旧入口恢复和其他 13 条字节保护仍通过，不等同重新运行全部 16 项。
+
+实际命令为相同临时工程和 derived-data 的 `xcodebuild test-without-building`，同时指定 `-only-testing:StageUITests/StageUITests/testEvictedHistoryResumesFromDownload` 和 `-only-testing:StageUITests/StageUITests/testEvictedHistoryStillLocatesAndResumesFromSeries`；未并发运行 Mac GUI 测试。最终新用例 1 项、旧入口 2 项分两轮通过；前三轮失败和两次临时诊断另列，不合并成一次全绿结果。
+
+Review 修正仅为测试滚动、明确的窗口重开步骤及失败现场采集；没有确定足以修改生产代码的间歇跳集根因。Python AST／脚本 help、输入 SHA-256、相对文档链接、M0／M3／M4 strict 及 Git diff 检查通过。交付标题 `补充三十集实际播放与冷启动进度回归`，本地身份以 `git log -1 --format='%H%n%B' --grep='^补充三十集实际播放与冷启动进度回归$'` 查询；不 push／PR／主规格同步／归档／发布。
+
 交付检查通过：M3／M4 strict 校验，Python AST／CLI help，11 个相对文件链接（不含锚点），84 个 Swift／Python／xcstrings 与工程输入 hash，Git diff／新增文件及暂存范围 review。Roadmap 阶段状态未改变。

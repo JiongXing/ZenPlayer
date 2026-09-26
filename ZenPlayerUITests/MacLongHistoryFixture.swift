@@ -2,20 +2,31 @@ import Foundation
 
 /// 真实列表／下载入口的长历史样本；存储根来自 MacResumeFixture 的独占 UUID 目录。
 nonisolated enum MacLongHistoryFixture {
-    private static let server = "https://mac-long-history-validation.invalid/"
-    static let categoryURL = server + "category"
-    static let detailURL = server + "series"
+    private static var server: String { isThirtyPlays ? "https://mac-thirty-plays-validation.invalid/" : "https://mac-long-history-validation.invalid/" }
+    static var categoryURL: String { server + "category" }
+    static var detailURL: String { server + "series" }
     private static let oldID = 910012
+    private static var count: Int { isThirtyPlays ? 30 : 21 }
+    private static var seriesID: Int { isThirtyPlays ? 911000 : 910000 }
+    private static var seriesTitle: String { isThirtyPlays ? "Mac 三十集系列" : "Mac 長期保留系列" }
+    private static var categoryTitle: String { isThirtyPlays ? "Mac 三十集分類" : "Mac 長歷史分類" }
 
-    static var isEnabled: Bool {
+    private static var scenario: String? {
         let args = ProcessInfo.processInfo.arguments
-        guard let index = args.firstIndex(of: "--stage-resume-case"), args.indices.contains(index + 1) else { return false }
-        return args[index + 1] == "long-history"
+        guard let index = args.firstIndex(of: "--stage-resume-case"), args.indices.contains(index + 1) else { return nil }
+        return args[index + 1]
+    }
+    static var isThirtyPlays: Bool { scenario == "thirty-plays" }
+    static var isEnabled: Bool { scenario == "long-history" || isThirtyPlays }
+    static var catalogEpisodes: [EpisodeItem] { (1...count).map { episode($0) } }
+    static var catalogSnapshot: QueueSnapshot {
+        QueueSnapshot(seriesID: seriesID, title: seriesTitle, detailURL: detailURL,
+                      serverURL: server, episodes: catalogEpisodes, isComplete: true)
     }
 
     private static func episode(_ number: Int, recent: Bool = false) -> EpisodeItem {
-        EpisodeItem(id: (recent ? 910100 : 910000) + number, num: recent ? "RECENT" : "LONG-HISTORY",
-                    title: recent ? "Mac 新近歷史-\(number)" : "Mac 長期保留-\(number)", episode: String(number),
+        EpisodeItem(id: (recent ? 910100 : seriesID) + number, num: recent ? "RECENT" : "LONG-HISTORY",
+                    title: recent ? "Mac 新近歷史-\(number)" : (isThirtyPlays ? "Mac 三十集-\(number)" : "Mac 長期保留-\(number)"), episode: String(number),
                     mp4Url: "", vodUrl: "", mp3Url: server + "\(recent ? "recent-" : "")\(number).wav",
                     coverUrl: "", textUrl: "", filesize: 1_920_044, duration: 120_000)
     }
@@ -23,19 +34,20 @@ nonisolated enum MacLongHistoryFixture {
     static func responseData(for url: String) throws -> Data {
         let data: [String: Any]
         if url == categoryURL {
-            let series = SeriesItem(id: 910000, title: "Mac 長期保留系列", cateId: "910000", num: "LONG-HISTORY",
-                                    date: "2026-01-01", author: "", address: "", total: 21, finish: 1, type: "mp3",
+            let series = SeriesItem(id: seriesID, title: seriesTitle, cateId: String(seriesID), num: "LONG-HISTORY",
+                                    date: "2026-01-01", author: "", address: "", total: count, finish: 1, type: "mp3",
                                     typeName: "音頻", coverUrl: "", url: detailURL, pageUrl: "")
             data = ["serverUrl": server, "updateTime": 0, "total": 1,
                     "rows": try JSONSerialization.jsonObject(with: JSONEncoder().encode([series]))]
         } else if url == detailURL {
-            data = ["serverUrl": server, "updateTime": 0, "series": "全21集", "totalCount": 21,
-                    "speechTitle": "Mac 長期保留系列", "speechAuthor": "", "speechAddress": "",
-                    "speechDate": "", "speechDesc": "超出最近十條的舊系列", "cateCoverUrl": "", "cateId": "910000",
-                    "albumNum": "LONG-HISTORY", "pathTitle": "Mac 長期保留系列", "type": "mp3",
-                    "rows": try JSONSerialization.jsonObject(with: JSONEncoder().encode((1...21).map { episode($0) }))]
+            data = ["serverUrl": server, "updateTime": 0, "series": "全\(count)集", "totalCount": count,
+                    "speechTitle": seriesTitle, "speechAuthor": "", "speechAddress": "",
+                    "speechDate": "", "speechDesc": isThirtyPlays ? "從零實際播放三十集" : "超出最近十條的舊系列",
+                    "cateCoverUrl": "", "cateId": String(seriesID),
+                    "albumNum": "LONG-HISTORY", "pathTitle": seriesTitle, "type": "mp3",
+                    "rows": try JSONSerialization.jsonObject(with: JSONEncoder().encode(catalogEpisodes))]
         } else {
-            let category = CategoryItem(title: "Mac 長歷史分類", cateId: 910000, url: categoryURL, coverUrl: "", desc: "Mac 長歷史分類")
+            let category = CategoryItem(title: categoryTitle, cateId: seriesID, url: categoryURL, coverUrl: "", desc: categoryTitle)
             data = ["serverUrl": server, "updateTime": 0, "total": 1, "title": "Mac 長歷史驗證", "subtitle": "",
                     "rows": try JSONSerialization.jsonObject(with: JSONEncoder().encode([category]))]
         }
