@@ -13,7 +13,7 @@ struct MiniPlayerView: View {
                         Text(context.episode.title).lineLimit(1).font(.headline)
                         Text("\(context.episode.episode) · \(session.sessionStatus)").lineLimit(1).font(.caption)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -37,13 +37,33 @@ struct MiniPlayerView: View {
     }
 }
 
-private struct PlayerControlsVisibilityKey: EnvironmentKey {
-    static let defaultValue: (UUID, Bool) -> Void = { _, _ in }
+private struct OpenPlayerControlsKey: EnvironmentKey {
+    static let defaultValue: () -> Void = {}
 }
 
 extension EnvironmentValues {
-    var playerControlsVisibility: (UUID, Bool) -> Void {
-        get { self[PlayerControlsVisibilityKey.self] }
-        set { self[PlayerControlsVisibilityKey.self] = newValue }
+    var openPlayerControls: () -> Void {
+        get { self[OpenPlayerControlsKey.self] }
+        set { self[OpenPlayerControlsKey.self] = newValue }
+    }
+}
+
+private struct MiniPlayerInset: ViewModifier {
+    @Environment(PlayerViewModel.self) private var session
+    @Environment(\.openPlayerControls) private var openControls
+
+    func body(content: Content) -> some View {
+        // 放在浏览页内容内，继承 Tab／导航的实际安全区；完整播放页不应用此修饰器。
+        content.safeAreaInset(edge: .bottom, spacing: 0) {
+            if session.hasSession {
+                MiniPlayerView(openControls: openControls)
+            }
+        }
+    }
+}
+
+extension View {
+    func miniPlayerInset() -> some View {
+        modifier(MiniPlayerInset())
     }
 }

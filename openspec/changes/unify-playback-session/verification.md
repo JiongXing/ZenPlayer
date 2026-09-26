@@ -72,3 +72,20 @@ git log -1 --format='%H%n%B' --grep='^实现 M1 统一播放会话并修复阶�
 ```
 
 只创建本地提交，不 push／PR／发布／主规格同步／归档。下一步是补齐本节未运行的 M1 平台验收，当前请求不自动进入 M2。
+
+## 2026-09-26 跨阶段 UI review 补充
+
+本节是 M4 整合验收期间对 M1 的回归修复，覆盖上文“当前 UI 全部未运行”的历史状态。基线 `main @ 4a01cf3`，只有本轮创建的 `Scripts/` 和 `ZenPlayerUITests/` 未跟踪，没有用户暂存／未暂存改动。持续目标授权阶段 review、修复及本地提交；不 push／PR／sync／archive／发布。
+
+### 实际缺陷与修复
+
+| 级别 | 复现与证据 | 修复 |
+| --- | --- | --- |
+| P1 | 首页续听后迷你条覆盖 Tab，“我的”点击实际打开完整播放页。iPhone 17／iOS 27 可访问性树：Tab y=791～874，迷你标题 y=793.3～831；`/tmp/ZenPlayer-stage-ui-routing.{xcresult,log}` 1 项失败。 | 将 inset 从 NavigationStack 外移到各浏览页内容内，根页使用 Tab 上方安全区，详情使用窗口安全区；完整页不应用 inset。移除随之失去用途的可见页 ID 状态。标题入口最小高 44pt。 |
+| P2 | 在最近播放页点击迷你条、再返回，回到了“我的”而非最近播放。直接目的地未进入绑定 NavigationPath，追加控制页时原页面丢失；`/tmp/ZenPlayer-stage-ui-detail-routing.{xcresult,log}` 的返回后树证实此路径。 | “我的”的最近播放／下载完成／关于入口接入既有值路由，继续由同一 NavigationPath 管理。历史／下载中的单集播放入口和媒体所有者不变。 |
+
+修复后 focused UI 回归通过：`/tmp/ZenPlayer-stage-ui-routing-fixed.xcresult` 1 项、0 失败；`/tmp/ZenPlayer-stage-ui-detail-fixed.xcresult` 1 项、0 失败，后者包含历史和下载页面往返、同集重进保持暂停。截图实际目视检查：`/tmp/ZenPlayer-stage-ui-routing-fixed-images/FB82D125-AB21-4452-BF11-C54C772D3CEE.png`，迷你条位于 Tab 上方，三个入口可见。不是仅编译或原生视图离屏渲染。
+
+测试在独立 bundle `com.jxing.ZenPlayer.StageValidation` 的模拟器容器中执行。180 秒静音 WAV 由隔离下载索引绑定，起点 30 秒；远端 `.invalid` 地址不能替代本地媒体。没有读取、复制或改动生产容器。复现脚本、边界见 [UI 测试说明](../../../ZenPlayerUITests/README.md)。最终整套 UI 和两端结果集中记在 [M4 验证记录](../search-loaded-catalog/verification.md#2026-09-26-隔离-app-ui-验证与补充交付)。
+
+1.2／2.2 已取得 iOS 模拟器首页／Tab／历史／下载／完整页的局部证据，但 macOS 多窗口、完整长列表末行、大字体／VoiceOver／Reduce Motion 仍未验证；3.2 的真机中断／后台／锁屏／PiP 等仍未验证。三项继续未勾选，M1 不标 Done。没有把静音样本的成功当作真实下载传输或实际媒体听感证明。

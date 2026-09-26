@@ -14,9 +14,7 @@ struct PlayerView: View {
     var selectsOnAppear = true
 
     @Environment(PlayerViewModel.self) private var viewModel
-    @Environment(\.playerControlsVisibility) private var controlsVisibility
     @State private var didSelect = false
-    @State private var visibilityID = UUID()
 
     var body: some View {
         ScrollView {
@@ -67,13 +65,11 @@ struct PlayerView: View {
         .background(pageBackground)
         .navigationBarBackButtonHidden(false)
         .onAppear {
-            controlsVisibility(visibilityID, true)
             if selectsOnAppear && !didSelect {
                 didSelect = true
                 viewModel.selectPlayback(context)
             }
         }
-        .onDisappear { controlsVisibility(visibilityID, false) }
     }
 
     private var mediaTypeSwitcher: some View {

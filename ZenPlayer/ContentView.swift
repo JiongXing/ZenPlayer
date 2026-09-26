@@ -10,7 +10,6 @@ import SwiftUI
 struct ContentView: View {
     @Environment(PlayerViewModel.self) private var session
     @Environment(\.scenePhase) private var scenePhase
-    @State private var visiblePlayerIDs: Set<UUID> = []
     @State private var navigationPath = NavigationPath()
     @State private var selectedTab: RootTab = .home
 
@@ -18,25 +17,40 @@ struct ContentView: View {
         NavigationStack(path: $navigationPath) {
             TabView(selection: $selectedTab) {
                 HomeView()
+                    .miniPlayerInset()
                     .tabItem {
                         Label(L10n.text(.tabHome), systemImage: "house")
                     }
                     .tag(RootTab.home)
 
                 MyView()
+                    .miniPlayerInset()
                     .tabItem {
                         Label(L10n.text(.tabMy), systemImage: "person")
                     }
                     .tag(RootTab.my)
             }
+            .navigationDestination(for: MyView.Destination.self) { destination in
+                Group {
+                    switch destination {
+                    case .recentPlayback: RecentPlaybackListView()
+                    case .completedDownloads: CompletedDownloadListView()
+                    case .about: AboutView()
+                    }
+                }
+                .miniPlayerInset()
+            }
             .navigationDestination(for: CategoryItem.self) { category in
                 CategoryDetailView(category: category)
+                    .miniPlayerInset()
             }
             .navigationDestination(for: SeriesItem.self) { series in
                 SeriesDetailView(series: series)
+                    .miniPlayerInset()
             }
             .navigationDestination(for: SeriesDestination.self) { destination in
                 SeriesDetailView(destination: destination)
+                    .miniPlayerInset()
             }
             .navigationDestination(for: PlaybackContext.self) { context in
                 PlayerView(context: context)
@@ -49,14 +63,7 @@ struct ContentView: View {
                 }
             }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            if session.hasSession && visiblePlayerIDs.isEmpty {
-                MiniPlayerView { navigationPath.append(PlayerControlsRoute.current) }
-            }
-        }
-        .environment(\.playerControlsVisibility, { id, visible in
-            if visible { visiblePlayerIDs.insert(id) } else { visiblePlayerIDs.remove(id) }
-        })
+        .environment(\.openPlayerControls, { navigationPath.append(PlayerControlsRoute.current) })
         .onChange(of: scenePhase) { _, _ in session.saveForLifecycleChange() }
         .environment(\.locale, L10n.currentLocale)
         #if os(iOS)

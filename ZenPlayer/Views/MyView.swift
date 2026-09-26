@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct MyView: View {
+    enum Destination: Hashable { case recentPlayback, completedDownloads, about }
+
     @Environment(\.horizontalSizeClass) private var sizeClass
     var body: some View {
         GeometryReader { proxy in
@@ -20,28 +22,25 @@ struct MyView: View {
                             title: .myRecentPlayback,
                             detail: recentPlaybackDetail,
                             systemImage: "clock.arrow.circlepath",
-                            tint: Color(red: 0.77, green: 0.57, blue: 0.39)
-                        ) {
-                            RecentPlaybackListView()
-                        }
+                            tint: Color(red: 0.77, green: 0.57, blue: 0.39),
+                            destination: .recentPlayback
+                        )
 
                         featureLink(
                             title: .myDownloadCompleted,
                             detail: downloadCompletedDetail,
                             systemImage: "checkmark.circle",
-                            tint: Color(red: 0.38, green: 0.62, blue: 0.56)
-                        ) {
-                            CompletedDownloadListView()
-                        }
+                            tint: Color(red: 0.38, green: 0.62, blue: 0.56),
+                            destination: .completedDownloads
+                        )
 
                         featureLink(
                             title: .myAbout,
                             detail: versionDescription,
                             systemImage: "info.circle",
-                            tint: Color(red: 0.58, green: 0.5, blue: 0.4)
-                        ) {
-                            AboutView()
-                        }
+                            tint: Color(red: 0.58, green: 0.5, blue: 0.4),
+                            destination: .about
+                        )
                     }
                 }
                 .frame(maxWidth: min(max(proxy.size.width - 32, 0), 720))
@@ -113,16 +112,14 @@ struct MyView: View {
         .shadow(color: Color(red: 0.71, green: 0.56, blue: 0.39).opacity(0.14), radius: 18, x: 0, y: 10)
     }
 
-    private func featureLink<Destination: View>(
+    private func featureLink(
         title: L10nKey,
         detail: String,
         systemImage: String,
         tint: Color,
-        @ViewBuilder destination: @escaping () -> Destination
+        destination: Destination
     ) -> some View {
-        NavigationLink {
-            destination()
-        } label: {
+        NavigationLink(value: destination) {
             HStack(spacing: 14) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 16, style: .continuous)

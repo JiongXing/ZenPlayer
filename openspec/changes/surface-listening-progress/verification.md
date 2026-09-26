@@ -33,3 +33,9 @@ Review 修复：取消的快照查询不记作已成功刷新，允许回页重�
 最近设备查询显示用户 iPhone 的 Developer Mode 关闭，已请求开启后连接／解锁；没有使用其他人的设备。无测试失败待修，但验收缺项使 M3 保持 In Verification，不能标 Done 或发布。
 
 3.1 本地交付：本轮阶段提交消息为“实现 M3 首页续听与系列进度定位”；提交身份用 `git log -1 --format='%H %s' -- openspec/changes/surface-listening-progress` 查询。没有 push、PR、主规格同步或归档。
+
+## 2026-09-26 隔离 App UI 补充
+
+M4 整合期间运行真实 SwiftUI／AVPlayer 的 iPhone 17／iOS 27 模拟器 UI 测试：首页从隔离容器的 30 秒本地历史一键启动静音 WAV；切 Tab、暂停后从历史／下载同集重进仍暂停；停止后重启保留续听卡且不出现活动迷你条／暂停动作。focused 结果 `/tmp/ZenPlayer-stage-ui-detail-fixed.xcresult`，1 项、0 失败。完整套件、两端回归及环境边界见 [M4 UI 验证](../search-loaded-catalog/verification.md#2026-09-26-隔离-app-ui-验证与补充交付)。
+
+这补充 AT-04／13 的实际模拟器 UI 子断言；上节“真实首页点击／实际下载入口未运行”是本次之前的状态。样本是验证 App 内播种的本地完成下载，不证明生产下载传输、真正断网或分类接口失败。AT-14 分类失败实景、AT-15 完成态动态展示、AT-19 上次收听定位及可访问性门槛仍不关闭。3.2 保持未勾选。
