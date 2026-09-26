@@ -272,6 +272,16 @@ final class PlayerViewModel {
         selectPlayback(context, force: true, snapshot: queue.snapshot)
     }
 
+    /// 列表只选择仍属于当前快照的单集；重复点击当前集不改变播放意图。
+    func playEpisode(id: Int, snapshotID: String) {
+        guard let current = currentContext, let snapshot = queue.snapshot,
+              snapshot.id == snapshotID,
+              let index = snapshot.episodes.firstIndex(where: { $0.id == id }),
+              let target = snapshot.context(at: index, preferred: selectedMediaType),
+              RecentPlaybackRecord.recordID(for: target) != RecentPlaybackRecord.recordID(for: current) else { return }
+        selectPlayback(target, snapshot: snapshot)
+    }
+
     private func localMediaTypes(for episode: EpisodeItem) -> [PlaybackMediaType] {
         var types: [PlaybackMediaType] = []
         if verifiedLocalURL(for: episode.id, type: .audio) != nil { types.append(.audio) }

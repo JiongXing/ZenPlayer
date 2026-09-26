@@ -720,6 +720,56 @@
         }
       }
     },
+    "player.playlist" : {
+      "localizations" : {
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "講集與播放列表"
+          }
+        }
+      }
+    },
+    "player.playlist_current" : {
+      "localizations" : {
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目前播放的單集"
+          }
+        }
+      }
+    },
+    "player.series_details" : {
+      "localizations" : {
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看講集詳情"
+          }
+        }
+      }
+    },
+    "player.series_unavailable" : {
+      "localizations" : {
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暫無所屬講集資訊"
+          }
+        }
+      }
+    },
+    "player.playlist_close" : {
+      "localizations" : {
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "關閉播放列表"
+          }
+        }
+      }
+    },
     "player.original" : {
       "localizations" : {
         "zh-Hant" : {

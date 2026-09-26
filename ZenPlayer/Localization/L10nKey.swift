@@ -103,6 +103,11 @@ enum L10nKey: String, CaseIterable {
     case playerVoiceDenoise = "player.voice_denoise"
     case playerVolumeBoost = "player.volume_boost"
     case playerOriginal = "player.original"
+    case playerPlaylist = "player.playlist"
+    case playerPlaylistCurrent = "player.playlist_current"
+    case playerSeriesDetails = "player.series_details"
+    case playerSeriesUnavailable = "player.series_unavailable"
+    case playerPlaylistClose = "player.playlist_close"
 
     case myTitle = "my.title"
     case myRecentPlayback = "my.recent_playback"

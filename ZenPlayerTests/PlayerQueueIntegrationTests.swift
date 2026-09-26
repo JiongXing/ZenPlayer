@@ -14,6 +14,63 @@ private final class TestAudioProcessor: PlaybackAudioProcessing {
 /// 编译真实 PlayerViewModel，使用真实 AVPlayer 和临时静音文件，不启动生产 App。
 @MainActor
 final class PlayerQueueIntegrationTests: XCTestCase {
+    func testPlaylistJumpSavesOldPositionAndResumesTargetInOriginalQueue() async throws {
+        let environment = try ProgressTestEnvironment()
+        let model = try makeModel(environment)
+        defer { model.stopPlayback() }
+        let snapshot = testQueue()
+        let first = try XCTUnwrap(snapshot.context(at: 0, preferred: .audio))
+        let fifth = try XCTUnwrap(snapshot.context(at: 2, preferred: .audio))
+        model.progressStore.update(fifth, position: 1.5, duration: 4, event: .advance)
+        model.selectPlayback(first, snapshot: snapshot)
+        try await waitUntil { !model.isPreparingPlayback && model.player?.currentItem?.status == .readyToPlay }
+        model.pausePlayback()
+        await model.seek(to: 1.25)
+        let original = model.player
+        let request = model.session.request
+        model.playEpisode(id: first.episode.id, snapshotID: snapshot.id)
+        XCTAssertTrue(model.player === original)
+        XCTAssertEqual(model.session.request, request)
+        XCTAssertFalse(model.session.wantsPlayback)
+        XCTAssertEqual(model.currentPosition, 1.25, accuracy: 0.05)
+
+        model.playEpisode(id: fifth.episode.id, snapshotID: snapshot.id)
+        XCTAssertTrue(model.session.wantsPlayback)
+        try await waitUntil { !model.isPreparingPlayback && model.player?.currentItem?.status == .readyToPlay }
+        model.pausePlayback()
+        XCTAssertEqual(model.currentContext?.episode.id, 5)
+        XCTAssertEqual(model.queue.snapshot?.id, snapshot.id)
+        XCTAssertEqual(model.queue.snapshot?.episodes.map(\.id), [1, 2, 5])
+        XCTAssertEqual(model.queue.index, 2)
+        XCTAssertEqual(model.selectedMediaType, .audio)
+        XCTAssertGreaterThanOrEqual(model.currentPosition, 1.45)
+        XCTAssertEqual(try XCTUnwrap(model.progressStore.record(for: first)).positionSeconds, 1.25, accuracy: 0.1)
+        XCTAssertTrue(model.canPlayPrevious)
+        XCTAssertFalse(model.canPlayNext)
+        await finish(model)
+    }
+
+    func testPlaylistIgnoresStaleSnapshotUnknownEpisodeAndStoppedSession() async throws {
+        let environment = try ProgressTestEnvironment()
+        let model = try makeModel(environment)
+        defer { model.stopPlayback() }
+        let snapshot = testQueue()
+        model.selectPlayback(try XCTUnwrap(snapshot.context(at: 0)), wantsPlayback: false, snapshot: snapshot)
+        try await waitUntil { !model.isPreparingPlayback && model.player?.currentItem?.status == .readyToPlay }
+        let player = model.player
+        let request = model.session.request
+        model.playEpisode(id: 5, snapshotID: testQueue().id)
+        model.playEpisode(id: 999, snapshotID: snapshot.id)
+        XCTAssertTrue(model.player === player)
+        XCTAssertEqual(model.session.request, request)
+        XCTAssertFalse(model.session.wantsPlayback)
+        model.stopPlayback()
+        model.playEpisode(id: 5, snapshotID: snapshot.id)
+        XCTAssertFalse(model.hasSession)
+        XCTAssertNil(model.player)
+        await finish(model)
+    }
+
     func testRealNaturalEndSavesCompletedThenAdvancesOnceToNextOwnPosition() async throws {
         let environment = try ProgressTestEnvironment()
         let model = try makeModel(environment)

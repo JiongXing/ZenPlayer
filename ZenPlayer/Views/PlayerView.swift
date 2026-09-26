@@ -15,12 +15,25 @@ struct PlayerView: View {
 
     @Environment(PlayerViewModel.self) private var viewModel
     @State private var didSelect = false
+    @State private var showsPlaylist = false
+    @State private var pendingSeriesDestination: SeriesDestination?
+    @State private var seriesDestination: SeriesDestination?
 
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
                 if let current = viewModel.currentContext {
                     Text(current.episode.title).font(.headline)
+                    Button { showsPlaylist = true } label: {
+                        Label(L10n.text(.playerPlaylist), systemImage: "list.bullet")
+                            .frame(minHeight: 44)
+                    }
+                    .accessibilityIdentifier("player.playlist")
+                    #if os(macOS)
+                    .popover(isPresented: $showsPlaylist, arrowEdge: .bottom) {
+                        playlistPanel.onDisappear(perform: finishPlaylistDismissal)
+                    }
+                    #endif
                     Text(viewModel.sessionStatus).font(.caption)
                     HStack {
                         Button { viewModel.togglePlayback() } label: {
@@ -64,12 +77,41 @@ struct PlayerView: View {
         }
         .background(pageBackground)
         .navigationBarBackButtonHidden(false)
+        #if os(iOS)
+        .sheet(isPresented: $showsPlaylist, onDismiss: finishPlaylistDismissal) {
+            playlistPanel
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
+        #endif
+        .navigationDestination(item: $seriesDestination) { destination in
+            SeriesDetailView(destination: destination)
+                .miniPlayerInset()
+        }
+        .onChange(of: viewModel.hasSession) { _, hasSession in
+            if !hasSession {
+                pendingSeriesDestination = nil
+                showsPlaylist = false
+            }
+        }
         .onAppear {
             if selectsOnAppear && !didSelect {
                 didSelect = true
                 viewModel.selectPlayback(context)
             }
         }
+    }
+
+    private var playlistPanel: some View {
+        PlayerPlaylistView { destination in
+            pendingSeriesDestination = destination
+            showsPlaylist = false
+        }
+    }
+
+    private func finishPlaylistDismissal() {
+        seriesDestination = pendingSeriesDestination
+        pendingSeriesDestination = nil
     }
 
     private var mediaTypeSwitcher: some View {

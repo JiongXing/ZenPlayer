@@ -2,8 +2,92 @@ import XCTest
 
 @MainActor
 final class StageUITests: XCTestCase {
+    func testPlayerPlaylistJumpAndSeriesRoundTrip() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--stage-seed-queue", "--stage-queue-catalog", "--stage-primary-window"]
+        launch(app)
+        let window = app.windows.firstMatch
+        clickCenter(window.buttons["繼續收聽"].firstMatch, in: window)
+        clickCenter(queueMini(in: window, episode: 1), in: window)
+        clickCenter(window.buttons["暫停"], in: window)
+        let playlist = window.buttons["player.playlist"]
+        clickCenter(playlist, in: window)
+        let first = app.buttons["player.playlist.episode.900101"]
+        XCTAssertTrue(first.waitForExistence(timeout: 5))
+        XCTAssertEqual(first.value as? String, "目前播放的單集")
+        XCTAssertTrue(app.buttons["player.playlist.episode.900102"].exists)
+        XCTAssertTrue(app.buttons["player.playlist.episode.900105"].exists)
+        capture(app, name: "mac-player-playlist-current")
+        first.click()
+        XCTAssertTrue(window.buttons["播放"].waitForExistence(timeout: 5))
+        XCTAssertFalse(window.buttons["暫停"].exists)
+        clickCenter(playlist, in: window)
+        app.buttons["player.playlist.episode.900105"].click()
+        XCTAssertTrue(window.staticTexts["Mac 連播驗證-5"].waitForExistence(timeout: 5))
+        clickCenter(window.buttons["暫停"], in: window)
+        XCTAssertFalse(window.buttons["下一集"].isEnabled)
+        clickCenter(playlist, in: window)
+        XCTAssertEqual(app.buttons["player.playlist.episode.900105"].value as? String, "目前播放的單集")
+        app.buttons["player.playlist.series"].click()
+        XCTAssertTrue(window.textFields["catalogSearchField"].waitForExistence(timeout: 10))
+        XCTAssertTrue(queueMini(in: window, episode: 5).label.contains("已暫停"))
+        XCTAssertTrue(queueEpisode(in: window, number: 5).exists)
+        capture(app, name: "mac-player-playlist-series-detail")
+        goBack(window)
+        XCTAssertTrue(playlist.waitForExistence(timeout: 5))
+        XCTAssertTrue(window.staticTexts["Mac 連播驗證-5"].exists)
+        XCTAssertTrue(window.buttons["播放"].exists)
+        XCTAssertFalse(window.buttons["暫停"].exists)
+        capture(app, name: "mac-player-playlist-return-paused")
+    }
+
     override func tearDownWithError() throws {
         XCUIApplication().terminate()
+    }
+
+    func testPlayerPlaylistMissingMetadataPartialListAndLiveHighlight() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--stage-seed", "--stage-primary-window"]
+        launch(app)
+        var window = app.windows.firstMatch
+        clickCenter(window.buttons["繼續收聽"].firstMatch, in: window)
+        clickCenter(mini(in: window), in: window)
+        clickCenter(window.buttons["暫停"], in: window)
+        clickCenter(window.buttons["player.playlist"], in: window)
+        XCTAssertTrue(app.staticTexts["暫無所屬講集資訊"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["player.playlist.episode.900002"].exists)
+        XCTAssertFalse(app.buttons["player.playlist.series"].exists)
+        capture(app, name: "mac-playlist-missing-metadata")
+        app.terminate()
+
+        app.launchArguments = ["--stage-seed-catalog", "--stage-catalog-edge-cases", "--stage-primary-window"]
+        launch(app)
+        window = app.windows.firstMatch
+        clickCenter(window.buttons["繼續收聽"].firstMatch, in: window)
+        let partialMini = window.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Mac 定位驗證-12, 12, ")).firstMatch
+        clickCenter(partialMini, in: window)
+        clickCenter(window.buttons["player.playlist"], in: window)
+        XCTAssertTrue(app.staticTexts["僅播放已載入的 21 集"].waitForExistence(timeout: 5))
+        let current = app.buttons["player.playlist.episode.900212"]
+        XCTAssertTrue(current.isHittable, "长列表首次展开应定位当前第 12 集")
+        XCTAssertEqual(current.value as? String, "目前播放的單集")
+        XCTAssertTrue(app.buttons["player.playlist.series"].exists)
+        capture(app, name: "mac-playlist-partial-current-visible")
+        app.terminate()
+
+        app.launchArguments = ["--stage-seed-queue", "--stage-primary-window"]
+        launch(app)
+        window = app.windows.firstMatch
+        clickCenter(window.buttons["繼續收聽"].firstMatch, in: window)
+        clickCenter(queueMini(in: window, episode: 1), in: window)
+        XCTAssertEqual((window.checkBoxes["播完自動播放下一集"].value as? NSNumber)?.intValue, 1)
+        clickCenter(window.buttons["player.playlist"], in: window)
+        let second = app.buttons["player.playlist.episode.900102"]
+        let advanced = wait { second.value as? String == "目前播放的單集" }
+        capture(app, name: "mac-playlist-natural-advance")
+        XCTAssertTrue(advanced)
     }
 
     func testThirtyActualPlaysPreserveFirstProgressAfterRestart() throws {
