@@ -7,84 +7,84 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		021E0417FB7E4E9D9C9A842F /* ZenPlayer/Models/Series.swift in Sources */ = {isa = PBXBuildFile; fileRef = B59EF3A1A1B679F50178627C /* ZenPlayer/Models/Series.swift */; };
+		10F358EDB89A10FC34F3E75C /* ZenPlayer/Localization/L10nKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E7420E5153E135CD4D1B1C3 /* ZenPlayer/Localization/L10nKey.swift */; };
+		167535061B41EBE91B3192CC /* ZenPlayer/Models/APIResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E565AF25FD8C57DE7DDAB6 /* ZenPlayer/Models/APIResponse.swift */; };
+		16BB8F8E481106D85F8409CC /* ZenPlayer/Services/PlaybackAudioProcessing.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7D5D69B934D212855DF9477 /* ZenPlayer/Services/PlaybackAudioProcessing.swift */; };
+		24430908AE84E04F5B05D4C2 /* ZenPlayer/Services/QueueSnapshotPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663FF3439814CD5770F5E728 /* ZenPlayer/Services/QueueSnapshotPersistence.swift */; };
+		311014AFC72383E9984AFEEC /* ZenPlayer/Models/CatalogLoadFailure.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7F7F581E00A82F727F47792 /* ZenPlayer/Models/CatalogLoadFailure.swift */; };
+		317507668C101B18853A810A /* ZenPlayer/Services/FileProgressPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 850F5E2D5400C2DE65F59CBA /* ZenPlayer/Services/FileProgressPersistence.swift */; };
+		338BDC47F797576A5756EEF4 /* ZenPlayer/Models/PlaybackQueueState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8975C95BA31207D80CBBDAFB /* ZenPlayer/Models/PlaybackQueueState.swift */; };
+		3DBE02F2FDF951D1BC21934C /* ZenPlayer/Models/Episode.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDDC88C6A7E230715930403E /* ZenPlayer/Models/Episode.swift */; };
+		4AB0C087BCE10A6A03FDBE67 /* ZenPlayer/ViewModels/PlayerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0D8B55D6BA946E1328F555 /* ZenPlayer/ViewModels/PlayerViewModel.swift */; };
+		4B81F048E53808A6342908F8 /* ZenPlayer/Models/QueueSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8F55C810A585B69093D211 /* ZenPlayer/Models/QueueSnapshot.swift */; };
+		5223F8458EC02927C4A6A20D /* ZenPlayer/Services/PlaybackProgressStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC8DA741C92B3568A0475534 /* ZenPlayer/Services/PlaybackProgressStore.swift */; };
+		57D13B0FAF294DC508932CEA /* ZenPlayer/Models/SeriesDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45D823292259AE948A58002F /* ZenPlayer/Models/SeriesDestination.swift */; };
+		5804EAFC77E89F96DD59DDBC /* ZenPlayer/Models/PlaybackSessionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AFA28F2C582DA4233F31F18 /* ZenPlayer/Models/PlaybackSessionState.swift */; };
+		616BE0E577910BDAD2D68E84 /* ZenPlayer/Services/QueueSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B5B46C1E955299676DB3BE6 /* ZenPlayer/Services/QueueSnapshotStore.swift */; };
+		68DA23F05836FCC0537182E2 /* ZenPlayer/Models/CatalogSearchIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77C0941FFD76441CBA1D81D8 /* ZenPlayer/Models/CatalogSearchIndex.swift */; };
+		6D2DCED0FC3A9F9CD2F75868 /* ZenPlayer/ViewModels/HomeResumeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C78A3A4C1FE689E39281A92 /* ZenPlayer/ViewModels/HomeResumeViewModel.swift */; };
+		6EBE484219C3BC6670B24740 /* ZenPlayer/Models/QueueMediaPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7BC6BE134B77D1724A590C1 /* ZenPlayer/Models/QueueMediaPolicy.swift */; };
 		966DFB112F3CB1D400A90038 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 966DFB102F3CB1D400A90038 /* Kingfisher */; };
-		3DBE02F2FDF951D1BC21934C = {isa = PBXBuildFile; fileRef = CDDC88C6A7E230715930403E; };
-		BE8DD8C3FC26DA595E9014E0 = {isa = PBXBuildFile; fileRef = 7E854CFF1895CF84B38EBBC7; };
-		EE1F45202AC9EFF5CA1F67E1 = {isa = PBXBuildFile; fileRef = 81B7D5CD18732D4C1480223B; };
-		AE281527F660C1F1C96BBBAE = {isa = PBXBuildFile; fileRef = 8F48F24199D94485A9B2C5B2; };
-		F11DF3BD5C32ED229D2EEE9F = {isa = PBXBuildFile; fileRef = 786DB6D79AC46041B2A8A16F; };
-		10F358EDB89A10FC34F3E75C = {isa = PBXBuildFile; fileRef = 8E7420E5153E135CD4D1B1C3; };
-DF300F72D7E96A9559966CE5 = {isa = PBXBuildFile; fileRef = F34BC4C2715E0099AFEFED8A; };
-317507668C101B18853A810A = {isa = PBXBuildFile; fileRef = 850F5E2D5400C2DE65F59CBA; };
-5223F8458EC02927C4A6A20D = {isa = PBXBuildFile; fileRef = EC8DA741C92B3568A0475534; };
-F0E271C51727971AD85771E1 = {isa = PBXBuildFile; fileRef = 47C915F2A919A254BBBD4620; };
-E397B8D51A12C4CDD437C9E6 = {isa = PBXBuildFile; fileRef = 5417D66C2F34095661D21E40; };
-A45DA34D57D85D4A979834B9 = {isa = PBXBuildFile; fileRef = 3C7254C77E50F7B6F68AB5EB; };
-5804EAFC77E89F96DD59DDBC = {isa = PBXBuildFile; fileRef = 3AFA28F2C582DA4233F31F18; };
-AE628E0A73181293823FFE13 = {isa = PBXBuildFile; fileRef = 193336E27BAC6DBDB50C1054; };
-4B81F048E53808A6342908F8 = {isa = PBXBuildFile; fileRef = 4C8F55C810A585B69093D211; };
-338BDC47F797576A5756EEF4 = {isa = PBXBuildFile; fileRef = 8975C95BA31207D80CBBDAFB; };
-24430908AE84E04F5B05D4C2 = {isa = PBXBuildFile; fileRef = 663FF3439814CD5770F5E728; };
-616BE0E577910BDAD2D68E84 = {isa = PBXBuildFile; fileRef = 7B5B46C1E955299676DB3BE6; };
-6EBE484219C3BC6670B24740 = {isa = PBXBuildFile; fileRef = C7BC6BE134B77D1724A590C1; };
-16BB8F8E481106D85F8409CC = {isa = PBXBuildFile; fileRef = D7D5D69B934D212855DF9477; };
-4AB0C087BCE10A6A03FDBE67 = {isa = PBXBuildFile; fileRef = 2B0D8B55D6BA946E1328F555; };
-9D439E858DC15DA7055E495C = {isa = PBXBuildFile; fileRef = D5FAB89F0C8A900CBF889D2A; };
-C60AEFEF23861ED0BB608652 = {isa = PBXBuildFile; fileRef = F4DB3923DD7075F9AE7B62F0; };
-6D2DCED0FC3A9F9CD2F75868 = {isa = PBXBuildFile; fileRef = 0C78A3A4C1FE689E39281A92; };
-57D13B0FAF294DC508932CEA = {isa = PBXBuildFile; fileRef = 45D823292259AE948A58002F; };
-C2A0702E252276ACC5582E3A = {isa = PBXBuildFile; fileRef = C3E65A7AA4F6518549AA15C6; };
-C0EAE279828F20722732F0EB = {isa = PBXBuildFile; fileRef = 9C22115C4CD119301CCAD755; };
-68DA23F05836FCC0537182E2 = {isa = PBXBuildFile; fileRef = 77C0941FFD76441CBA1D81D8; };
-021E0417FB7E4E9D9C9A842F = {isa = PBXBuildFile; fileRef = B59EF3A1A1B679F50178627C; };
-B2D11D74BB72AFDED92DAA0D = {isa = PBXBuildFile; fileRef = EA6BDE727422CC7E2FA8AB26; };
-311014AFC72383E9984AFEEC = {isa = PBXBuildFile; fileRef = C7F7F581E00A82F727F47792; };
-167535061B41EBE91B3192CC = {isa = PBXBuildFile; fileRef = A5E565AF25FD8C57DE7DDAB6; };
-D4463A30C5F250B3FD7BDB8F = {isa = PBXBuildFile; fileRef = D4032D2999C720C753B262D8; };
-FC63448FDDC7F81FE192003E = {isa = PBXBuildFile; fileRef = 75C44DA9527077E6197101E0; };
-C28A5D96A7D9DE85123AC6FE = {isa = PBXBuildFile; fileRef = D49C06D815595C8C58A674A2; };
-FA197495D4BD4C429F22BC95 = {isa = PBXBuildFile; fileRef = AE72F93051C229F3FC87613C; };
+		9D439E858DC15DA7055E495C /* ZenPlayer/Models/ResumeCandidate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5FAB89F0C8A900CBF889D2A /* ZenPlayer/Models/ResumeCandidate.swift */; };
+		A45DA34D57D85D4A979834B9 /* ZenPlayer/Services/PlaybackProgressGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C7254C77E50F7B6F68AB5EB /* ZenPlayer/Services/PlaybackProgressGate.swift */; };
+		AE281527F660C1F1C96BBBAE /* ZenPlayer/Models/RecentPlaybackRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F48F24199D94485A9B2C5B2 /* ZenPlayer/Models/RecentPlaybackRecord.swift */; };
+		AE628E0A73181293823FFE13 /* ZenPlayer/Models/PlaybackSeriesReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 193336E27BAC6DBDB50C1054 /* ZenPlayer/Models/PlaybackSeriesReference.swift */; };
+		B2D11D74BB72AFDED92DAA0D /* ZenPlayer/Models/EpisodeLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA6BDE727422CC7E2FA8AB26 /* ZenPlayer/Models/EpisodeLocation.swift */; };
+		BE8DD8C3FC26DA595E9014E0 /* ZenPlayer/Models/PlaybackContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E854CFF1895CF84B38EBBC7 /* ZenPlayer/Models/PlaybackContext.swift */; };
+		C0EAE279828F20722732F0EB /* ZenPlayer/Models/EpisodeNumberParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C22115C4CD119301CCAD755 /* ZenPlayer/Models/EpisodeNumberParser.swift */; };
+		C28A5D96A7D9DE85123AC6FE /* ZenPlayer/ViewModels/SeriesDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D49C06D815595C8C58A674A2 /* ZenPlayer/ViewModels/SeriesDetailViewModel.swift */; };
+		C2A0702E252276ACC5582E3A /* ZenPlayer/Models/SearchNormalization.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E65A7AA4F6518549AA15C6 /* ZenPlayer/Models/SearchNormalization.swift */; };
+		C60AEFEF23861ED0BB608652 /* ZenPlayer/Models/ResumeCandidatePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4DB3923DD7075F9AE7B62F0 /* ZenPlayer/Models/ResumeCandidatePolicy.swift */; };
+		D4463A30C5F250B3FD7BDB8F /* ZenPlayer/Services/APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4032D2999C720C753B262D8 /* ZenPlayer/Services/APIService.swift */; };
+		DF300F72D7E96A9559966CE5 /* ZenPlayer/Models/PlaybackProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = F34BC4C2715E0099AFEFED8A /* ZenPlayer/Models/PlaybackProgress.swift */; };
+		E397B8D51A12C4CDD437C9E6 /* ZenPlayer/Services/RecentPlaybackStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5417D66C2F34095661D21E40 /* ZenPlayer/Services/RecentPlaybackStore.swift */; };
+		EE1F45202AC9EFF5CA1F67E1 /* ZenPlayer/Models/PlaybackMediaType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81B7D5CD18732D4C1480223B /* ZenPlayer/Models/PlaybackMediaType.swift */; };
+		F0E271C51727971AD85771E1 /* ZenPlayer/Services/LegacyProgressMigration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47C915F2A919A254BBBD4620 /* ZenPlayer/Services/LegacyProgressMigration.swift */; };
+		F11DF3BD5C32ED229D2EEE9F /* ZenPlayer/Localization/L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 786DB6D79AC46041B2A8A16F /* ZenPlayer/Localization/L10n.swift */; };
+		FA197495D4BD4C429F22BC95 /* ZenPlayer/Models/Category.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE72F93051C229F3FC87613C /* ZenPlayer/Models/Category.swift */; };
+		FC63448FDDC7F81FE192003E /* ZenPlayer/ViewModels/CategoryDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C44DA9527077E6197101E0 /* ZenPlayer/ViewModels/CategoryDetailViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0C78A3A4C1FE689E39281A92 /* ZenPlayer/ViewModels/HomeResumeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/ViewModels/HomeResumeViewModel.swift; sourceTree = SOURCE_ROOT; };
+		193336E27BAC6DBDB50C1054 /* ZenPlayer/Models/PlaybackSeriesReference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/PlaybackSeriesReference.swift; sourceTree = SOURCE_ROOT; };
+		2B0D8B55D6BA946E1328F555 /* ZenPlayer/ViewModels/PlayerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/ViewModels/PlayerViewModel.swift; sourceTree = SOURCE_ROOT; };
+		3AFA28F2C582DA4233F31F18 /* ZenPlayer/Models/PlaybackSessionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/PlaybackSessionState.swift; sourceTree = SOURCE_ROOT; };
+		3C7254C77E50F7B6F68AB5EB /* ZenPlayer/Services/PlaybackProgressGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Services/PlaybackProgressGate.swift; sourceTree = SOURCE_ROOT; };
+		45D823292259AE948A58002F /* ZenPlayer/Models/SeriesDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/SeriesDestination.swift; sourceTree = SOURCE_ROOT; };
+		47C915F2A919A254BBBD4620 /* ZenPlayer/Services/LegacyProgressMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Services/LegacyProgressMigration.swift; sourceTree = SOURCE_ROOT; };
+		4C8F55C810A585B69093D211 /* ZenPlayer/Models/QueueSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/QueueSnapshot.swift; sourceTree = SOURCE_ROOT; };
+		5417D66C2F34095661D21E40 /* ZenPlayer/Services/RecentPlaybackStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Services/RecentPlaybackStore.swift; sourceTree = SOURCE_ROOT; };
+		663FF3439814CD5770F5E728 /* ZenPlayer/Services/QueueSnapshotPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Services/QueueSnapshotPersistence.swift; sourceTree = SOURCE_ROOT; };
+		75C44DA9527077E6197101E0 /* ZenPlayer/ViewModels/CategoryDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/ViewModels/CategoryDetailViewModel.swift; sourceTree = SOURCE_ROOT; };
+		77C0941FFD76441CBA1D81D8 /* ZenPlayer/Models/CatalogSearchIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/CatalogSearchIndex.swift; sourceTree = SOURCE_ROOT; };
+		786DB6D79AC46041B2A8A16F /* ZenPlayer/Localization/L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Localization/L10n.swift; sourceTree = SOURCE_ROOT; };
+		7B5B46C1E955299676DB3BE6 /* ZenPlayer/Services/QueueSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Services/QueueSnapshotStore.swift; sourceTree = SOURCE_ROOT; };
+		7E854CFF1895CF84B38EBBC7 /* ZenPlayer/Models/PlaybackContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/PlaybackContext.swift; sourceTree = SOURCE_ROOT; };
+		81B7D5CD18732D4C1480223B /* ZenPlayer/Models/PlaybackMediaType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/PlaybackMediaType.swift; sourceTree = SOURCE_ROOT; };
+		850F5E2D5400C2DE65F59CBA /* ZenPlayer/Services/FileProgressPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Services/FileProgressPersistence.swift; sourceTree = SOURCE_ROOT; };
+		8975C95BA31207D80CBBDAFB /* ZenPlayer/Models/PlaybackQueueState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/PlaybackQueueState.swift; sourceTree = SOURCE_ROOT; };
+		8E7420E5153E135CD4D1B1C3 /* ZenPlayer/Localization/L10nKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Localization/L10nKey.swift; sourceTree = SOURCE_ROOT; };
+		8F48F24199D94485A9B2C5B2 /* ZenPlayer/Models/RecentPlaybackRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/RecentPlaybackRecord.swift; sourceTree = SOURCE_ROOT; };
 		966DFAB32F3C7CF500A90038 /* ZenPlayer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ZenPlayer.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		CDDC88C6A7E230715930403E = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/Episode.swift"; sourceTree = SOURCE_ROOT; };
-		7E854CFF1895CF84B38EBBC7 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/PlaybackContext.swift"; sourceTree = SOURCE_ROOT; };
-		81B7D5CD18732D4C1480223B = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/PlaybackMediaType.swift"; sourceTree = SOURCE_ROOT; };
-		8F48F24199D94485A9B2C5B2 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/RecentPlaybackRecord.swift"; sourceTree = SOURCE_ROOT; };
-		786DB6D79AC46041B2A8A16F = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Localization/L10n.swift"; sourceTree = SOURCE_ROOT; };
-		8E7420E5153E135CD4D1B1C3 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Localization/L10nKey.swift"; sourceTree = SOURCE_ROOT; };
-		E7B5ED7645AD14A41700C100 = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = ZenPlayerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-F34BC4C2715E0099AFEFED8A = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/PlaybackProgress.swift"; sourceTree = SOURCE_ROOT; };
-850F5E2D5400C2DE65F59CBA = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Services/FileProgressPersistence.swift"; sourceTree = SOURCE_ROOT; };
-EC8DA741C92B3568A0475534 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Services/PlaybackProgressStore.swift"; sourceTree = SOURCE_ROOT; };
-47C915F2A919A254BBBD4620 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Services/LegacyProgressMigration.swift"; sourceTree = SOURCE_ROOT; };
-5417D66C2F34095661D21E40 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Services/RecentPlaybackStore.swift"; sourceTree = SOURCE_ROOT; };
-3C7254C77E50F7B6F68AB5EB = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Services/PlaybackProgressGate.swift"; sourceTree = SOURCE_ROOT; };
-3AFA28F2C582DA4233F31F18 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/PlaybackSessionState.swift"; sourceTree = SOURCE_ROOT; };
-193336E27BAC6DBDB50C1054 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/PlaybackSeriesReference.swift"; sourceTree = SOURCE_ROOT; };
-4C8F55C810A585B69093D211 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/QueueSnapshot.swift"; sourceTree = SOURCE_ROOT; };
-8975C95BA31207D80CBBDAFB = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/PlaybackQueueState.swift"; sourceTree = SOURCE_ROOT; };
-663FF3439814CD5770F5E728 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Services/QueueSnapshotPersistence.swift"; sourceTree = SOURCE_ROOT; };
-7B5B46C1E955299676DB3BE6 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Services/QueueSnapshotStore.swift"; sourceTree = SOURCE_ROOT; };
-C7BC6BE134B77D1724A590C1 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/QueueMediaPolicy.swift"; sourceTree = SOURCE_ROOT; };
-D7D5D69B934D212855DF9477 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Services/PlaybackAudioProcessing.swift"; sourceTree = SOURCE_ROOT; };
-2B0D8B55D6BA946E1328F555 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/ViewModels/PlayerViewModel.swift"; sourceTree = SOURCE_ROOT; };
-D5FAB89F0C8A900CBF889D2A = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/ResumeCandidate.swift"; sourceTree = SOURCE_ROOT; };
-F4DB3923DD7075F9AE7B62F0 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/ResumeCandidatePolicy.swift"; sourceTree = SOURCE_ROOT; };
-0C78A3A4C1FE689E39281A92 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/ViewModels/HomeResumeViewModel.swift"; sourceTree = SOURCE_ROOT; };
-45D823292259AE948A58002F = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/SeriesDestination.swift"; sourceTree = SOURCE_ROOT; };
-C3E65A7AA4F6518549AA15C6 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/SearchNormalization.swift"; sourceTree = SOURCE_ROOT; };
-9C22115C4CD119301CCAD755 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/EpisodeNumberParser.swift"; sourceTree = SOURCE_ROOT; };
-77C0941FFD76441CBA1D81D8 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/CatalogSearchIndex.swift"; sourceTree = SOURCE_ROOT; };
-B59EF3A1A1B679F50178627C = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/Series.swift"; sourceTree = SOURCE_ROOT; };
-EA6BDE727422CC7E2FA8AB26 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/EpisodeLocation.swift"; sourceTree = SOURCE_ROOT; };
-C7F7F581E00A82F727F47792 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/CatalogLoadFailure.swift"; sourceTree = SOURCE_ROOT; };
-A5E565AF25FD8C57DE7DDAB6 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/APIResponse.swift"; sourceTree = SOURCE_ROOT; };
-D4032D2999C720C753B262D8 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Services/APIService.swift"; sourceTree = SOURCE_ROOT; };
-75C44DA9527077E6197101E0 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/ViewModels/CategoryDetailViewModel.swift"; sourceTree = SOURCE_ROOT; };
-D49C06D815595C8C58A674A2 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/ViewModels/SeriesDetailViewModel.swift"; sourceTree = SOURCE_ROOT; };
-AE72F93051C229F3FC87613C = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/Category.swift"; sourceTree = SOURCE_ROOT; };
+		9C22115C4CD119301CCAD755 /* ZenPlayer/Models/EpisodeNumberParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/EpisodeNumberParser.swift; sourceTree = SOURCE_ROOT; };
+		A5E565AF25FD8C57DE7DDAB6 /* ZenPlayer/Models/APIResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/APIResponse.swift; sourceTree = SOURCE_ROOT; };
+		AE72F93051C229F3FC87613C /* ZenPlayer/Models/Category.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/Category.swift; sourceTree = SOURCE_ROOT; };
+		B59EF3A1A1B679F50178627C /* ZenPlayer/Models/Series.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/Series.swift; sourceTree = SOURCE_ROOT; };
+		C3E65A7AA4F6518549AA15C6 /* ZenPlayer/Models/SearchNormalization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/SearchNormalization.swift; sourceTree = SOURCE_ROOT; };
+		C7BC6BE134B77D1724A590C1 /* ZenPlayer/Models/QueueMediaPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/QueueMediaPolicy.swift; sourceTree = SOURCE_ROOT; };
+		C7F7F581E00A82F727F47792 /* ZenPlayer/Models/CatalogLoadFailure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/CatalogLoadFailure.swift; sourceTree = SOURCE_ROOT; };
+		CDDC88C6A7E230715930403E /* ZenPlayer/Models/Episode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/Episode.swift; sourceTree = SOURCE_ROOT; };
+		D4032D2999C720C753B262D8 /* ZenPlayer/Services/APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Services/APIService.swift; sourceTree = SOURCE_ROOT; };
+		D49C06D815595C8C58A674A2 /* ZenPlayer/ViewModels/SeriesDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/ViewModels/SeriesDetailViewModel.swift; sourceTree = SOURCE_ROOT; };
+		D5FAB89F0C8A900CBF889D2A /* ZenPlayer/Models/ResumeCandidate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/ResumeCandidate.swift; sourceTree = SOURCE_ROOT; };
+		D7D5D69B934D212855DF9477 /* ZenPlayer/Services/PlaybackAudioProcessing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Services/PlaybackAudioProcessing.swift; sourceTree = SOURCE_ROOT; };
+		E7B5ED7645AD14A41700C100 /* ZenPlayerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = ZenPlayerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EA6BDE727422CC7E2FA8AB26 /* ZenPlayer/Models/EpisodeLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/EpisodeLocation.swift; sourceTree = SOURCE_ROOT; };
+		EC8DA741C92B3568A0475534 /* ZenPlayer/Services/PlaybackProgressStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Services/PlaybackProgressStore.swift; sourceTree = SOURCE_ROOT; };
+		F34BC4C2715E0099AFEFED8A /* ZenPlayer/Models/PlaybackProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/PlaybackProgress.swift; sourceTree = SOURCE_ROOT; };
+		F4DB3923DD7075F9AE7B62F0 /* ZenPlayer/Models/ResumeCandidatePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZenPlayer/Models/ResumeCandidatePolicy.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -98,6 +98,11 @@ AE72F93051C229F3FC87613C = {isa = PBXFileReference; lastKnownFileType = sourceco
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		80809447C77624C433F53504 /* ZenPlayerTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ZenPlayerTests;
+			sourceTree = "<group>";
+		};
 		966DFAB52F3C7CF500A90038 /* ZenPlayer */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -106,7 +111,6 @@ AE72F93051C229F3FC87613C = {isa = PBXFileReference; lastKnownFileType = sourceco
 			path = ZenPlayer;
 			sourceTree = "<group>";
 		};
-		80809447C77624C433F53504 = {isa = PBXFileSystemSynchronizedRootGroup; path = ZenPlayerTests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -121,12 +125,56 @@ AE72F93051C229F3FC87613C = {isa = PBXFileReference; lastKnownFileType = sourceco
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		2D8A94BA3067E51F007AA9E0 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				AE72F93051C229F3FC87613C /* ZenPlayer/Models/Category.swift */,
+				D49C06D815595C8C58A674A2 /* ZenPlayer/ViewModels/SeriesDetailViewModel.swift */,
+				75C44DA9527077E6197101E0 /* ZenPlayer/ViewModels/CategoryDetailViewModel.swift */,
+				D4032D2999C720C753B262D8 /* ZenPlayer/Services/APIService.swift */,
+				A5E565AF25FD8C57DE7DDAB6 /* ZenPlayer/Models/APIResponse.swift */,
+				C7F7F581E00A82F727F47792 /* ZenPlayer/Models/CatalogLoadFailure.swift */,
+				EA6BDE727422CC7E2FA8AB26 /* ZenPlayer/Models/EpisodeLocation.swift */,
+				B59EF3A1A1B679F50178627C /* ZenPlayer/Models/Series.swift */,
+				77C0941FFD76441CBA1D81D8 /* ZenPlayer/Models/CatalogSearchIndex.swift */,
+				9C22115C4CD119301CCAD755 /* ZenPlayer/Models/EpisodeNumberParser.swift */,
+				C3E65A7AA4F6518549AA15C6 /* ZenPlayer/Models/SearchNormalization.swift */,
+				45D823292259AE948A58002F /* ZenPlayer/Models/SeriesDestination.swift */,
+				0C78A3A4C1FE689E39281A92 /* ZenPlayer/ViewModels/HomeResumeViewModel.swift */,
+				F4DB3923DD7075F9AE7B62F0 /* ZenPlayer/Models/ResumeCandidatePolicy.swift */,
+				D5FAB89F0C8A900CBF889D2A /* ZenPlayer/Models/ResumeCandidate.swift */,
+				2B0D8B55D6BA946E1328F555 /* ZenPlayer/ViewModels/PlayerViewModel.swift */,
+				D7D5D69B934D212855DF9477 /* ZenPlayer/Services/PlaybackAudioProcessing.swift */,
+				C7BC6BE134B77D1724A590C1 /* ZenPlayer/Models/QueueMediaPolicy.swift */,
+				7B5B46C1E955299676DB3BE6 /* ZenPlayer/Services/QueueSnapshotStore.swift */,
+				663FF3439814CD5770F5E728 /* ZenPlayer/Services/QueueSnapshotPersistence.swift */,
+				8975C95BA31207D80CBBDAFB /* ZenPlayer/Models/PlaybackQueueState.swift */,
+				4C8F55C810A585B69093D211 /* ZenPlayer/Models/QueueSnapshot.swift */,
+				193336E27BAC6DBDB50C1054 /* ZenPlayer/Models/PlaybackSeriesReference.swift */,
+				3AFA28F2C582DA4233F31F18 /* ZenPlayer/Models/PlaybackSessionState.swift */,
+				3C7254C77E50F7B6F68AB5EB /* ZenPlayer/Services/PlaybackProgressGate.swift */,
+				5417D66C2F34095661D21E40 /* ZenPlayer/Services/RecentPlaybackStore.swift */,
+				47C915F2A919A254BBBD4620 /* ZenPlayer/Services/LegacyProgressMigration.swift */,
+				EC8DA741C92B3568A0475534 /* ZenPlayer/Services/PlaybackProgressStore.swift */,
+				850F5E2D5400C2DE65F59CBA /* ZenPlayer/Services/FileProgressPersistence.swift */,
+				F34BC4C2715E0099AFEFED8A /* ZenPlayer/Models/PlaybackProgress.swift */,
+				CDDC88C6A7E230715930403E /* ZenPlayer/Models/Episode.swift */,
+				7E854CFF1895CF84B38EBBC7 /* ZenPlayer/Models/PlaybackContext.swift */,
+				81B7D5CD18732D4C1480223B /* ZenPlayer/Models/PlaybackMediaType.swift */,
+				8F48F24199D94485A9B2C5B2 /* ZenPlayer/Models/RecentPlaybackRecord.swift */,
+				786DB6D79AC46041B2A8A16F /* ZenPlayer/Localization/L10n.swift */,
+				8E7420E5153E135CD4D1B1C3 /* ZenPlayer/Localization/L10nKey.swift */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		966DFAAA2F3C7CF500A90038 = {
 			isa = PBXGroup;
 			children = (
 				80809447C77624C433F53504 /* ZenPlayerTests */,
 				966DFAB52F3C7CF500A90038 /* ZenPlayer */,
 				966DFAB42F3C7CF500A90038 /* Products */,
+				2D8A94BA3067E51F007AA9E0 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -142,6 +190,25 @@ AE72F93051C229F3FC87613C = {isa = PBXFileReference; lastKnownFileType = sourceco
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		2BCA9D46132ED3B9F3736F87 /* ZenPlayerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C7FEF3ED74640E71D4564C6A /* Build configuration list for PBXNativeTarget "ZenPlayerTests" */;
+			buildPhases = (
+				62AB01C7BD8CDABF9CB25179 /* Sources */,
+				527884A0193ABCFFBD4F69B9 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				80809447C77624C433F53504 /* ZenPlayerTests */,
+			);
+			name = ZenPlayerTests;
+			productName = ZenPlayerTests;
+			productReference = E7B5ED7645AD14A41700C100 /* ZenPlayerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		966DFAB22F3C7CF500A90038 /* ZenPlayer */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 966DFABE2F3C7CF600A90038 /* Build configuration list for PBXNativeTarget "ZenPlayer" */;
@@ -165,7 +232,6 @@ AE72F93051C229F3FC87613C = {isa = PBXFileReference; lastKnownFileType = sourceco
 			productReference = 966DFAB32F3C7CF500A90038 /* ZenPlayer.app */;
 			productType = "com.apple.product-type.application";
 		};
-		2BCA9D46132ED3B9F3736F87 = {isa = PBXNativeTarget; buildConfigurationList = C7FEF3ED74640E71D4564C6A; buildPhases = (62AB01C7BD8CDABF9CB25179, 527884A0193ABCFFBD4F69B9,); buildRules = (); dependencies = (); fileSystemSynchronizedGroups = (80809447C77624C433F53504,); name = ZenPlayerTests; productName = ZenPlayerTests; productReference = E7B5ED7645AD14A41700C100; productType = "com.apple.product-type.bundle.unit-test"; };
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -205,6 +271,13 @@ AE72F93051C229F3FC87613C = {isa = PBXFileReference; lastKnownFileType = sourceco
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		527884A0193ABCFFBD4F69B9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		966DFAB12F3C7CF500A90038 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -212,10 +285,52 @@ AE72F93051C229F3FC87613C = {isa = PBXFileReference; lastKnownFileType = sourceco
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-527884A0193ABCFFBD4F69B9 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		62AB01C7BD8CDABF9CB25179 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FA197495D4BD4C429F22BC95 /* ZenPlayer/Models/Category.swift in Sources */,
+				C28A5D96A7D9DE85123AC6FE /* ZenPlayer/ViewModels/SeriesDetailViewModel.swift in Sources */,
+				FC63448FDDC7F81FE192003E /* ZenPlayer/ViewModels/CategoryDetailViewModel.swift in Sources */,
+				D4463A30C5F250B3FD7BDB8F /* ZenPlayer/Services/APIService.swift in Sources */,
+				167535061B41EBE91B3192CC /* ZenPlayer/Models/APIResponse.swift in Sources */,
+				311014AFC72383E9984AFEEC /* ZenPlayer/Models/CatalogLoadFailure.swift in Sources */,
+				B2D11D74BB72AFDED92DAA0D /* ZenPlayer/Models/EpisodeLocation.swift in Sources */,
+				021E0417FB7E4E9D9C9A842F /* ZenPlayer/Models/Series.swift in Sources */,
+				68DA23F05836FCC0537182E2 /* ZenPlayer/Models/CatalogSearchIndex.swift in Sources */,
+				C0EAE279828F20722732F0EB /* ZenPlayer/Models/EpisodeNumberParser.swift in Sources */,
+				C2A0702E252276ACC5582E3A /* ZenPlayer/Models/SearchNormalization.swift in Sources */,
+				57D13B0FAF294DC508932CEA /* ZenPlayer/Models/SeriesDestination.swift in Sources */,
+				6D2DCED0FC3A9F9CD2F75868 /* ZenPlayer/ViewModels/HomeResumeViewModel.swift in Sources */,
+				C60AEFEF23861ED0BB608652 /* ZenPlayer/Models/ResumeCandidatePolicy.swift in Sources */,
+				9D439E858DC15DA7055E495C /* ZenPlayer/Models/ResumeCandidate.swift in Sources */,
+				4AB0C087BCE10A6A03FDBE67 /* ZenPlayer/ViewModels/PlayerViewModel.swift in Sources */,
+				16BB8F8E481106D85F8409CC /* ZenPlayer/Services/PlaybackAudioProcessing.swift in Sources */,
+				6EBE484219C3BC6670B24740 /* ZenPlayer/Models/QueueMediaPolicy.swift in Sources */,
+				616BE0E577910BDAD2D68E84 /* ZenPlayer/Services/QueueSnapshotStore.swift in Sources */,
+				24430908AE84E04F5B05D4C2 /* ZenPlayer/Services/QueueSnapshotPersistence.swift in Sources */,
+				338BDC47F797576A5756EEF4 /* ZenPlayer/Models/PlaybackQueueState.swift in Sources */,
+				4B81F048E53808A6342908F8 /* ZenPlayer/Models/QueueSnapshot.swift in Sources */,
+				AE628E0A73181293823FFE13 /* ZenPlayer/Models/PlaybackSeriesReference.swift in Sources */,
+				5804EAFC77E89F96DD59DDBC /* ZenPlayer/Models/PlaybackSessionState.swift in Sources */,
+				A45DA34D57D85D4A979834B9 /* ZenPlayer/Services/PlaybackProgressGate.swift in Sources */,
+				E397B8D51A12C4CDD437C9E6 /* ZenPlayer/Services/RecentPlaybackStore.swift in Sources */,
+				F0E271C51727971AD85771E1 /* ZenPlayer/Services/LegacyProgressMigration.swift in Sources */,
+				5223F8458EC02927C4A6A20D /* ZenPlayer/Services/PlaybackProgressStore.swift in Sources */,
+				317507668C101B18853A810A /* ZenPlayer/Services/FileProgressPersistence.swift in Sources */,
+				DF300F72D7E96A9559966CE5 /* ZenPlayer/Models/PlaybackProgress.swift in Sources */,
+				3DBE02F2FDF951D1BC21934C /* ZenPlayer/Models/Episode.swift in Sources */,
+				BE8DD8C3FC26DA595E9014E0 /* ZenPlayer/Models/PlaybackContext.swift in Sources */,
+				EE1F45202AC9EFF5CA1F67E1 /* ZenPlayer/Models/PlaybackMediaType.swift in Sources */,
+				AE281527F660C1F1C96BBBAE /* ZenPlayer/Models/RecentPlaybackRecord.swift in Sources */,
+				F11DF3BD5C32ED229D2EEE9F /* ZenPlayer/Localization/L10n.swift in Sources */,
+				10F358EDB89A10FC34F3E75C /* ZenPlayer/Localization/L10nKey.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		966DFAAF2F3C7CF500A90038 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -223,10 +338,45 @@ AE72F93051C229F3FC87613C = {isa = PBXFileReference; lastKnownFileType = sourceco
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		62AB01C7BD8CDABF9CB25179 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (FA197495D4BD4C429F22BC95, C28A5D96A7D9DE85123AC6FE, FC63448FDDC7F81FE192003E, D4463A30C5F250B3FD7BDB8F, 167535061B41EBE91B3192CC, 311014AFC72383E9984AFEEC, B2D11D74BB72AFDED92DAA0D, 021E0417FB7E4E9D9C9A842F, 68DA23F05836FCC0537182E2, C0EAE279828F20722732F0EB, C2A0702E252276ACC5582E3A, 57D13B0FAF294DC508932CEA, 6D2DCED0FC3A9F9CD2F75868, C60AEFEF23861ED0BB608652, 9D439E858DC15DA7055E495C, 4AB0C087BCE10A6A03FDBE67, 16BB8F8E481106D85F8409CC, 6EBE484219C3BC6670B24740, 616BE0E577910BDAD2D68E84, 24430908AE84E04F5B05D4C2, 338BDC47F797576A5756EEF4, 4B81F048E53808A6342908F8, AE628E0A73181293823FFE13, 5804EAFC77E89F96DD59DDBC, A45DA34D57D85D4A979834B9, E397B8D51A12C4CDD437C9E6, F0E271C51727971AD85771E1, 5223F8458EC02927C4A6A20D, 317507668C101B18853A810A, DF300F72D7E96A9559966CE5, 3DBE02F2FDF951D1BC21934C, BE8DD8C3FC26DA595E9014E0, EE1F45202AC9EFF5CA1F67E1, AE281527F660C1F1C96BBBAE, F11DF3BD5C32ED229D2EEE9F, 10F358EDB89A10FC34F3E75C,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		2CF073304B307971054D5B14 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17;
+				MACOSX_DEPLOYMENT_TARGET = 14;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.zenplayer.isolated-tests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		822A725D5AD9B8B4C320F7E5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17;
+				MACOSX_DEPLOYMENT_TARGET = 14;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.zenplayer.isolated-tests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 		966DFABC2F3C7CF600A90038 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -459,34 +609,6 @@ AE72F93051C229F3FC87613C = {isa = PBXFileReference; lastKnownFileType = sourceco
 			};
 			name = Release;
 		};
-		2CF073304B307971054D5B14 = {isa = XCBuildConfiguration; buildSettings = {
- GENERATE_INFOPLIST_FILE = YES;
- PRODUCT_BUNDLE_IDENTIFIER = com.zenplayer.isolated-tests;
- PRODUCT_NAME = "$(TARGET_NAME)";
- SDKROOT = auto;
- SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
- IPHONEOS_DEPLOYMENT_TARGET = 17;
- MACOSX_DEPLOYMENT_TARGET = 14;
- SWIFT_VERSION = 5.0;
- SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
- SWIFT_APPROACHABLE_CONCURRENCY = YES;
- TARGETED_DEVICE_FAMILY = 1;
- CODE_SIGN_IDENTITY = "-";
- }; name = Debug; };
-		822A725D5AD9B8B4C320F7E5 = {isa = XCBuildConfiguration; buildSettings = {
- GENERATE_INFOPLIST_FILE = YES;
- PRODUCT_BUNDLE_IDENTIFIER = com.zenplayer.isolated-tests;
- PRODUCT_NAME = "$(TARGET_NAME)";
- SDKROOT = auto;
- SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
- IPHONEOS_DEPLOYMENT_TARGET = 17;
- MACOSX_DEPLOYMENT_TARGET = 14;
- SWIFT_VERSION = 5.0;
- SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
- SWIFT_APPROACHABLE_CONCURRENCY = YES;
- TARGETED_DEVICE_FAMILY = 1;
- CODE_SIGN_IDENTITY = "-";
- }; name = Release; };
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -508,7 +630,15 @@ AE72F93051C229F3FC87613C = {isa = PBXFileReference; lastKnownFileType = sourceco
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C7FEF3ED74640E71D4564C6A = {isa = XCConfigurationList; buildConfigurations = (2CF073304B307971054D5B14, 822A725D5AD9B8B4C320F7E5,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		C7FEF3ED74640E71D4564C6A /* Build configuration list for PBXNativeTarget "ZenPlayerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2CF073304B307971054D5B14 /* Debug */,
+				822A725D5AD9B8B4C320F7E5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
