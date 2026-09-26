@@ -15,7 +15,7 @@
 | --- | --- | --- |
 | 中间集成 | 两端各 70 项，0 失败 | `/tmp/ZenPlayer-M3-integration-{mac,ios}.xcresult` 及同名前缀 `.log` |
 | 最终 macOS | 71 项，0 失败，App 编译通过 | `/tmp/ZenPlayer-M3-final-mac.xcresult`、`.log` |
-| 最终 iOS 模拟器 | 71 项，0 失败，App 编译通过 | `/tmp/ZenPlayer-M3-final-ios.xcresult`、`.log`；iPhone 16，id F98C04D4-C1D9-4D5D-A97F-F13C5F8BF425 |
+| 最终 iOS 模拟器 | 71 项，0 失败，App 编译通过 | `/tmp/ZenPlayer-M3-final-ios.xcresult`、`.log`；iPhone 17／iOS 27.0，id F98C04D4-C1D9-4D5D-A97F-F13C5F8BF425 |
 | OpenSpec | strict 通过 | `OPENSPEC_TELEMETRY=0 openspec validate surface-listening-progress --strict --no-interactive` |
 | 本地化／差异 | 9 个新增繁体 key 完整，diff check 通过 | L10nKey 与 xcstrings 对照、Git 定向检查 |
 | 静态渲染 | 360pt 首页卡明暗外观可读、长标题换行、未知时长正确 | `/tmp/ZenPlayer-M3-resume-standard.png`、`/tmp/ZenPlayer-M3-resume-large-dark.png`，隔离 ImageRenderer；不代表实际交互通过 |

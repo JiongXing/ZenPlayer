@@ -25,7 +25,13 @@ final class CategoryDetailViewModel {
         }
     }
 
-    var seriesList: [SeriesItem] = []
+    private(set) var seriesList: [SeriesItem] = []
+    private(set) var visibleSeries: [SeriesItem] = []
+    private(set) var total: Int?
+    var searchQuery = "" { didSet { applySearch() } }
+    var isSearchLimited: Bool { total.map { $0 <= 0 || seriesList.count < $0 } ?? true }
+    private var searchIndex = CatalogSearchIndex()
+    private var loadRequest = UUID()
     var isLoading = false
     var errorMessage: String?
     var sortField: SortField = .number {
@@ -35,23 +41,30 @@ final class CategoryDetailViewModel {
         didSet { applySort() }
     }
 
-    private let apiService = APIService.shared
+    private let loader: (String) async throws -> SeriesData
+
+    init(loader: @escaping (String) async throws -> SeriesData = { try await APIService.shared.fetchSeries(url: $0) }) {
+        self.loader = loader
+    }
 
     /// 加载二级类目数据
     /// - Parameter url: 由一级类目数据中 `CategoryItem.url` 提供的完整请求地址
     func loadSeries(url: String) async {
+        let request = UUID()
+        loadRequest = request
         isLoading = true
+        defer { if loadRequest == request { isLoading = false } }
         errorMessage = nil
 
         do {
-            let data = try await apiService.fetchSeries(url: url)
+            let data = try await loader(url)
+            guard !Task.isCancelled, loadRequest == request else { return }
+            total = data.total
             seriesList = data.rows
             applySort()
         } catch {
-            errorMessage = error.localizedDescription
+            if !Task.isCancelled, loadRequest == request { errorMessage = CatalogLoadFailure.message(for: error) }
         }
-
-        isLoading = false
     }
 
     // MARK: - 排序
@@ -75,6 +88,13 @@ final class CategoryDetailViewModel {
                 return isAscending ? lhs.id < rhs.id : lhs.id > rhs.id
             }
         }
+        searchIndex = CatalogSearchIndex(series: seriesList)
+        applySearch()
+    }
+
+    private func applySearch() {
+        let ids = Set(searchIndex.matchingIDs(query: searchQuery))
+        visibleSeries = seriesList.filter { ids.contains($0.id) }
     }
 
     /// 提取字符串中的数字用于编号排序，例如 "第12集" -> 12

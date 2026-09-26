@@ -6,6 +6,22 @@
 import Foundation
 
 enum L10nKey: String, CaseIterable {
+    case catalogCategoryPrompt = "catalog.category_prompt"
+    case catalogEpisodePrompt = "catalog.episode_prompt"
+    case catalogCourseResults = "catalog.course_results"
+    case catalogEpisodeResults = "catalog.episode_results"
+    case catalogLimited = "catalog.limited"
+    case catalogNoResults = "catalog.no_results"
+    case catalogClear = "catalog.clear"
+    case catalogNeedsConnection = "catalog.needs_connection"
+    case catalogJumpTitle = "catalog.jump_title"
+    case catalogJumpInput = "catalog.jump_input"
+    case catalogJumpGo = "catalog.jump_go"
+    case catalogJumpInvalid = "catalog.jump_invalid"
+    case catalogJumpNotFound = "catalog.jump_not_found"
+    case catalogJumpDuplicates = "catalog.jump_duplicates"
+    case catalogJumpCandidate = "catalog.jump_candidate"
+
     case commonCancel = "common.cancel"
     case commonDelete = "common.delete"
     case commonSelected = "common.selected"

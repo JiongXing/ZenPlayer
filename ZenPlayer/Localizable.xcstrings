@@ -1255,6 +1255,156 @@
           }
         }
       }
+    },
+    "catalog.category_prompt": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜尋本分類課程或編號"
+          }
+        }
+      }
+    },
+    "catalog.clear": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除關鍵詞"
+          }
+        }
+      }
+    },
+    "catalog.course_results": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找到 %lld 門課程"
+          }
+        }
+      }
+    },
+    "catalog.episode_prompt": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜尋本系列標題或集數"
+          }
+        }
+      }
+    },
+    "catalog.episode_results": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找到 %lld 集"
+          }
+        }
+      }
+    },
+    "catalog.jump_candidate": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "第 %1$@ 集 · %2$@ · %3$@"
+          }
+        }
+      }
+    },
+    "catalog.jump_duplicates": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此集數有多個條目，請選擇要定位的內容"
+          }
+        }
+      }
+    },
+    "catalog.jump_go": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "定位"
+          }
+        }
+      }
+    },
+    "catalog.jump_input": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "集數，例如 12 或第12集"
+          }
+        }
+      }
+    },
+    "catalog.jump_invalid": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請輸入非負整數集數，例如 12 或第12集"
+          }
+        }
+      }
+    },
+    "catalog.jump_not_found": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到此集，請確認集數"
+          }
+        }
+      }
+    },
+    "catalog.jump_title": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跳至集數"
+          }
+        }
+      }
+    },
+    "catalog.limited": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "僅搜尋已載入內容"
+          }
+        }
+      }
+    },
+    "catalog.needs_connection": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚無可用的目錄內容，請連線後重試。"
+          }
+        }
+      }
+    },
+    "catalog.no_results": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已載入內容中沒有符合的結果"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

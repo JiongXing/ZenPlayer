@@ -11,6 +11,7 @@ import SwiftUI
 struct CategoryDetailView: View {
     let category: CategoryItem
 
+    @FocusState private var searchFocused: Bool
     @State private var viewModel = CategoryDetailViewModel()
     @Environment(\.horizontalSizeClass) private var sizeClass
 
@@ -36,60 +37,66 @@ struct CategoryDetailView: View {
     // MARK: - 内容视图
 
     private var contentView: some View {
-        ScrollView {
-            VStack(spacing: 4) {
-                // 类目描述
-                if !category.desc.isEmpty {
-                    Text(category.desc)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, LayoutConstants.horizontalPadding(sizeClass: sizeClass))
-                        .padding(.top, 16)
-                        .padding(.bottom, 8)
-                }
+        VStack(spacing: 0) {
+            CatalogSearchHeader(query: $viewModel.searchQuery, prompt: .catalogCategoryPrompt,
+                                resultText: L10n.string(.catalogCourseResults, Int64(viewModel.visibleSeries.count)),
+                                isLimited: viewModel.isSearchLimited, isEmpty: viewModel.visibleSeries.isEmpty,
+                                isFocused: $searchFocused)
+            ScrollView {
+                VStack(spacing: 4) {
+                    // 类目描述
+                    if !category.desc.isEmpty {
+                        Text(category.desc)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, LayoutConstants.horizontalPadding(sizeClass: sizeClass))
+                            .padding(.top, 16)
+                            .padding(.bottom, 8)
+                    }
 
-                // 统计信息
-                HStack {
-                    Text(L10n.string(.categorySeriesCount, Int64(viewModel.seriesList.count)))
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                    Spacer()
-                    Picker(L10n.text(.categorySortField), selection: $viewModel.sortField) {
-                        ForEach(CategoryDetailViewModel.SortField.allCases) { field in
-                            Text(field.displayName).tag(field)
+                    // 统计信息
+                    HStack {
+                        Text(L10n.string(.categorySeriesCount, Int64(viewModel.seriesList.count)))
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                        Spacer()
+                        Picker(L10n.text(.categorySortField), selection: $viewModel.sortField) {
+                            ForEach(CategoryDetailViewModel.SortField.allCases) { field in
+                                Text(field.displayName).tag(field)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .labelsHidden()
+
+                        Button {
+                            viewModel.isAscending.toggle()
+                        } label: {
+                            Label(
+                                viewModel.isAscending ? L10n.text(.categorySortAsc) : L10n.text(.categorySortDesc),
+                                systemImage: viewModel.isAscending ? "arrow.up" : "arrow.down"
+                            )
+                            .labelStyle(.iconOnly)
+                        }
+                        .buttonStyle(.borderless)
+                        .accessibilityLabel(viewModel.isAscending ? Text(L10n.text(.categorySortAscHint)) : Text(L10n.text(.categorySortDescHint)))
+                    }
+                    .padding(.horizontal, LayoutConstants.horizontalPadding(sizeClass: sizeClass))
+                    .padding(.bottom, 8)
+
+                    // 列表
+                    LazyVStack(spacing: 4) {
+                        ForEach(viewModel.visibleSeries) { series in
+                            NavigationLink(value: series) {
+                                SeriesRowView(series: series)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal, 16)
                         }
                     }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
-
-                    Button {
-                        viewModel.isAscending.toggle()
-                    } label: {
-                        Label(
-                            viewModel.isAscending ? L10n.text(.categorySortAsc) : L10n.text(.categorySortDesc),
-                            systemImage: viewModel.isAscending ? "arrow.up" : "arrow.down"
-                        )
-                        .labelStyle(.iconOnly)
-                    }
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel(viewModel.isAscending ? Text(L10n.text(.categorySortAscHint)) : Text(L10n.text(.categorySortDescHint)))
                 }
-                .padding(.horizontal, LayoutConstants.horizontalPadding(sizeClass: sizeClass))
-                .padding(.bottom, 8)
-
-                // 列表
-                LazyVStack(spacing: 4) {
-                    ForEach(viewModel.seriesList) { series in
-                        NavigationLink(value: series) {
-                            SeriesRowView(series: series)
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.horizontal, 16)
-                    }
-                }
+                .padding(.bottom, 24)
             }
-            .padding(.bottom, 24)
         }
     }
 

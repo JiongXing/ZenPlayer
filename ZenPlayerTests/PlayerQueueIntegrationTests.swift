@@ -258,6 +258,32 @@ final class PlayerQueueIntegrationTests: XCTestCase {
         await finish(model)
     }
 
+    func testFilteredEpisodeStillNaturallyAdvancesThroughFullLoadedQueue() async throws {
+        let environment = try ProgressTestEnvironment()
+        let model = try makeModel(environment)
+        defer { model.stopPlayback() }
+        let allEpisodes = testQueue().episodes
+        let series = SeriesDetailViewModel(loader: { _ in searchDetail(allEpisodes, total: allEpisodes.count) })
+        await series.loadSpeechDetail(url: "fixture", series: searchDestination)
+        let snapshot = try XCTUnwrap(series.queueSnapshot)
+        series.searchQuery = "2"
+        XCTAssertEqual(series.visibleEpisodes.map(\.id), [2])
+        let selected = try XCTUnwrap(series.visibleEpisodes.first)
+        let index = try XCTUnwrap(snapshot.episodes.firstIndex(where: { $0.id == selected.id }))
+        model.selectPlayback(try XCTUnwrap(snapshot.context(at: index)), snapshot: snapshot)
+        try await waitUntil { !model.isPreparingPlayback && model.player?.currentItem?.status == .readyToPlay }
+        model.pausePlayback()
+        await model.seek(to: 3.8)
+        model.resumePlayback()
+        try await waitUntil { model.currentContext?.episode.id == 5 && !model.isPreparingPlayback && model.player?.currentItem?.status == .readyToPlay }
+        model.pausePlayback()
+        XCTAssertEqual(model.queue.snapshot?.episodes.map(\.id), [1, 2, 5])
+        XCTAssertEqual(model.queue.snapshot?.id, snapshot.id)
+        XCTAssertEqual(series.visibleEpisodes.map(\.id), [2])
+        XCTAssertEqual(series.queueSnapshot, snapshot)
+        await finish(model)
+    }
+
     private func makeModel(_ environment: ProgressTestEnvironment, offline: Bool = false, audioOnly: Bool = false,
                            processor: (() -> any PlaybackAudioProcessing)? = nil) throws -> PlayerViewModel {
         for id in [1, 2, 5] { try silentWave().write(to: environment.directory.appendingPathComponent("\(id).wav")) }

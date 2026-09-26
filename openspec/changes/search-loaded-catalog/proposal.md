@@ -1,0 +1,28 @@
+## Why
+
+长分类／系列列表只能逐行浏览，缺乏页内查找和准确集数定位。M4 按 PRD F3-01～F3-04、Q-03／Q-04、AT-22～AT-26 补齐确定性本地检索，并整合 AT-09／AT-19、汇总 M0～M4 验收缺口。
+
+## What Changes
+
+- 分类按已加载 title／num 检索，保留所选排序；系列按 title／num／episode 检索，纯数字精确集数优先，原标题不变。
+- 固定简繁字表、全半角与大小写归一化、多词 AND 匹配，字段预处理避免每键全量转换。
+- 跳至集数只按实际 episode 值；支持前导零、全角及第12集，拒绝负数／小数／非法输入；缺集明确提示，重复集数给候选。
+- 成功定位与上次收听定位清筛选、收键盘、滚动并文字高亮约 2 秒，不开播、不改变完整队列。
+- 区分已加载范围、零结果、加载错误和首次离线；错误可重试，零结果可清词，不抓取额外目录。
+- 隔离测试、性能样本、两端构建及阶段 review／本地提交；实际设备、可访问性与旧能力按真实结果登记。
+
+## Capabilities
+
+### New Capabilities
+
+- `loaded-catalog-search`：分类／系列检索、集数直达、范围反馈及搜索与队列／进度整合。
+
+### Modified Capabilities
+
+暂无主规格；本 change 不同步或归档 M0～M3。
+
+## Impact
+
+CategoryDetailViewModel 目前只在加载及排序变更时调整完整 seriesList，未保留 total；SeriesDetailViewModel 保留完整 episodes 和 M2 queueSnapshot。新增纯搜索／集数解析，ViewModel 维护派生结果与输入状态；视图添加输入及反馈。SeriesDetailView 复用 M3 稳定 episode id 滚动与历史路由。无新依赖、持久化迁移、网络接口、远端埋点或播放器重构。
+
+持续目标已授权 M1～M4 实施及阶段本地提交，M3 提交 096307d。前序设备缺口不阻止独立搜索工程，但最终验收必须保留；不将本地测试替代真机门槛。

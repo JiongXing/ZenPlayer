@@ -12,6 +12,8 @@ import Kingfisher
 struct SeriesDetailView: View {
     let series: SeriesDestination
     @State private var highlightedEpisodeID: Int?
+    @State private var isJumpPresented = false
+    @FocusState private var searchFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(series: SeriesItem) {
@@ -39,6 +41,18 @@ struct SeriesDetailView: View {
             if let snapshot { playbackSession.queueStore.cache(snapshot) }
         }
         .navigationTitle(series.title)
+        .toolbar {
+            Button {
+                searchFocused = false
+                isJumpPresented = true
+            } label: {
+                Text(L10n.text(.catalogJumpTitle)).frame(minWidth: 44, minHeight: 44)
+            }
+            .disabled(viewModel.speechDetail == nil)
+        }
+        .sheet(isPresented: $isJumpPresented) {
+            EpisodeJumpSheet(input: $viewModel.jumpInput) { viewModel.submitJump() }
+        }
         .animation(.easeInOut(duration: 0.3), value: viewModel.speechDetail != nil)
         .task {
             if viewModel.speechDetail == nil {
@@ -50,60 +64,101 @@ struct SeriesDetailView: View {
     // MARK: - 内容视图
 
     private func contentView(detail: SpeechDetailData) -> some View {
-        ScrollViewReader { reader in
-            ScrollView {
-                VStack(spacing: 0) {
-                    // 讲集信息头部
-                    headerView(detail: detail)
+        VStack(spacing: 0) {
+            searchHeader
+            ScrollViewReader { reader in
+                ScrollView {
+                    VStack(spacing: 0) {
+                        // 讲集信息头部
+                        headerView(detail: detail)
 
-                    Divider()
-                        .padding(.horizontal, LayoutConstants.horizontalPadding(sizeClass: sizeClass))
+                        Divider()
+                            .padding(.horizontal, LayoutConstants.horizontalPadding(sizeClass: sizeClass))
 
-                    // 播放列表标题栏
-                    playlistHeader(detail: detail)
-                    if let target = ResumeCandidatePolicy.latestInSeries(episodes: viewModel.episodes, serverURL: detail.serverUrl,
-                                                                         records: playbackSession.progressStore.records.values) {
-                        Button(L10n.text(.resumeLocate)) { locate(target.context.episode.id, reader: reader) }
-                            .frame(minHeight: 44)
-                    }
+                        // 播放列表标题栏
+                        playlistHeader(detail: detail)
+                        if let target = ResumeCandidatePolicy.latestInSeries(episodes: viewModel.episodes, serverURL: detail.serverUrl,
+                                                                             records: playbackSession.progressStore.records.values) {
+                            Button { viewModel.locateEpisode(id: target.context.episode.id) } label: {
+                                Text(L10n.text(.resumeLocate)).frame(minWidth: 44, minHeight: 44)
+                            }
+                        }
 
-                    // 播放列表（缩小两侧边距，留更多空间展示标题与元信息）
-                    LazyVStack(spacing: 4) {
-                        ForEach(viewModel.episodes) { episode in
-                            EpisodeRowView(
-                                episode: episode,
-                                serverUrl: detail.serverUrl,
-                                seriesType: detail.type,
-                                downloadManager: downloadManager,
-                                queueSnapshot: viewModel.queueSnapshot,
-                                isListeningTarget: highlightedEpisodeID == episode.id
-                            )
-                            .padding(.horizontal, 6)
-                            .id(episode.id)
-                            .overlay {
-                                if highlightedEpisodeID == episode.id {
-                                    RoundedRectangle(cornerRadius: 10).stroke(.tint, lineWidth: 2).allowsHitTesting(false)
+                        // 播放列表（缩小两侧边距，留更多空间展示标题与元信息）
+                        LazyVStack(spacing: 4) {
+                            ForEach(viewModel.visibleEpisodes) { episode in
+                                EpisodeRowView(
+                                    episode: episode,
+                                    serverUrl: detail.serverUrl,
+                                    seriesType: detail.type,
+                                    downloadManager: downloadManager,
+                                    queueSnapshot: viewModel.queueSnapshot,
+                                    isListeningTarget: highlightedEpisodeID == episode.id
+                                )
+                                .padding(.horizontal, 6)
+                                .id(episode.id)
+                                .overlay {
+                                    if highlightedEpisodeID == episode.id {
+                                        RoundedRectangle(cornerRadius: 10).stroke(.tint, lineWidth: 2).allowsHitTesting(false)
+                                    }
                                 }
                             }
                         }
+                        .padding(.bottom, 24)
                     }
-                    .padding(.bottom, 24)
                 }
-            }
-            .task(id: viewModel.queueSnapshot?.id) {
-                if let target = series.targetEpisodeID, viewModel.episodes.contains(where: { $0.id == target }) {
-                    // 等待当前已加载列表进入布局后定位，不触发播放。
+                .task(id: viewModel.queueSnapshot?.id) {
+                    if let target = series.targetEpisodeID { viewModel.locateEpisode(id: target) }
+                }
+                .task(id: viewModel.location?.id) {
+                    guard let location = viewModel.location else { return }
+                    searchFocused = false
+                    // 清除筛选后的列表先进入布局；不触发播放。
                     await Task.yield()
-                    locate(target, reader: reader)
+                    guard !Task.isCancelled else { return }
+                    highlightedEpisodeID = location.episodeID
+                    if reduceMotion { reader.scrollTo(location.episodeID, anchor: .center) }
+                    else { withAnimation(.easeInOut) { reader.scrollTo(location.episodeID, anchor: .center) } }
+                    do {
+                        try await Task.sleep(for: .seconds(2))
+                        guard !Task.isCancelled, viewModel.location?.id == location.id else { return }
+                        highlightedEpisodeID = nil
+                    } catch { /* 新定位或离页取消旧高亮计时。 */ }
                 }
             }
         }
     }
 
-    private func locate(_ episodeID: Int, reader: ScrollViewProxy) {
-        highlightedEpisodeID = episodeID
-        if reduceMotion { reader.scrollTo(episodeID, anchor: .center) }
-        else { withAnimation(.easeInOut) { reader.scrollTo(episodeID, anchor: .center) } }
+    private var searchHeader: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            CatalogSearchHeader(query: $viewModel.searchQuery, prompt: .catalogEpisodePrompt,
+                                resultText: L10n.string(.catalogEpisodeResults, Int64(viewModel.visibleEpisodes.count)),
+                                isLimited: viewModel.isSearchLimited, isEmpty: viewModel.visibleEpisodes.isEmpty,
+                                isFocused: $searchFocused)
+            if let error = viewModel.jumpError {
+                Label(L10n.text(error), systemImage: "exclamationmark.circle")
+                    .foregroundStyle(.red).padding(.horizontal, 16)
+            }
+            if !viewModel.jumpCandidates.isEmpty {
+                Text(L10n.text(.catalogJumpDuplicates)).font(.subheadline).padding(.horizontal, 16)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(viewModel.jumpCandidates) { episode in
+                            Button {
+                                viewModel.locateEpisode(id: episode.id)
+                            } label: {
+                                Text(L10n.string(.catalogJumpCandidate, episode.episode, episode.title, episode.num))
+                                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+                .frame(maxHeight: 180)
+            }
+        }
     }
 
     // MARK: - 头部信息
