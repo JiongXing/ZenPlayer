@@ -37,7 +37,7 @@ PRD 来源：用户附件 `/Users/jxing/Desktop/ZenPlayer_PRD_v1.0.md`，首次�
 - 不包含：系列自动连播、首页续听卡和搜索；不只删除 onDisappear 停止逻辑。
 - 依赖：集成 M0 进度接口；macOS 采用单主窗口，保持本地优先与降噪回退。
 - PRD：F1-01～F1-04、D-02、Q-01～Q-03；验收 AT-01～AT-06、AT-11，AT-12 的跨页／PiP／窗口部分；AT-04 首页续听整合留 M3。
-- 状态：**In Verification**；代码 review／修复与两端自动化完成，本轮授权本地提交，4/6 项满足完成条件。跨页与主要迷你条 UI 已有局部证据；单窗口关闭／重启、可访问性及真实 iPhone 生命周期见当前验证记录；M0 设备验收缺口继续保留。
+- 状态：**In Verification**；代码 review／修复与两端自动化完成，本轮授权本地提交，5/6 项满足完成条件。跨页与迷你条展示／导航主流程已有证据；单窗口关闭／重启、可访问性及真实 iPhone 生命周期见当前验证记录；M0 设备验收缺口继续保留。
 - 变更：[unify-playback-session](openspec/changes/unify-playback-session/proposal.md)；[验证记录](openspec/changes/unify-playback-session/verification.md)。
 
 ## 后续 · M2 系列连播
@@ -57,7 +57,7 @@ PRD 来源：用户附件 `/Users/jxing/Desktop/ZenPlayer_PRD_v1.0.md`，首次�
 - 不包含：云同步、远端行为埋点、搜索引擎和队列重构。
 - 依赖：M0／M1，与 M2 队列集成；清筛选定位与 M4 联调。
 - PRD：F2-01／F2-02，复用 F2-03～F2-06，F3-03 定位联动；验收 AT-13～AT-15、AT-19 定位部分，复验 AT-04 首页续听及 AT-16／AT-18 展示。
-- 状态：**In Verification**；代码、review 修复和两端 71 项测试通过，5/6 项完成；实际首页／系列 UI、可访问性与 M4 清筛选联调待验。M0～M2 设备缺口保留。
+- 状态：**Done（本轮主流程验收范围）**；6/6 项完成。首页续听、系列状态／历史定位、长期旧记录恢复及 M4 清筛选联调已有实际 UI 和自动化证据，已核对当前源码一致性；VoiceOver／精确动画计时等补充验证仍未运行。M0～M2 的 iPhone 核心设备缺口独立保留，不代表全产品发布验收完成。
 - 变更：[surface-listening-progress](openspec/changes/surface-listening-progress/proposal.md)；[验证记录](openspec/changes/surface-listening-progress/verification.md)。
 
 ## 后续 · M4 搜索与总验收

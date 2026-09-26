@@ -207,3 +207,26 @@ M2／M3 补验时发现 Mac 完整页使用文字“播放／暫停”按钮，�
 收尾 review：应用差异仅 ZenPlayerApp 的平台场景声明；没有改变播放器所有权、持久化或队列状态。测试统一启动参数，合并两项旧窗口用例并删除无效新建窗口补救。本轮临时压力／trace 代码未纳入提交。两项 change strict 校验、27 个 Markdown 本地文件链接、Python 解析、唯一 Mac launch 入口及 `git diff --check` 通过。未发现本轮范围内新的阻断问题；既往间歇跳集仍未定位，保留 M2 记录，不声称已修复。
 
 按既有授权本地提交，标题 `简化 macOS 为单窗口并收敛主流程验证`；提交 hash 以 `git log -1 --format='%H%n%B' --grep='^简化 macOS 为单窗口并收敛主流程验证$'` 查询。无 push／PR／发布／主规格同步／归档。本轮单窗口调整达到对应主流程条件，M1 仍 4/6、In Verification，不据此宣告全部 M1～M4 完成。
+
+## 2026-09-26 主流程完成度审计
+
+本轮基线 `be4826edac4bfc00261222ace349b1d383a7ee6c`，起始工作区干净。上一轮单窗口代码及核心 UI 回归已经提交；本轮不改应用代码，不增加或重复执行测试。按用户明确要求，完成判定聚焦主流程，补充验证与阶段完成分开；没有把未验证写为通过，也不豁免 iPhone 核心生命周期。
+
+重新读取现有 xcresult 摘要及 context.json，并逐文件核对当前 SHA-256：
+
+| 证据 | 实际结果与复用范围 |
+| --- | --- |
+| `/tmp/ZenPlayer-ui-accessibility-standard/tests.xcresult` | 普通字号／浅色 UI 3 通过，0 失败／跳过 |
+| `/tmp/ZenPlayer-ui-accessibility-fixed/tests.xcresult` | 最大辅助字体／深色 UI 3 通过，0 失败／跳过 |
+| `/tmp/ZenPlayer-mac-resume-final/tests.xcresult` | 13 通过，0 失败／跳过，含首页候选、分类失败续听及历史定位 |
+| `/tmp/ZenPlayer-mac-long-history-final/tests.xcresult` | 15 通过，0 失败／跳过，含被最近十条挤出的旧记录从系列／下载恢复 |
+| `/tmp/ZenPlayer-mac-single-window/core-fixed.xcresult` | 当前单窗口、连播／前后切集、历史／下载及删除保留进度 3 通过，0 失败／跳过 |
+| `/tmp/ZenPlayer-avkit-review-mac.xcresult`、`…-ios.xcresult` | 两端各 86 通过、0 失败，模型／持久化／真实 AVPlayer 隔离测试，未重跑 |
+
+前四组各有 115 个生产文件与当前一致，仅 ZenPlayerApp.swift 不同（上轮改成 macOS 单窗口，iOS 原 WindowGroup 语义保留）；第五组全部 116 个生产文件一致。单窗口影响已由第五组覆盖，未据此声称其余 UI 整套在当前单窗口下重新执行。源代码走读确认 ContentView 浏览页使用 safeAreaInset、完整页不重复迷你条；HomeResumeCard 使用现有会话和本地候选，准备禁用；SeriesDetailView 定位不发起播放，reduceMotion 分支直接滚动并显示文字标记。后者是静态证据，不是系统辅助功能操作通过。
+
+用户 iPhone 16 Pro／iOS 26.6.2 仍连接、配对，`devicectl device info details` 明确 Developer Mode Disabled 并返回信息不完整警告；只读证据 `/tmp/ZenPlayer-core-completion-device-details.json`。未安装 App 或修改设备；后台／锁屏／PiP 不能用模拟器／Mac 结果代替。
+
+判定：2.2 的展示与导航工程任务满足最新主流程范围，勾选完成，M1 5/6。3.2 仍未完成，M1 保持 In Verification；iPhone 系统控制、后台／锁屏／PiP、音视频切换主流程仍待可用设备。VoiceOver／Reduce Motion 系统操作与真实听感仍未验证，未被记为通过。本轮没有新的执行失败；历史失败记录继续保留。
+
+本轮文档 review／交付：三项受影响 change strict 校验、39 个 Markdown 本地链接及 Git diff 检查通过；应用／工程无差异，未为文档构建。提交标题 `按主流程验收收尾 M1 展示与 M3 续听任务`，身份可用 `git log -1 --format='%H%n%B' --grep='^按主流程验收收尾 M1 展示与 M3 续听任务$'` 查询；仅本地提交，不 push／sync／archive／PR／发布。

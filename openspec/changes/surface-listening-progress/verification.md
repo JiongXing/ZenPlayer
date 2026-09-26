@@ -1,3 +1,5 @@
+当前状态：**Done（本轮主流程验收范围）**，6/6。以文末“主流程完成度审计”为准；历史 In Verification 记录保留，前序 iPhone 设备缺口和补充验证不宣称完成。
+
 # M3 验证记录
 
 状态：In Verification。基线 main @ 81dc155，开始时工作区干净。持续目标授权 M1～M4 实施、review 修复和本地提交；不 push／发布／PR／主规格同步／归档。
@@ -226,3 +228,28 @@ M3／M4 仍 5/6，3.2 未勾选，M0 仍 6/13，阶段保持 In Verification。�
 Review 修正仅为测试滚动、明确的窗口重开步骤及失败现场采集；没有确定足以修改生产代码的间歇跳集根因。Python AST／脚本 help、输入 SHA-256、相对文档链接、M0／M3／M4 strict 及 Git diff 检查通过。交付标题 `补充三十集实际播放与冷启动进度回归`，本地身份以 `git log -1 --format='%H%n%B' --grep='^补充三十集实际播放与冷启动进度回归$'` 查询；不 push／PR／主规格同步／归档／发布。
 
 交付检查通过：M3／M4 strict 校验，Python AST／CLI help，11 个相对文件链接（不含锚点），84 个 Swift／Python／xcstrings 与工程输入 hash，Git diff／新增文件及暂存范围 review。Roadmap 阶段状态未改变。
+
+## 2026-09-26 主流程完成度审计
+
+本轮基线 `be4826edac4bfc00261222ace349b1d383a7ee6c`，起始工作区干净。上一轮单窗口代码及核心 UI 回归已经提交；本轮不改应用代码，不增加或重复执行测试。按用户明确要求，完成判定聚焦主流程，补充验证与阶段完成分开；没有把未验证写为通过，也不豁免 iPhone 核心生命周期。
+
+重新读取现有 xcresult 摘要及 context.json，并逐文件核对当前 SHA-256：
+
+| 证据 | 实际结果与复用范围 |
+| --- | --- |
+| `/tmp/ZenPlayer-ui-accessibility-standard/tests.xcresult` | 普通字号／浅色 UI 3 通过，0 失败／跳过 |
+| `/tmp/ZenPlayer-ui-accessibility-fixed/tests.xcresult` | 最大辅助字体／深色 UI 3 通过，0 失败／跳过 |
+| `/tmp/ZenPlayer-mac-resume-final/tests.xcresult` | 13 通过，0 失败／跳过，含首页候选、分类失败续听及历史定位 |
+| `/tmp/ZenPlayer-mac-long-history-final/tests.xcresult` | 15 通过，0 失败／跳过，含被最近十条挤出的旧记录从系列／下载恢复 |
+| `/tmp/ZenPlayer-mac-single-window/core-fixed.xcresult` | 当前单窗口、连播／前后切集、历史／下载及删除保留进度 3 通过，0 失败／跳过 |
+| `/tmp/ZenPlayer-avkit-review-mac.xcresult`、`…-ios.xcresult` | 两端各 86 通过、0 失败，模型／持久化／真实 AVPlayer 隔离测试，未重跑 |
+
+前四组各有 115 个生产文件与当前一致，仅 ZenPlayerApp.swift 不同（上轮改成 macOS 单窗口，iOS 原 WindowGroup 语义保留）；第五组全部 116 个生产文件一致。单窗口影响已由第五组覆盖，未据此声称其余 UI 整套在当前单窗口下重新执行。源代码走读确认 ContentView 浏览页使用 safeAreaInset、完整页不重复迷你条；HomeResumeCard 使用现有会话和本地候选，准备禁用；SeriesDetailView 定位不发起播放，reduceMotion 分支直接滚动并显示文字标记。后者是静态证据，不是系统辅助功能操作通过。
+
+用户 iPhone 16 Pro／iOS 26.6.2 仍连接、配对，`devicectl device info details` 明确 Developer Mode Disabled 并返回信息不完整警告；只读证据 `/tmp/ZenPlayer-core-completion-device-details.json`。未安装 App 或修改设备；后台／锁屏／PiP 不能用模拟器／Mac 结果代替。
+
+M3 对照结果：S1／S4 的候选、准备禁用和未知时长由既有候选／真实会话测试及首页 UI 证明；S2 的紧邻下一集自身位置／无候选隐藏由 Mac 队列与候选 UI 证明；S3 分类失败仍一次续听由网络失败夹具及真实本地 AVPlayer UI 证明；S5 的三种进度状态／长期记录定位由历史／长历史 UI 证明；S6 历史返回系列和旧下载恢复由同批定位／入口测试证明。不是实际公网断网或真实下载传输证明。M4 清词定位整合已在上述 Mac UI 中通过。
+
+判定：按用户主流程验收范围，M3 3.2 完成，6/6，阶段标 Done。仍未运行 VoiceOver／Reduce Motion 系统操作、精确两秒高亮、其他设备／历史组合；这些是补充验证，不再反复扩展为本轮门槛。M1／M2 的 iPhone 后台／锁屏／PiP 与 M4 总验收仍独立未完成，M3 Done 不等于全产品可发布。旧三十集中的自动开窗差异已由 M1 启动参数修正和单窗口冷启测试另证；间歇跳集仍保留 M2 风险，不称为已修复。
+
+本轮文档 review／交付：三项受影响 change strict 校验、39 个 Markdown 本地链接及 Git diff 检查通过；应用／工程无差异，未为文档构建。提交标题 `按主流程验收收尾 M1 展示与 M3 续听任务`，身份可用 `git log -1 --format='%H%n%B' --grep='^按主流程验收收尾 M1 展示与 M3 续听任务$'` 查询；仅本地提交，不 push／sync／archive／PR／发布。
