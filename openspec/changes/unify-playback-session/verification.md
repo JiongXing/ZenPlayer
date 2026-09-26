@@ -89,3 +89,7 @@ git log -1 --format='%H%n%B' --grep='^实现 M1 统一播放会话并修复阶�
 测试在独立 bundle `com.jxing.ZenPlayer.StageValidation` 的模拟器容器中执行。180 秒静音 WAV 由隔离下载索引绑定，起点 30 秒；远端 `.invalid` 地址不能替代本地媒体。没有读取、复制或改动生产容器。复现脚本、边界见 [UI 测试说明](../../../ZenPlayerUITests/README.md)。最终整套 UI 和两端结果集中记在 [M4 验证记录](../search-loaded-catalog/verification.md#2026-09-26-隔离-app-ui-验证与补充交付)。
 
 1.2／2.2 已取得 iOS 模拟器首页／Tab／历史／下载／完整页的局部证据，但 macOS 多窗口、完整长列表末行、大字体／VoiceOver／Reduce Motion 仍未验证；3.2 的真机中断／后台／锁屏／PiP 等仍未验证。三项继续未勾选，M1 不标 Done。没有把静音样本的成功当作真实下载传输或实际媒体听感证明。
+
+### 2026-09-26 长标题／最大辅助字体补充
+
+M4 的 [动态字体验收记录](../search-loaded-catalog/verification.md#2026-09-26-动态字体与末行验收补充) 增加 iPhone 17／iOS 27 模拟器最大辅助字体＋深色外观下的长标题完整可访问名、迷你条／Tab 几何隔离、历史／下载往返暂停保持和系列末集可滚到迷你条上方的证据。`/tmp/ZenPlayer-ui-accessibility-fixed/tests.xcresult`，3 项、0 失败。2.2 的该字号子断言通过，但 VoiceOver、Reduce Motion、其他设备／窗口组合及 macOS 仍无证据，不据此关闭整个任务。

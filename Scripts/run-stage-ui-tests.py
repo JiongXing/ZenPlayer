@@ -108,6 +108,12 @@ def main():
     parser.add_argument("--destination", required=True, help="platform=iOS Simulator,id=<available UUID>")
     parser.add_argument("--output", type=Path, required=True, help="仓库外的新输出目录，必须不存在")
     parser.add_argument("--package-cache", type=Path, help="可复用的 Xcode SourcePackages 路径")
+    parser.add_argument("--appearance", choices=("light", "dark"), help="临时模拟器外观，测试后还原")
+    parser.add_argument("--content-size", choices=(
+        "extra-small", "small", "medium", "large", "extra-large", "extra-extra-large", "extra-extra-extra-large",
+        "accessibility-medium", "accessibility-large", "accessibility-extra-large",
+        "accessibility-extra-extra-large", "accessibility-extra-extra-extra-large"
+    ), help="临时动态字体级别，测试后还原")
     args = parser.parse_args()
     match = re.fullmatch(r"platform=iOS Simulator,id=([0-9a-fA-F-]{36})", args.destination)
     if not match:
@@ -152,8 +158,32 @@ def main():
         raise RuntimeError("构建产物不是独立验证 App，拒绝安装和写数据")
     subprocess.run(["xcrun", "simctl", "install", device_id, str(app)], check=True)
     run_logged([sys.executable, str(output / "seed_fixture.py"), device_id], work, output / "fixture.log")
-    run_logged(command + ["-resultBundlePath", str(output / "tests.xcresult"), "test-without-building"],
-               work, output / "test.log")
+    original_ui = {}
+    ui_evidence = {"requested": {"appearance": args.appearance, "content_size": args.content_size}}
+    try:
+        for option, desired in ui_evidence["requested"].items():
+            current = subprocess.check_output(["xcrun", "simctl", "ui", device_id, option], text=True).strip()
+            if current in ("unknown", "unsupported"):
+                raise RuntimeError(f"无法核实模拟器 {option} 设置，停止 UI 验证")
+            ui_evidence.setdefault("original", {})[option] = current
+            if desired:
+                original_ui[option] = current
+                subprocess.run(["xcrun", "simctl", "ui", device_id, option, desired], check=True)
+            actual = subprocess.check_output(["xcrun", "simctl", "ui", device_id, option], text=True).strip()
+            if actual != (desired or current):
+                raise RuntimeError(f"模拟器 {option} 设置未生效")
+            ui_evidence.setdefault("actual", {})[option] = actual
+        (output / "ui-settings.json").write_text(json.dumps(ui_evidence, indent=2) + "\n")
+        run_logged(command + ["-resultBundlePath", str(output / "tests.xcresult"), "test-without-building"],
+                   work, output / "test.log")
+    finally:
+        for option, original in original_ui.items():
+            subprocess.run(["xcrun", "simctl", "ui", device_id, option, original], check=True)
+            actual = subprocess.check_output(["xcrun", "simctl", "ui", device_id, option], text=True).strip()
+            ui_evidence.setdefault("restored", {})[option] = actual
+        (output / "ui-settings.json").write_text(json.dumps(ui_evidence, indent=2) + "\n")
+        if any(ui_evidence.get("restored", {}).get(option) != value for option, value in original_ui.items()):
+            raise RuntimeError("模拟器外观／字体未还原，见 ui-settings.json")
     print("隔离 UI 验证完成：", output, flush=True)
 
 

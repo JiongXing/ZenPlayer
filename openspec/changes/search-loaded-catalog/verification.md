@@ -83,7 +83,7 @@ M4 新增 15 项：6 个检索／解析、7 个页面模型、1 个完整队列�
 | 23 | 简繁／全半角／多词、前导零数字精确优先、原标题保持 | 实际输入法交互 |
 | 24 | 集数解析模型；模拟器 0012 定位第 12 集，清筛选、收面板／键盘、目标可点且不播放 | 2 秒高亮时序、全角／中文输入法实景及真机 |
 | 25 | 各模型路径；模拟器零结果／清词、99999 无此集提示可见且保留原筛选 | 非法文本与重复候选按钮的实际 UI |
-| 26 | 范围／错误模型和计算 P95；局部明暗布局；模拟器标准字号键盘收起和根页迷你条不遮 Tab | 真机端到端 P95／反馈，大字／VoiceOver／Reduce Motion、完整长列表末行 |
+| 26 | 范围／错误模型和计算 P95；模拟器标准与最大辅助字体下的键盘／Tab／长标题及末集可达，深色单集信息可读 | 真机端到端 P95／反馈，VoiceOver／Reduce Motion、其他字号／窗口组合和更广列表样本 |
 
 原功能回归：分类排序已由真实 ViewModel 测试覆盖；地址／本地优先／源回退和处理器失败保留原声有策略／播放器隔离证据；下载暂停／恢复／删除、文件分享、实际 RNNoise 降噪听感、音量增强与两平台完整播放界面操作均**未运行**。处理器替身的失败测试不等于真实算法听感回归。没有静默删除这些发布门槛。
 
@@ -142,3 +142,47 @@ python3 Scripts/run-stage-ui-tests.py --destination 'platform=iOS Simulator,id=F
 通过：5 个 change 的 OpenSpec strict 校验、Python 语法及 CLI help／拒绝错误目的地 smoke、相关 Markdown 文件链接、`git diff --check`；审查覆盖所有新增脚本／测试和已跟踪改动。没有改动生产 pbxproj、PRD、Roadmap 状态或主规格。已运行测试的历史失败原因均已定位；最终没有失败断言待修。
 
 补充本地提交标题：`修复迷你播放器遮挡与返回路径，补齐隔离 UI 回归`。实际身份通过 `git log -1 --format='%H%n%B' --grep='^修复迷你播放器遮挡与返回路径，补齐隔离 UI 回归$'` 查询。提交仅交付修复、验证 Harness 和现有 change 证据，不等于验收 Done；没有 push／PR／sync／archive／发布。
+
+## 2026-09-26 动态字体与末行验收补充
+
+基线 `main @ 8994d49`，工作区起始干净。本轮继续 3.2 中可独立运行的动态字体、明暗外观、长标题可访问名和列表末行子断言。复查用户 iPhone `jxing's16pro`（devicectl ID `CBE73FBF-972C-572A-A490-D06203CE3840`）Developer Mode 仍为 disabled；没有向真机安装或写数据，不重复请求已在等待的设备准备。
+
+### Review 发现及局部修复
+
+最大辅助字体下，旧紧凑单集行的集数、时长、文件大小和下载按钮共享横排空间，时长被压到不可读，集数和大小逐字竖排。真实失败布局截图：`/tmp/ZenPlayer-ui-accessibility-dark-images/4D6A1E68-226D-425C-8B23-B56B409D9A58.png`。本轮只在 `isCompact && dynamicTypeSize.isAccessibilitySize` 时改为纵向字段布局，保留完整标题、进度、定位标记和既有下载动作；常规字号及宽屏使用原布局。没有修改播放器、进度、队列或下载算法。
+
+UI Harness 增加 `--appearance`／`--content-size`：通过 simctl 实际设置并读回验证，保存 `ui-settings.json`，无论测试成功或失败均还原所选模拟器的原外观／字号。没有修改用户 macOS 或真实设备设置。样本使用长标题，确认视觉截断后完整可访问名仍存在。新增第 3 项 UI 测试：暂停本地样本→浏览真实系列→跳至最后第 21 集→滚动并检查位于迷你条上方、会话仍暂停；另为第 12 集新增时长实际可见且未挤成窄条的断言，截图同时保存可访问性树。
+
+### 失败记录与修正
+
+- `/tmp/ZenPlayer-ui-accessibility-dark/tests.xcresult`：2 项中 1 项失败。长卡片在最大字号下部分位于迷你条后方，XCTest 默认 `.tap()` 的命中点落到迷你条，误开完整页。UI 数据和截图确认这次失败是测试未先暴露目标，不是历史记录消失；同时目视发现上述单集行的真实布局缺陷。
+- `/tmp/ZenPlayer-ui-accessibility-layout/tests.xcresult`：3 项中 1 项失败。已修正历史／下载操作，但新增末行测试的粗粒度上滑越过课程卡片。改为像用户一样先定位实际内容安全区，点击其中可见的卡片区域；保持页面身份、暂停、末行几何位置等断言，没有移除产品验收条件。
+- 两次失败后 `ui-settings.json` 和 simctl 读回均证明外观／字号已还原为 `light`／`large`。临时失败产物保留，未将测试失败改记为通过。
+
+### 已通过的最大字体 UI
+
+`/tmp/ZenPlayer-ui-accessibility-fixed/tests.xcresult`：**3 项、0 失败**（103.324 秒），构建／播种／测试命令全部 exit 0。iPhone 17／iOS 27.0，`dark` + `accessibility-extra-extra-extra-large`，实际设置和还原值都记录在 `ui-settings.json`。完整生产源码副本运行，没有 App 测试模式。可复现命令（output 必须换成新目录）：
+
+```sh
+python3 Scripts/run-stage-ui-tests.py --destination 'platform=iOS Simulator,id=F98C04D4-C1D9-4D5D-A97F-F13C5F8BF425' --output /tmp/ZenPlayer-ui-accessibility-fixed --package-cache /tmp/ZenPlayer-M0-ios/SourcePackages --appearance dark --content-size accessibility-extra-extra-extra-large
+```
+
+已目视检查两张最终截图：`/tmp/ZenPlayer-ui-accessibility-fixed-images/E47C68FF-C994-4573-988C-EBF6CAC48D6E.png`（第 12 集字段可读）、`BCAE7CF7-019F-4D05-B9AA-93E48E74C8C2.png`（末集信息和下载入口均在迷你条上方）。最大字体下单行所占空间变高，可正常滚动，不以压小用户字体换取显示。首页／我的的既有卡片仍沿用原主题配色，不宣称全 App 深色视觉重新设计。
+
+这些证据只覆盖该模拟器两种字号／外观组合下的具体路径，不证明全部尺寸、VoiceOver 朗读／焦点顺序或 Reduce Motion，也不替代参考真机性能、macOS 多窗口、真实 iPhone 后台／锁屏／PiP／中断及旧能力全流程。3.2 继续未勾选，阶段不标 Done。
+
+### 本轮最终回归与交付
+
+| 检查 | 实际结果 | 证据 |
+| --- | --- | --- |
+| 最大辅助字体／深色实际 UI | 3 项、0 失败，103.324 秒 | `/tmp/ZenPlayer-ui-accessibility-fixed/tests.xcresult`、`test.log` |
+| 常规字号／浅色实际 UI | 3 项、0 失败，100.378 秒 | `/tmp/ZenPlayer-ui-accessibility-standard/tests.xcresult`、`test.log`；参数 `--appearance light --content-size large` |
+| macOS App 编译／自动化 | 86 项、0 失败 | `/tmp/ZenPlayer-accessibility-final-mac.xcresult`、`.log` |
+| iOS App 编译／自动化 | 86 项、0 失败 | `/tmp/ZenPlayer-accessibility-final-ios.xcresult`、`.log` |
+| Harness／规格／范围 | 通过 | Python 语法／help、5 个 change strict 校验、相关文件链接及 Git 差异检查 |
+
+两套 UI 各 3 项为同一套测试的两种配置，不计作 6 个独立场景。两套 `context.json` 中所有 App 与 UI 测试源码 SHA-256 均与当前文件一致；两套 `ui-settings.json` 的 original 与 restored 均为 light／large。常规字号末集截图 `/tmp/ZenPlayer-ui-accessibility-standard-images/4BC9D9CF-17B8-40ED-B9F4-DB7A979212AF.png` 已目视检查，保留原紧凑行，末集没有被迷你条遮住。UI 日志含既有 AVAudioSession 主线程调用提示，未把它解释为已经发生的卡顿或已通过的反馈时延。
+
+两端命令沿用当前 scheme／目的地和 `/tmp/ZenPlayer-M0-{mac,ios}` derived data，resultBundlePath 为上表路径；iOS 测试关闭并发。所有真实设备和更广辅助功能缺口继续保留。部署版本、签名／依赖、生产工程、主规格和 Roadmap 状态不变。
+
+本地提交标题：`修复辅助字体下单集信息布局并补充 UI 验收`；实际身份用 `git log -1 --format='%H%n%B' --grep='^修复辅助字体下单集信息布局并补充 UI 验收$'` 查询。只本地提交，不 push／PR／sync／archive／发布。

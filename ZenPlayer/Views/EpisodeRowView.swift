@@ -22,6 +22,7 @@ struct EpisodeRowView: View {
     var isListeningTarget = false
 
     @State private var isHovered = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var sizeClass
     #endif
@@ -50,7 +51,11 @@ struct EpisodeRowView: View {
         NavigationLink(value: playbackContext) {
             Group {
                 if isCompact {
-                    compactBody
+                    if dynamicTypeSize.isAccessibilitySize {
+                        accessibilityBody
+                    } else {
+                        compactBody
+                    }
                 } else {
                     regularBody
                 }
@@ -114,6 +119,26 @@ struct EpisodeRowView: View {
                         if hasMp4 { downloadButton(type: .mp4) }
                     }
                 }
+            }
+        }
+    }
+
+    // MARK: - 辅助字体布局
+
+    /// 辅助字体下按字段纵向排列，避免时长／集数被下载按钮挤到零宽度。
+    private var accessibilityBody: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(episode.title)
+                .font(.subheadline)
+                .fixedSize(horizontal: false, vertical: true)
+            EpisodeProgressBadge(context: playbackContext)
+            if isListeningTarget { Text(L10n.text(.resumeLocated)).font(.caption).bold() }
+            Text(L10n.string(.episodeFormat, episode.episode)).font(.caption2)
+            Label(episode.formattedDuration, systemImage: "clock").font(.caption2)
+            Text(episode.formattedFileSize).font(.caption2).foregroundStyle(.secondary)
+            HStack(spacing: 12) {
+                if hasMp3 { downloadButton(type: .mp3) }
+                if hasMp4 { downloadButton(type: .mp4) }
             }
         }
     }

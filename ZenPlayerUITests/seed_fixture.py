@@ -27,7 +27,7 @@ def seed(device):
         media.setframerate(8000)
         media.writeframes(bytes(8000 * 2 * 180))
     context = {
-        "episode": {"id": 900001, "num": "UI-001", "title": "UI 靜音驗證", "episode": "1",
+        "episode": {"id": 900001, "num": "UI-001", "title": "UI 靜音驗證：長標題用於確認迷你播放器截斷顯示後仍保留完整可存取名稱", "episode": "1",
                     "mp4Url": "", "vodUrl": "", "mp3Url": "https://stage-validation.invalid/silent.wav",
                     "coverUrl": "", "textUrl": "", "filesize": 2880044, "duration": 180000},
         "serverUrl": "https://stage-validation.invalid/", "preferredMediaType": "audio"
