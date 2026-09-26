@@ -1,3 +1,5 @@
+当前执行状态：本轮工程收尾，按用户要求停止后续 UI／压力／极端边界测试。最新结果以文末“停止 UI 扩展后的工程收尾”为准；历史“继续补齐 UI／真机”的下一步不再自动执行。
+
 当前验收口径：主流程优先；最新阶段判定与核心缺口见文末“主流程范围与剩余门槛”。下文较早的“全矩阵／所有组合”等待验清单为历史记录，不再要求逐项扩展压力测试。
 
 # M4 验证记录
@@ -405,3 +407,38 @@ AT-16 的 macOS 实际 30 集操作新增定向通过证据：`/tmp/ZenPlayer-ma
 AT-12 的当前 macOS 合同为单窗口，关闭／退出／重启已在 `/tmp/ZenPlayer-mac-single-window/core-fixed.xcresult` 通过；早先双窗口表述只属历史证据。AT-16 的旧自动开窗问题已有同一样本 A/B 参数诊断与修复；完整三十集未在新启动 helper 下重跑，仍复用原位置保留证据，不再反复执行三十集压力。历史间歇输入／跳集问题未定位，作为剩余风险保留。
 
 本轮文档 review／交付：三项受影响 change strict 校验、39 个 Markdown 本地链接及 Git diff 检查通过；应用／工程无差异，未为文档构建。提交标题 `按主流程验收收尾 M1 展示与 M3 续听任务`，身份可用 `git log -1 --format='%H%n%B' --grep='^按主流程验收收尾 M1 展示与 M3 续听任务$'` 查询；仅本地提交，不 push／sync／archive／PR／发布。
+
+## 2026-09-26 停止 UI 扩展后的工程收尾
+
+用户明确“不必再做 UI 测试了，尽快收尾”，随后重申只保证核心流程、不需要压力或极端边界。按此指示结束新增 UI 工作，不继续设备轮询或扩展夹具。M1～M4 实现、阶段 review 修复与本地提交已存在：M1 `b3e35b8`、M2 `81dc155`、M3 `096307d`、M4 `4a01cf3`；之后的回归修复和单窗口收敛已在本地 Git 历史。所有生产 Swift 代码与上一已提交基线一致，本轮没有新增业务功能或无关重构。
+
+### 范围与保护
+
+撤下上一轮未完成的 `--download-smoke`、目录注入及两个新增下载 UI／媒体服务文件，恢复本轮引入前的 Harness；源码备份 `/tmp/ZenPlayer-cancelled-download-ui`。该尝试两次构建通过，但首次因 XCTest 非主线程操作失败，第二次测试 Runner 崩溃，均未完成真实下载；不能算下载回归通过。没有为此修改生产下载实现。开始收尾时已无相关测试／媒体服务进程，本轮未运行 UI 测试。
+
+工作区另有用户／Xcode 的 project.pbxproj 与 Localizable.xcstrings 改动：前者是 Recovered References 导航分组／格式，后者新增两个组合文案键／格式。对比结构未见构建配置／已有译文变更，原文件完整保留且不纳入本次提交。构建前后逐字节比较相同；快照位于 `/tmp/ZenPlayer-core-closeout/`。
+
+### 本次通过
+
+旧 `/tmp/ZenPlayer-avkit-review-{mac,ios}.xcresult` 已不可用，历史 86 项结果仍只是既有记录。本次重新运行已有 8 项非 UI 核心用例，不新增用例、不执行性能／压力循环：
+
+- PlaybackSavingTests/testPeriodicAndImmediateActionsPersistWithControlledClock
+- PlaybackSessionTests/testSameSelectionPreservesPausedSessionAndLatestRequestWins
+- PlaybackSessionTests/testStopAndEndNeverRestartOrEraseTargetUnexpectedly
+- PlayerQueueIntegrationTests/testRealNaturalEndSavesCompletedThenAdvancesOnceToNextOwnPosition
+- PlayerQueueIntegrationTests/testDisabledAutoAdvanceConsumesEndAndTogglingOnDoesNotRestart
+- HomeResumeViewModelTests/testLocalCandidateAndNextSnapshotNeedNoCategoryRequest
+- CatalogViewModelTests/testCategoryFiltersLoadedFieldsKeepsSelectedSortAndRestoresOnClear
+- CatalogViewModelTests/testEpisodeFilterNeverChangesSnapshotAndLocateClearsFilterWithoutPlayback
+
+macOS 27 arm64 与 iPhone 17／iOS 27 模拟器：**各 8 通过、0 失败、0 跳过**。两次均 `xcodebuild test`，包含当前 App 与独立测试 target 编译，只有 `ZenPlayerTests` 被选择，无 App host／UI target。播放集成用实际 AVPlayer 和隔离本地 WAV；不读写真实 App 容器。
+
+结果 `/tmp/ZenPlayer-core-closeout/mac.xcresult`、`ios.xcresult`；完整命令与日志为同目录 `mac.log`、`ios.log`。共同参数 `-project ZenPlayer.xcodeproj -scheme ZenPlayer -parallel-testing-enabled NO`，对上述每项传 `-only-testing:ZenPlayerTests/<类>/<方法>`；destination 分别 `platform=macOS`、`platform=iOS Simulator,id=F98C04D4-C1D9-4D5D-A97F-F13C5F8BF425`，derivedDataPath 分别为同目录 mac／ios。xcresulttool 摘要再次确认实际数量与结果。
+
+### 未验证与交付结论
+
+未继续执行 iPhone 后台／锁屏／PiP、真实音视频切换／听感、实际下载传输／分享／音效、VoiceOver、参考机精确计时等操作。本轮用户已要求停止 UI 测试，这些明确延期；不把模拟器／静音样本当作真机通过，不以补做其他测试拖延交付。历史间歇输入／跳集现象未定位，也不声称根因已修复。
+
+M1～M4 本轮工程工作收尾；M1／M2／M4 的 3.2 保留未勾选并注明延期，表示设备／产品验收未完成，不再作为自动续跑指令；M3 维持此前主流程 Done。没有将全部产品验收虚标为通过。后续只有用户重新要求验收才恢复这些操作，不同步主规格、不归档、不推送／PR／发布。
+
+最终本地提交标题 `收尾 M1～M4 核心回归并停止 UI 测试扩展`，身份通过 Git 查询。当前仅提交任务与验证记录，保留用户未提交文件。

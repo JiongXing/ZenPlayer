@@ -1,3 +1,5 @@
+当前执行状态：本轮工程收尾，按用户要求停止后续 UI／压力／极端边界测试。最新结果以文末“停止 UI 扩展后的工程收尾”为准；历史“继续补齐 UI／真机”的下一步不再自动执行。
+
 # M2 验证记录
 
 状态：In Verification。基线 main @ b3e35b8，开始时工作区干净。授权来自持续目标：M1～M4 顺序实施、review／修复及本地提交；不 push／PR／发布／同步／归档。
@@ -127,3 +129,9 @@ python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-mac-queue-r3 -
 以上不证明此前间歇跳集已修复；保留为已知未定位现象，不继续压力诊断。后续验证以正常上一集／下一集、自然续播、首页续听及进度保留为主，不要求穷举极端时序。3.2 的未验证设备路径仍未勾选。
 
 单窗口整合后的核心连播回归：`/tmp/ZenPlayer-mac-single-window/core-fixed.xcresult` 内 testNaturalQueueAdvanceControlsAndColdPreference 通过（59.558 秒），覆盖真实 AVPlayer 自然续播、手动前后切集、末集停止及偏好冷恢复；同批 3 项共 0 失败。首次缺少 AppKit 启动参数的失败及修复详见 [M1 记录](../unify-playback-session/verification.md#2026-09-26-单窗口与主流程验证收敛)。不关闭其他设备缺口。
+
+## 2026-09-26 停止 UI 扩展后的工程收尾
+
+遵循用户最新要求，停止后续 UI／压力／极端边界测试，撤下未完成的新增下载 UI 尝试。M1～M4 业务实现和 review／阶段提交已经交付，本轮以已有非 UI 核心用例收尾：macOS 与 iPhone 17／iOS 27 模拟器各 8 项通过、0 失败／跳过，含 App 编译。当前代码、用户未提交工程／本地化改动均完整保留，没有新业务修改。
+
+真实设备／UI 验收继续记录为未验证，不冒充通过，也不再自动执行。完整用例、命令、结果、失败尝试、保护范围与提交标识见 [M4 收尾记录](../search-loaded-catalog/verification.md#2026-09-26-停止-ui-扩展后的工程收尾)。该工程交付结论不等于全产品验收或发布。
