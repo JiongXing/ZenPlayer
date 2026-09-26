@@ -20,6 +20,7 @@ DF300F72D7E96A9559966CE5 = {isa = PBXBuildFile; fileRef = F34BC4C2715E0099AFEFED
 F0E271C51727971AD85771E1 = {isa = PBXBuildFile; fileRef = 47C915F2A919A254BBBD4620; };
 E397B8D51A12C4CDD437C9E6 = {isa = PBXBuildFile; fileRef = 5417D66C2F34095661D21E40; };
 A45DA34D57D85D4A979834B9 = {isa = PBXBuildFile; fileRef = 3C7254C77E50F7B6F68AB5EB; };
+5804EAFC77E89F96DD59DDBC = {isa = PBXBuildFile; fileRef = 3AFA28F2C582DA4233F31F18; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,6 +38,7 @@ EC8DA741C92B3568A0475534 = {isa = PBXFileReference; lastKnownFileType = sourceco
 47C915F2A919A254BBBD4620 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Services/LegacyProgressMigration.swift"; sourceTree = SOURCE_ROOT; };
 5417D66C2F34095661D21E40 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Services/RecentPlaybackStore.swift"; sourceTree = SOURCE_ROOT; };
 3C7254C77E50F7B6F68AB5EB = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Services/PlaybackProgressGate.swift"; sourceTree = SOURCE_ROOT; };
+3AFA28F2C582DA4233F31F18 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/PlaybackSessionState.swift"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -175,7 +177,7 @@ EC8DA741C92B3568A0475534 = {isa = PBXFileReference; lastKnownFileType = sourceco
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		62AB01C7BD8CDABF9CB25179 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A45DA34D57D85D4A979834B9, E397B8D51A12C4CDD437C9E6, F0E271C51727971AD85771E1, 5223F8458EC02927C4A6A20D, 317507668C101B18853A810A, DF300F72D7E96A9559966CE5, 3DBE02F2FDF951D1BC21934C, BE8DD8C3FC26DA595E9014E0, EE1F45202AC9EFF5CA1F67E1, AE281527F660C1F1C96BBBAE, F11DF3BD5C32ED229D2EEE9F, 10F358EDB89A10FC34F3E75C,); runOnlyForDeploymentPostprocessing = 0; };
+		62AB01C7BD8CDABF9CB25179 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (5804EAFC77E89F96DD59DDBC, A45DA34D57D85D4A979834B9, E397B8D51A12C4CDD437C9E6, F0E271C51727971AD85771E1, 5223F8458EC02927C4A6A20D, 317507668C101B18853A810A, DF300F72D7E96A9559966CE5, 3DBE02F2FDF951D1BC21934C, BE8DD8C3FC26DA595E9014E0, EE1F45202AC9EFF5CA1F67E1, AE281527F660C1F1C96BBBAE, F11DF3BD5C32ED229D2EEE9F, 10F358EDB89A10FC34F3E75C,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */

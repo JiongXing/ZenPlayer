@@ -1,0 +1,26 @@
+## Context
+
+基线 49b4eed，M0 接口已提交、验收未齐。PlayerView 每页持有模型并在 onDisappear stop；三类入口混用 PlaybackContext 值路由及直接 PlayerView。App 的 WindowGroup 未注入会话。保留现有 NavigationStack／TabView 和降噪构建链路。
+
+## Goals / Non-Goals
+
+Goals：复用现有 PlayerViewModel 作为 App 级媒体所有者，避免第二套引擎；分离可测的播放意图与平台事件。Non-Goals：本阶段不创建队列／首页卡／搜索，不改 M0 迁移合同。
+
+## Decisions
+
+- ZenPlayerApp 的 @State 模型跨 WindowGroup 注入 Environment。页面只读取同一实例，不持有媒体资源；同键 prepare 幂等。保留 PlaybackContext 路由以减小入口改动，后续 M2 可扩展上下文。
+- 纯 PlaybackSessionState 负责目标身份、请求修订、播放意图、阶段、中断恢复资格及可控时钟无进展检测；AVPlayer／M0 progressGate 保持媒体和保存职责。采用单一意图模型，避免多个视图分别推导播放状态。
+- 完整页使用当前会话目标，传入 context 仅是单集入口选择；迷你条经独立的控制页值路由只展示当前会话，避免导航延迟重选旧目标。导航生命期只更新窗口内可见完整页 ID 集合；退出页面不释放模型。ContentView 提供安全区迷你条，同一窗口完整页显示时隐藏。
+- 所有暂停／继续／停止和 iOS 系统控制走相同模型方法。停止递增媒体身份并移除观察者、系统命令、音频会话；中断前记录是否在播放，手动暂停撤销恢复资格；系统中断导致的原生暂停观察不撤销资格，重复开始通知幂等。
+- KVO 和通知携带 player/item/token；准备／播放中途失败及 30 秒无进展时取消有效请求，保留当前目标与进度用于重试。轻量可取消监测任务只在活动会话存在，按单调时钟判定，暂停不超时。
+- 切源读取即时 AVPlayer 状态避免 KVO 延迟导致暂停意图丢失；失败重试保留失败前意图。原生控件仍操作同一 AVPlayer；其 rate／timeControlStatus 观察将变化反馈到统一状态。视图不能自动 play；加载恢复完成后仅执行当前意图。
+
+## Risks / Trade-offs
+
+- 原生暂停、系统中断及缓冲 rate==0 需区分 → 依据 timeControlStatus 与显式意图测试，设备路径另验。
+- 窗口／全屏／PiP 的 SwiftUI 可见性差异 → 多窗口共享媒体但窗口可见性局部保存；不以模拟器单元测试冒充设备验证。
+- M0 阶段的设备缺口 → 保留原状态，M1 集成测试覆盖相关行为但不提前标为 Done。
+
+## Migration Plan
+
+不迁移数据，不改签名或依赖；M0 进度单例继续使用。新会话不持久化活动播放，启动始终 idle。回退 UI 代码仍保留新存储。

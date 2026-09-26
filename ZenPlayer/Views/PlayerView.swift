@@ -11,61 +11,68 @@ import AVKit
 /// 播放页：支持视频/音频播放与音频处理控制
 struct PlayerView: View {
     let context: PlaybackContext
+    var selectsOnAppear = true
 
-    @State private var viewModel = PlayerViewModel()
-    @Environment(\.scenePhase) private var scenePhase
-    @State private var shouldStopOnDisappear = true
+    @Environment(PlayerViewModel.self) private var viewModel
+    @Environment(\.playerControlsVisibility) private var controlsVisibility
+    @State private var didSelect = false
+    @State private var visibilityID = UUID()
 
     var body: some View {
-        VStack(spacing: 14) {
-            if let player = viewModel.player {
-                mediaPlayerArea(player: player)
-            } else if viewModel.isPreparingPlayback {
-                ProgressView(L10n.text(.playerLoading))
-                    .frame(maxWidth: .infinity, minHeight: 220)
-            } else if let error = viewModel.errorMessage {
-                errorView(message: error)
-            } else {
-                ProgressView(L10n.text(.playerLoading))
-                    .frame(maxWidth: .infinity, minHeight: 220)
-            }
-
-            ProgressSaveNotice(store: viewModel.progressStore)
-            if viewModel.restoreError {
-                HStack {
-                    Text(L10n.text(.progressRestoreFailed))
-                    Button(L10n.text(.progressRetry)) { Task { await viewModel.retryRestore() } }
+        ScrollView {
+            VStack(spacing: 14) {
+                if let current = viewModel.currentContext {
+                    Text(current.episode.title).font(.headline)
+                    Text(viewModel.sessionStatus).font(.caption)
+                    HStack {
+                        Button { viewModel.togglePlayback() } label: {
+                            Label(L10n.text(viewModel.session.phase == .failed ? .progressRetry : viewModel.isPlaying ? .sessionPause : .sessionPlay), systemImage: viewModel.session.phase == .failed ? "arrow.clockwise" : viewModel.isPlaying ? "pause.fill" : "play.fill")
+                        }
+                        .frame(minWidth: 44, minHeight: 44)
+                        Button(L10n.text(.sessionStop)) { viewModel.stopPlayback() }
+                            .frame(minHeight: 44)
+                    }
                 }
-                .font(.footnote)
-            }
+                if let player = viewModel.player {
+                    mediaPlayerArea(player: player)
+                } else if viewModel.isPreparingPlayback {
+                    Group {
+                        if viewModel.showsLoading { ProgressView(L10n.text(.playerLoading)) }
+                        else { Text(viewModel.sessionStatus) }
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 220)
+                } else if let error = viewModel.errorMessage {
+                    errorView(message: error)
+                } else {
+                    Text(L10n.text(.sessionStopped))
+                        .frame(maxWidth: .infinity, minHeight: 220)
+                }
 
-            if viewModel.canSwitchMediaType {
-                mediaTypeSwitcher
-            }
+                ProgressSaveNotice(store: viewModel.progressStore)
 
-            if viewModel.player != nil {
-                controlPanel
-            }
+                if viewModel.canSwitchMediaType {
+                    mediaTypeSwitcher
+                }
 
-            Spacer(minLength: 0)
+                if viewModel.player != nil {
+                    controlPanel
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
         .background(pageBackground)
         .navigationBarBackButtonHidden(false)
-        .task(id: context) {
-            await viewModel.preparePlayback(context: context)
-        }
-        .onChange(of: scenePhase) { _, newPhase in
-            // 仅在前台活跃态下页面离开才停止播放，避免 PiP 过渡阶段被误停。
-            shouldStopOnDisappear = newPhase == .active
-            viewModel.saveForLifecycleChange()
-        }
-        .onDisappear {
-            if shouldStopOnDisappear {
-                viewModel.stopPlayback()
+        .onAppear {
+            controlsVisibility(visibilityID, true)
+            if selectsOnAppear && !didSelect {
+                didSelect = true
+                viewModel.selectPlayback(context)
             }
         }
+        .onDisappear { controlsVisibility(visibilityID, false) }
     }
 
     private var mediaTypeSwitcher: some View {

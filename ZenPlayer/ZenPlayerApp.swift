@@ -33,6 +33,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 
 @main
 struct ZenPlayerApp: App {
+    @State private var playbackSession = PlayerViewModel()
     #if os(iOS)
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     #endif
@@ -45,6 +46,7 @@ struct ZenPlayerApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(playbackSession)
                 #if os(iOS)
                 .tint(.secondary)
                 #endif

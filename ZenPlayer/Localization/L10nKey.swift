@@ -50,6 +50,16 @@ enum L10nKey: String, CaseIterable {
     case progressCompleted = "progress.completed"
     case progressUnknownDuration = "progress.unknown_duration"
 
+    case sessionStopped = "session.stopped"
+    case sessionPreparing = "session.preparing"
+    case sessionPlaying = "session.playing"
+    case sessionPaused = "session.paused"
+    case sessionTimedOut = "session.timed_out"
+    case sessionPause = "session.pause"
+    case sessionPlay = "session.play"
+    case sessionStop = "session.stop"
+    case sessionMore = "session.more"
+
     case playerLoading = "player.loading"
     case playerCannotPlay = "player.cannot_play"
     case playerVoiceDenoise = "player.voice_denoise"

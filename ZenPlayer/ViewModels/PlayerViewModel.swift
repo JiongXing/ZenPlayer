@@ -110,7 +110,26 @@ final class PlayerViewModel {
     private var progressGate = PlaybackProgressGate()
     private let uptime: () -> Double
     private var pendingResumePosition: Double = 0
-    private var playAfterRestore = false
+    private(set) var session = PlaybackSessionState()
+    private(set) var currentPosition: Double = 0
+    private(set) var showsLoading = false
+    @ObservationIgnored private var preparationTask: Task<Void, Never>?
+    @ObservationIgnored private var monitoringTask: Task<Void, Never>?
+    @ObservationIgnored private var controlObservation: NSKeyValueObservation?
+    var currentContext: PlaybackContext? { session.context }
+    var isPlaying: Bool { session.wantsPlayback && session.phase != .failed && session.phase != .ended }
+    var hasSession: Bool { session.hasSession }
+
+    var sessionStatus: String {
+        switch session.phase {
+        case .idle: return L10n.string(.sessionStopped)
+        case .preparing, .buffering: return showsLoading ? L10n.string(.playerLoading) : L10n.string(.sessionPreparing)
+        case .playing: return L10n.string(.sessionPlaying)
+        case .paused: return L10n.string(.sessionPaused)
+        case .ended: return L10n.string(.progressCompleted)
+        case .failed: return errorMessage ?? L10n.string(.playerCannotPlay)
+        }
+    }
     private var restoreAttempted = false
     private var seekInFlight = false
     private var seekRequest = UUID()
@@ -136,6 +155,9 @@ final class PlayerViewModel {
     private var playbackTimeObserverToken: Any?
     @ObservationIgnored
     private var playbackCompletionObserver: NSObjectProtocol?
+    @ObservationIgnored private var playbackFailureObserver: NSObjectProtocol?
+    @ObservationIgnored private var bufferObservation: NSKeyValueObservation?
+    private var bufferedThrough: Double = 0
 #if os(iOS)
     @ObservationIgnored
     private var interruptionObserver: NSObjectProtocol?
@@ -153,58 +175,84 @@ final class PlayerViewModel {
 #endif
 
     /// 统一准备播放：先解析 URL，再构建带降噪回退能力的 AVPlayer
-    /// - Parameters:
-    ///   - episode: 单集
-    ///   - serverUrl: 服务器根地址
-    ///   - preferVideo: 若同时有 mp3 和 mp4，true 表示优先视频
-    func preparePlayback(context: PlaybackContext) async {
-        await preparePlayback(
-            episode: context.episode,
-            serverUrl: context.serverUrl,
-            preferredMediaType: context.preferredMediaType
-        )
-    }
-
-    /// 统一准备播放：先解析 URL，再构建带降噪回退能力的 AVPlayer
-    /// - Parameters:
-    ///   - episode: 单集
-    ///   - serverUrl: 服务器根地址
-    ///   - preferVideo: 若同时有 mp3 和 mp4，true 表示优先视频
-    func preparePlayback(episode: EpisodeItem, serverUrl: String, preferVideo: Bool = false) async {
-        let preferredMediaType: PlaybackMediaType = preferVideo ? .video : .audio
-        await preparePlayback(episode: episode, serverUrl: serverUrl, preferredMediaType: preferredMediaType)
-    }
-
-    /// 统一准备播放：先解析 URL，再构建带降噪回退能力的 AVPlayer
-    /// - Parameters:
-    ///   - episode: 单集
-    ///   - serverUrl: 服务器根地址
-    ///   - preferredMediaType: 首选媒体类型
-    private func preparePlayback(
-        episode: EpisodeItem,
-        serverUrl: String,
-        preferredMediaType: PlaybackMediaType?
-    ) async {
-        stopPlayback()
-        currentEpisode = episode
-        currentServerURL = serverUrl
-        availableMediaTypes = supportedMediaTypes(for: episode)
-
-        guard let mediaType = initialMediaType(preferred: preferredMediaType) else {
-            stopPlayback()
-            errorMessage = L10n.string(.errorNoPlayableAddress)
-            playbackURL = nil
-            isVideo = false
-            isPreparingPlayback = false
+    func selectPlayback(_ context: PlaybackContext, force: Bool = false, wantsPlayback: Bool = true) {
+        guard session.select(context, now: uptime(), force: force, wantsPlayback: wantsPlayback) else { return }
+        preparationTask?.cancel()
+        releasePlayback()
+        currentEpisode = context.episode
+        currentServerURL = context.serverUrl
+        currentPosition = progressStore.record(for: context)?.resumePosition ?? 0
+        availableMediaTypes = supportedMediaTypes(for: context.episode)
+        restoreError = false
+        guard let mediaType = initialMediaType(preferred: context.preferredMediaType) else {
+            failPlayback(message: L10n.string(.errorNoPlayableAddress))
             return
         }
-
         selectedMediaType = mediaType
-        await reloadCurrentPlayback()
+        let request = session.request
+        startMonitoring()
+        preparationTask = Task { [weak self] in
+            guard let self, self.session.request == request else { return }
+            await self.reloadCurrentPlayback()
+        }
+    }
+
+    func preparePlayback(context: PlaybackContext) async {
+        selectPlayback(context)
+        await preparationTask?.value
+    }
+
+    func pausePlayback() {
+        session.pause()
+        player?.pause()
+        persistCurrentPlaybackProgress(force: true)
+#if os(iOS)
+        updateNowPlayingPlaybackState()
+#endif
+    }
+
+    func resumePlayback() {
+        if session.phase == .failed {
+            retryPlayback()
+            return
+        }
+        if session.phase == .ended {
+            if let context = currentContext { selectPlayback(context, force: true) }
+            return
+        }
+        session.play(now: uptime())
+        if progressGate.ready, session.wantsPlayback { player?.play() }
+    }
+
+    func togglePlayback() {
+        if isPlaying { pausePlayback() } else { resumePlayback() }
+    }
+
+    private func startMonitoring() {
+        monitoringTask?.cancel()
+        monitoringTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(250))
+                guard !Task.isCancelled, let self, self.session.hasSession else { return }
+                self.showsLoading = self.session.loadingVisible(now: self.uptime())
+                if self.session.timedOut(now: self.uptime()) {
+                    self.failPlayback(message: L10n.string(.sessionTimedOut))
+                    return
+                }
+            }
+        }
+    }
+
+    private func failPlayback(message: String) {
+        session.fail(request: session.request)
+        releasePlayback()
+        errorMessage = message
+        monitoringTask?.cancel()
+        showsLoading = false
     }
 
     func switchMediaType(to mediaType: PlaybackMediaType) async {
-        guard availableMediaTypes.contains(mediaType) else { return }
+        guard session.hasSession, availableMediaTypes.contains(mediaType) else { return }
         guard mediaType != selectedMediaType || player == nil else { return }
 
         selectedMediaType = mediaType
@@ -217,23 +265,26 @@ final class PlayerViewModel {
         // 切源先抓当前媒体即时位置和播放意图；stop 后才读取最新仓库值。
         let switching = activePlaybackContext.map { RecentPlaybackRecord.recordID(for: $0) == RecentPlaybackRecord.recordID(for: context) } ?? false
         let immediate = switching ? player?.currentTime().seconds : nil
-        let wasPlaying = restoreError ? playAfterRestore : player.map { $0.rate > 0 || $0.timeControlStatus == .waitingToPlayAtSpecifiedRate }
+        // 原生暂停的 KVO 可能尚未送达；媒体已恢复时以即时播放器状态为准。
+        let wasPlaying: Bool
+        if progressGate.ready, let player {
+            wasPlaying = player.rate > 0 || player.timeControlStatus == .waitingToPlayAtSpecifiedRate
+        } else {
+            wasPlaying = session.phase == .failed ? session.retryWantsPlayback : session.wantsPlayback
+        }
         let usableImmediate = immediate.flatMap { progressGate.action(token: progressGate.token, position: $0) }
-        stopPlayback()
+        releasePlayback()
         let stored = progressStore.record(for: context)
         pendingResumePosition = usableImmediate ?? stored?.resumePosition ?? 0
-#if os(iOS)
-        playAfterRestore = wasPlaying ?? true
-#else
-        playAfterRestore = wasPlaying ?? false
-#endif
+        session.select(context, now: uptime(), force: true, wantsPlayback: wasPlaying)
+        startMonitoring()
         let token = progressGate.begin(position: pendingResumePosition, uptime: uptime())
         isPreparingPlayback = true
         restoreAttempted = false
         restoreError = false
         errorMessage = nil
         resolvePlaybackURL(episode: episode, serverUrl: serverUrl, mediaType: selectedMediaType)
-        guard let url = playbackURL else { isPreparingPlayback = false; restoreError = stored != nil; return }
+        guard let url = playbackURL else { failPlayback(message: L10n.string(.errorNoPlayableAddress)); return }
 #if os(iOS)
         configureAudioSessionForPlayback(isVideo: isVideo)
         setupAudioSessionObserversIfNeeded()
@@ -246,6 +297,23 @@ final class PlayerViewModel {
 
     /// 停止并释放当前播放链路资源
     func stopPlayback() {
+        preparationTask?.cancel()
+        preparationTask = nil
+        monitoringTask?.cancel()
+        monitoringTask = nil
+        releasePlayback()
+        session.stop()
+        errorMessage = nil
+        restoreError = false
+        currentEpisode = nil
+        currentServerURL = nil
+        currentPosition = 0
+        playbackURL = nil
+        availableMediaTypes = []
+        showsLoading = false
+    }
+
+    private func releasePlayback() {
         persistCurrentPlaybackProgress(force: true)
         progressGate.invalidate()
         stopPlaybackObservation()
@@ -437,6 +505,46 @@ final class PlayerViewModel {
                 self.handlePlaybackTick(currentTimeSeconds: time.seconds)
             }
         }
+        controlObservation = player.observe(\.timeControlStatus, options: [.new]) { [weak self, weak player, weak item] _, _ in
+            Task { @MainActor [weak self, weak player, weak item] in
+                guard let self, let player, let item, self.isCurrent(player, item: item, token: token), self.progressGate.ready else { return }
+                switch player.timeControlStatus {
+                case .playing:
+                    if self.session.interruptionActive { player.pause(); return }
+                    if self.session.phase == .ended { self.resumePlayback(); return }
+                    if !self.session.wantsPlayback { self.session.play(now: self.uptime()) }
+                    self.session.observedPlaying(request: self.session.request, now: self.uptime())
+                case .waitingToPlayAtSpecifiedRate:
+                    if self.session.interruptionActive { player.pause(); return }
+                    if self.session.phase == .ended { self.resumePlayback(); return }
+                    self.session.observedWaiting(request: self.session.request, now: self.uptime())
+                case .paused:
+                    if self.session.phase != .ended { self.session.observedPause() }
+                @unknown default: break
+                }
+            }
+        }
+        bufferedThrough = 0
+        bufferObservation = item.observe(\.loadedTimeRanges, options: [.initial, .new]) { [weak self, weak player, weak item] _, _ in
+            Task { @MainActor [weak self, weak player, weak item] in
+                guard let self, let player, let item, self.isCurrent(player, item: item, token: token) else { return }
+                let position = player.currentTime().seconds
+                // 仅当前播放位置所在缓冲段的增长算有效进展。
+                let end = item.loadedTimeRanges.map(\.timeRangeValue).filter {
+                    $0.start.seconds <= position && CMTimeRangeGetEnd($0).seconds > position
+                }.map { CMTimeRangeGetEnd($0).seconds }.max() ?? 0
+                if end.isFinite, end > self.bufferedThrough {
+                    self.bufferedThrough = end
+                    self.session.advanced(request: self.session.request, now: self.uptime())
+                }
+            }
+        }
+        playbackFailureObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemFailedToPlayToEndTime, object: item, queue: .main) { [weak self, weak player, weak item] _ in
+            Task { @MainActor [weak self, weak player, weak item] in
+                guard let self, let player, let item, self.isCurrent(player, item: item, token: token) else { return }
+                self.failPlayback(message: item.error?.localizedDescription ?? L10n.string(.playerCannotPlay))
+            }
+        }
         rateObservation = player.observe(\.rate, options: [.old, .new]) { [weak self, weak player, weak item] _, change in
             let paused = change.newValue == 0 && change.oldValue != 0
             let started = (change.newValue ?? 0) > 0
@@ -453,9 +561,7 @@ final class PlayerViewModel {
             Task { @MainActor [weak self, weak player, weak item] in
                 guard let self, let player, let item, self.isCurrent(player, item: item, token: token) else { return }
                 if item.status == .failed {
-                    self.restoreError = true
-                    self.isPreparingPlayback = false
-                    self.progressGate.restored(token: token, success: false, position: 0)
+                    self.failPlayback(message: item.error?.localizedDescription ?? L10n.string(.playerCannotPlay))
                 } else if item.status == .readyToPlay, !self.restoreAttempted {
                     self.restoreAttempted = true
                     await self.restorePlaybackPositionIfNeeded(to: self.pendingResumePosition, player: player, item: item, token: token)
@@ -477,6 +583,7 @@ final class PlayerViewModel {
                       let context = self.activePlaybackContext else { return }
                 let current = player.currentTime().seconds
                 let position = current.isFinite && current >= 0 ? current : self.progressStore.record(for: context)?.positionSeconds ?? 0
+                self.session.ended(request: self.session.request)
                 self.progressGate.ended(token: token)
                 self.progressStore.update(context, position: position, duration: self.mediaDuration, event: .ended)
                 self.progressStore.requestFlush()
@@ -497,8 +604,11 @@ final class PlayerViewModel {
         playbackTimeObserverToken = nil
         statusObservation = nil
         rateObservation = nil
-        for observer in [playbackCompletionObserver, timeJumpObserver].compactMap({ $0 }) { NotificationCenter.default.removeObserver(observer) }
+        controlObservation = nil
+        bufferObservation = nil
+        for observer in [playbackCompletionObserver, playbackFailureObserver, timeJumpObserver].compactMap({ $0 }) { NotificationCenter.default.removeObserver(observer) }
         playbackCompletionObserver = nil
+        playbackFailureObserver = nil
         timeJumpObserver = nil
 #if os(macOS)
         if let terminationObserver { NotificationCenter.default.removeObserver(terminationObserver) }
@@ -535,12 +645,19 @@ final class PlayerViewModel {
         restoreError = !progressGate.ready
         isPreparingPlayback = false
         if progressGate.ready {
+            currentPosition = actual
+            session.ready(request: session.request, now: uptime())
             savePosition(actual)
-            if playAfterRestore { player.play() }
+            if session.wantsPlayback { player.play() }
+        } else {
+            failPlayback(message: L10n.string(.progressRestoreFailed))
         }
     }
 
-    func retryRestore() async { await reloadCurrentPlayback() }
+    func retryPlayback() {
+        guard let context = currentContext else { return }
+        selectPlayback(context, force: true, wantsPlayback: session.retryWantsPlayback)
+    }
 
     func seek(to position: Double) async {
         guard let player, let item = player.currentItem, progressGate.ready, position.isFinite, position >= 0 else { return }
@@ -560,6 +677,8 @@ final class PlayerViewModel {
     private func recordMovement(position: Double, playing: Bool) {
         guard !seekInFlight, player?.currentItem?.status == .readyToPlay, let context = activePlaybackContext else { return }
         if progressGate.tick(token: progressGate.token, position: position, playing: playing, uptime: uptime()) {
+            currentPosition = position
+            session.advanced(request: session.request, now: uptime())
             progressStore.update(context, position: position, duration: mediaDuration, event: .advance)
         }
     }
@@ -567,6 +686,7 @@ final class PlayerViewModel {
     private func savePosition(_ position: Double, explicitSeek: Bool = false) {
         guard !seekInFlight, player?.currentItem?.status == .readyToPlay, let context = activePlaybackContext,
               let position = progressGate.action(token: progressGate.token, position: position, explicitSeek: explicitSeek) else { return }
+        currentPosition = position
         progressStore.update(context, position: position, duration: mediaDuration, event: .position)
         progressStore.requestFlush()
     }
@@ -672,7 +792,7 @@ final class PlayerViewModel {
         playCommandTarget = commandCenter.playCommand.addTarget { [weak self] _ in
             Task { @MainActor [weak self] in
                 guard let self, self.progressGate.token == token else { return }
-                self.player?.play()
+                self.resumePlayback()
                 self.updateNowPlayingPlaybackState()
             }
             return .success
@@ -681,8 +801,7 @@ final class PlayerViewModel {
         pauseCommandTarget = commandCenter.pauseCommand.addTarget { [weak self] _ in
             Task { @MainActor [weak self] in
                 guard let self, self.progressGate.token == token else { return }
-                self.player?.pause()
-                self.persistCurrentPlaybackProgress(force: true)
+                self.pausePlayback()
                 self.updateNowPlayingPlaybackState()
             }
             return .success
@@ -691,12 +810,7 @@ final class PlayerViewModel {
         toggleCommandTarget = commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
             Task { @MainActor [weak self] in
                 guard let self, self.progressGate.token == token else { return }
-                if self.player?.rate == 0 {
-                    self.player?.play()
-                } else {
-                    self.player?.pause()
-                    self.persistCurrentPlaybackProgress(force: true)
-                }
+                self.togglePlayback()
                 self.updateNowPlayingPlaybackState()
             }
             return .success
@@ -737,14 +851,16 @@ final class PlayerViewModel {
 
     private func setupAudioSessionObserversIfNeeded() {
         let center = NotificationCenter.default
+        let token = progressGate.token
         if interruptionObserver == nil {
             interruptionObserver = center.addObserver(
                 forName: AVAudioSession.interruptionNotification,
                 object: AVAudioSession.sharedInstance(),
                 queue: .main
             ) { [weak self] notification in
-                Task { @MainActor [weak self] in
-                    self?.handleAudioInterruption(notification)
+                MainActor.assumeIsolated {
+                    guard let self, self.progressGate.token == token else { return }
+                    self.handleAudioInterruption(notification)
                 }
             }
         }
@@ -754,8 +870,9 @@ final class PlayerViewModel {
                 object: AVAudioSession.sharedInstance(),
                 queue: .main
             ) { [weak self] notification in
-                Task { @MainActor [weak self] in
-                    self?.handleRouteChange(notification)
+                MainActor.assumeIsolated {
+                    guard let self, self.progressGate.token == token else { return }
+                    self.handleRouteChange(notification)
                 }
             }
         }
@@ -781,14 +898,16 @@ final class PlayerViewModel {
         }
         switch type {
         case .began:
+            session.interruptionBegan()
             player?.pause()
             persistCurrentPlaybackProgress(force: true)
             updateNowPlayingPlaybackState()
         case .ended:
             let optionsRaw = info[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
             let options = AVAudioSession.InterruptionOptions(rawValue: optionsRaw)
-            if options.contains(.shouldResume) {
-                player?.play()
+            if session.interruptionEnded(systemAllows: options.contains(.shouldResume), now: uptime()) {
+                configureAudioSessionForPlayback(isVideo: isVideo)
+                if progressGate.ready { player?.play() }
             }
             updateNowPlayingPlaybackState()
         @unknown default:
@@ -804,8 +923,7 @@ final class PlayerViewModel {
         }
         // 耳机拔出时自动暂停，避免外放打扰。
         if reason == .oldDeviceUnavailable {
-            player?.pause()
-            persistCurrentPlaybackProgress(force: true)
+            pausePlayback()
             updateNowPlayingPlaybackState()
         }
     }

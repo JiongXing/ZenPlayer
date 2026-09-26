@@ -35,8 +35,8 @@ PRD 来源：用户附件 `/Users/jxing/Desktop/ZenPlayer_PRD_v1.0.md`，原样�
 - 不包含：系列自动连播、首页续听卡和搜索；不只删除 onDisappear 停止逻辑。
 - 依赖：集成 M0 进度接口；核对 macOS 多窗口，保持本地优先与降噪回退。
 - PRD：F1-01～F1-04、D-02、Q-01～Q-03；验收 AT-01～AT-06、AT-11，AT-12 的跨页／PiP／窗口部分；AT-04 首页续听整合留 M3。
-- 状态：**Planned**；规划：待创建。阻塞：等待 M0 接口及本阶段单独批准。
-- 变更：待创建；验证证据：暂无。
+- 状态：**In Verification**；代码 review／修复与两端自动化完成，本轮授权本地提交，3/6 项满足完成条件。跨页／多窗口操作、迷你条 UI、真实 iPhone 生命周期待验；M0 设备验收缺口继续保留。
+- 变更：[unify-playback-session](openspec/changes/unify-playback-session/proposal.md)；[验证记录](openspec/changes/unify-playback-session/verification.md)。
 
 ## 后续 · M2 系列连播
 

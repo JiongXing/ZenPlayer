@@ -965,6 +965,96 @@
           }
         }
       }
+    },
+    "session.stopped": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已停止"
+          }
+        }
+      }
+    },
+    "session.preparing": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在準備"
+          }
+        }
+      }
+    },
+    "session.playing": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在收聽"
+          }
+        }
+      }
+    },
+    "session.paused": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已暫停"
+          }
+        }
+      }
+    },
+    "session.timed_out": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "播放載入逾時，請重試"
+          }
+        }
+      }
+    },
+    "session.pause": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暫停"
+          }
+        }
+      }
+    },
+    "session.play": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "播放"
+          }
+        }
+      }
+    },
+    "session.stop": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止播放"
+          }
+        }
+      }
+    },
+    "session.more": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更多"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
