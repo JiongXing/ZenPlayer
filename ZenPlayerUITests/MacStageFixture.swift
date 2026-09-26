@@ -34,6 +34,9 @@ enum MacStageFixture {
                                       height: min(window.frame.height, visible.height))
                     window.setFrame(NSRect(x: visible.minX, y: visible.maxY - size.height,
                                            width: size.width, height: size.height), display: true)
+                    if arguments.contains("--stage-native-input-probe") {
+                        MacNativeInputProbe.present(relativeTo: window)
+                    }
                 }
             }
         }

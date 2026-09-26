@@ -19,10 +19,14 @@ def main():
     parser.add_argument("--output", type=Path, required=True, help="仓库外不存在的输出目录")
     parser.add_argument("--package-cache", type=Path, help="可复用的 Xcode SourcePackages 路径")
     parser.add_argument("--only-testing", help="只运行指定的 MacStageUITests 测试方法")
+    parser.add_argument("--native-input-probe", action="store_true",
+                        help="单独诊断原生 NSTextField 的 Unicode 事件合成；不运行阶段套件")
     parser.add_argument("--jump-input", choices=("12", "0012", "第１２集"), default="0012",
-                        help="搜索用例的第 12 集输入形式；Unicode 形式在本机 Xcode 存在事件合成超时")
+                        help="搜索用例的第 12 集输入形式；历史 Unicode 合成超时与最新复测见 verification.md")
     args = parser.parse_args()
     repo = Path(__file__).resolve().parents[1]
+    if args.native_input_probe and args.only_testing:
+        parser.error("native-input-probe 是独立诊断，不能与 only-testing 组合")
     if args.only_testing and args.only_testing not in re.findall(
             r"func (test\w+)\(", (repo / "ZenPlayerUITests/MacStageUITests.swift").read_text()):
         parser.error("only-testing 必须是现有 Mac UI 测试方法名")
@@ -58,11 +62,13 @@ def main():
                 settings.pop("IPHONEOS_DEPLOYMENT_TARGET", None)
                 settings.pop("TARGETED_DEVICE_FAMILY", None)
     path.write_bytes(plistlib.dumps(project, sort_keys=False))
-    shutil.copy2(repo / "ZenPlayerUITests/MacStageUITests.swift", work / "StageUITests/StageUITests.swift")
+    test_source = "MacNativeInputTests.swift" if args.native_input_probe else "MacStageUITests.swift"
+    shutil.copy2(repo / "ZenPlayerUITests" / test_source, work / "StageUITests/StageUITests.swift")
     shutil.copy2(repo / "ZenPlayerUITests/MacStageFixture.swift", work / "ZenPlayer/MacStageFixture.swift")
     shutil.copy2(repo / "ZenPlayerUITests/MacQueueFixture.swift", work / "ZenPlayer/MacQueueFixture.swift")
     shutil.copy2(repo / "ZenPlayerUITests/MacCatalogFixture.swift", work / "ZenPlayer/MacCatalogFixture.swift")
     shutil.copy2(repo / "ZenPlayerUITests/MacCatalogURLProtocol.swift", work / "ZenPlayer/MacCatalogURLProtocol.swift")
+    shutil.copy2(repo / "ZenPlayerUITests/MacNativeInputProbe.swift", work / "ZenPlayer/MacNativeInputProbe.swift")
     scheme_path = work / "ZenPlayer.xcodeproj/xcshareddata/xcschemes/ZenPlayer.xcscheme"
     scheme = ET.parse(scheme_path)
     test_action = scheme.getroot().find("TestAction")
@@ -96,6 +102,7 @@ def main():
         "head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip(),
         "destination": "platform=macOS", "bundleID": BUNDLE_ID,
         "onlyTesting": args.only_testing,
+        "nativeInputProbe": args.native_input_probe,
         "jumpInput": args.jump_input,
         "bootstrap": "temporary App initializer seeds its own sandbox before creating PlayerViewModel",
         "networkFixture": "temporary APIService config adds a URLProtocol limited to explicit fixture flags and URLs",

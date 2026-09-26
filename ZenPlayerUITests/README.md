@@ -41,7 +41,7 @@ python3 Scripts/run-mac-stage-ui-tests.py \
 
 可追加 `--only-testing testCatalogSortingAndKeyboardJumpPreservePausedSession` 定向运行现有方法；脚本在创建输出前校验方法名，并在 `context.json` 记录选择。省略时运行全部 Mac 用例。每次使用新的 output 目录。
 
-跳集输入默认 `0012`。`--jump-input '第１２集'` 可重现 Unicode UI 输入路径，也接受 `12`；参数只写入临时 scheme 的 TestAction 环境并记录到 `context.json`。本机 Xcode 27 的 Unicode `typeText` 在事件合成时超时，当前不能将此路径算通过；纯解析单测通过不替代该 UI 缺口。默认运行通过仅证明实际使用的输入形式，不能推及所有变体。
+跳集输入默认 `0012`。`--jump-input '第１２集'` 可重跑 Unicode UI 输入路径，也接受 `12`；参数只写入临时 scheme 的 TestAction 环境并记录到 `context.json`。本机 Xcode 27 曾在 Unicode `typeText` 合成时超时；最新实际跳集面板复测已通过，但历史间歇失败根因仍未确定，不能概括为 XCTest 不支持 Unicode。具体结果见 M4 verification.md；默认运行通过仅证明实际使用的输入形式，不能推及所有变体。
 
 `MacStageFixture.swift` 只复制进临时 App，并在临时 App 初始化播放器前加入播种调用；该文件不编入生产 target。只有 `--stage-seed` 启动时才创建自己的 180 秒静音 WAV、单条 30 秒进度和完成下载索引，且先断言 bundle 与 sandbox home。样本远端为不可解析的 `.invalid` 地址，必须通过真实 DownloadManager 的本地完成索引播放。它验证本容器内文件，不证明下载传输或外部文件的 security-scoped bookmark 授权。冷启动检查移除播种参数，读取上次实际保存的进度。删除场景的 `--stage-verify-deleted` 只读断言实际样本文件已删除、进度文件可解码且仍至少 30 秒；失败会使验证 App 启动失败，从而让测试失败。
 
@@ -58,7 +58,7 @@ python3 Scripts/run-mac-stage-ui-tests.py \
 
 本项仍不证明真实媒体听感、PiP／全屏、耳机／中断、异常强杀数据安全或所有 macOS 版本／窗口尺寸。完整矩阵以 change 的 verification.md 为准。
 
-Mac 搜索框逐键发送并核对累计值，以区分输入是否送达与搜索结果是否正确。本机曾在批量 `typeText` 长 ASCII 文本时丢两个字符；原因尚未确定，逐键回归不覆盖连续快速输入可靠性或性能目标。
+既有 Mac 搜索用例逐键发送并核对累计值，以区分输入是否送达与搜索结果是否正确。本机曾在批量 `typeText` 长 ASCII 文本时丢两个字符；原因尚未确定，逐键回归不覆盖连续快速输入可靠性或性能目标。新增批量输入用例见下文。
 
 
 ## Mac 系列连播与首页下一集
@@ -85,3 +85,16 @@ Mac 搜索框逐键发送并核对累计值，以区分输入是否送达与搜�
 - `testPartialCatalogAndDuplicateOrZeroEpisodeLocation`：`--stage-seed-catalog --stage-catalog-edge-cases` 仍只拥有原目录样本的两个进度键；响应声明 24 集但只返回 21 条，第一条的真实 episode 为 0，第 18 条的 episode 改为 12（与第 12 条同集数、不同 id）。实际 UI 验证部分加载及零结果保留范围说明、清词恢复全部已加载条目、重复集数等待用户选择而不自动跳第一条、选择第二候选后按其 id 定位，以及存在的第 0 集可达。退出冷启继续逐字节核实进度未被浏览／定位修改。
 
 这些参数仅用于临时验证 App，不注入生产可执行文件。目录和媒体来自同一份夹具元数据，默认已有用例的 1／2／5、时长、进度和完整性均不变；边界变体仅在显式参数存在时启用。已有 Unicode／连续输入异常仍以 verification.md 的实际记录为准，单次绿色测试不代表输入可靠性或端到端性能门槛已关闭。
+
+## Mac 批量输入与原生对照
+
+`testBatchSearchInputRetainsExactText` 加入默认阶段套件，使用隔离目录样本，在实际搜索框一次 `typeText` 输入整个查询，不逐键补发。依次验证 `1`、长 ASCII 零结果词、`12`、`MAC-CATALOG 21` 的逐字保留、结果数与不开播；查询 `1` 应命中 12 条，精确项优先不代表只保留精确项。每次输入前后保留窗口树，供间歇失败调查。
+
+`--native-input-probe` 则单独选用 `MacNativeInputTests.swift`，在临时 App 的原生 `NSTextField` 验证 `12` 和 `第１２集`。它不经过搜索、解析或 SwiftUI Binding，结果不计入产品阶段通过数；与 `--only-testing` 互斥，组合时在创建输出前拒绝。`MacNativeInputProbe.swift` 仅复制进验证 App，显式参数才显示窗口，原生产 target 不变。测试结束终止验证 App；沿用独立 bundle、sandbox 和专属样本边界。
+
+```sh
+python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-input-new --only-testing testBatchSearchInputRetainsExactText
+python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-native-new --native-input-probe
+```
+
+输出目录须不存在，可加 `--package-cache` 复用现有 SourcePackages；Mac GUI 测试应串行运行。本轮同一批量输入测试重复 5 次、原生对照及实际 Unicode 跳集各 1 次均通过，不等同真实输入法组合输入、长时间可靠性或端到端性能验收。

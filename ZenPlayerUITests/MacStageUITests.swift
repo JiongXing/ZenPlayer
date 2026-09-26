@@ -6,6 +6,36 @@ final class StageUITests: XCTestCase {
         XCUIApplication().terminate()
     }
 
+    func testBatchSearchInputRetainsExactText() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--stage-seed-catalog", "--stage-primary-window"]
+        app.launch()
+        let window = app.windows.firstMatch
+        XCTAssertTrue(window.staticTexts["Mac 定位驗證-12"].waitForExistence(timeout: 15))
+        clickCenter(window.descendants(matching: .tab).matching(identifier: "person").firstMatch, in: window)
+        clickCenter(window.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "最近播放")).firstMatch,
+                    in: window)
+        clickCenter(window.buttons["返回系列並定位此集"].firstMatch, in: window)
+        let search = window.textFields["catalogSearchField"]
+        XCTAssertTrue(search.waitForExistence(timeout: 15))
+        for (index, query) in ["1", "ZenPlayerNoMatch987654321", "12", "MAC-CATALOG 21"].enumerated() {
+            clickCenter(search, in: window)
+            search.typeKey("a", modifierFlags: .command)
+            capture(app, name: "mac-batch-input-\(index)-focused-before-typing")
+            search.typeText(query)
+            capture(app, name: "mac-batch-input-\(index)-after-typing")
+            XCTAssertEqual(search.value as? String, query, "批量输入必须逐字保留，不能依靠逐键重发补齐")
+            if query == "ZenPlayerNoMatch987654321" {
+                XCTAssertTrue(window.staticTexts["已載入內容中沒有符合的結果"].exists)
+            } else {
+                // 纯数字精确项优先，其余包含匹配仍保留：1 命中 1、10…19、21。
+                XCTAssertTrue(window.staticTexts[query == "1" ? "找到 12 集" : "找到 1 集"].exists)
+            }
+            XCTAssertFalse(window.buttons["pause.fill"].exists)
+        }
+    }
+
     func testFilteredEpisodeNaturallyAdvancesThroughFullSeries() throws {
         continueAfterFailure = false
         let app = XCUIApplication()

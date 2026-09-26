@@ -324,3 +324,42 @@ Review 没有发现需要修改生产实现的新缺陷；新增逻辑均在临�
 本地交付标题：`补充搜索入口连播与目录边界 UI 回归`。只提交当前 Harness／文档改动，不 push／PR／sync／archive／发布；提交身份以 `git log -1 --format='%H%n%B' --grep='^补充搜索入口连播与目录边界 UI 回归$'` 查询。
 
 交付检查：M2／M4 两个 change strict 校验通过；相关 9 个相对文件链接（不含锚点）、最终源文件 hash、Git diff／暂存范围检查通过。无新文件或生产工程改动，Roadmap 阶段状态未变化。
+
+## 2026-09-26 批量输入与 Unicode 对照 review
+
+基线 `main @ 783f8110404f115d4155b2ca9a7a7654d6d73657`。按用户“review 并提交当前阶段代码”收尾，范围为 M4 未提交的输入测试／隔离 Harness 及证据。生产 App 源码、工程、数据格式均未改。
+
+### Review 结果与边界
+
+- 新增 `testBatchSearchInputRetainsExactText`，在实际系列搜索框批量输入四个查询并逐字核对，保留前后窗口树，不用逐键重发掩盖丢字。新用例纳入默认套件；原有十项和共享 helper 不变。
+- 原生 `NSTextField` 对照单独运行，不作为产品验收项。诊断窗口由专属参数控制，在移除首窗观察者之后创建；沿用独立 bundle／sandbox 检查，未触及生产数据。运行器在创建输出前拒绝与 `--only-testing` 混用。
+- 修正帮助／README 对 Unicode 的过时结论：当前原生对照和实际 SwiftUI 跳集路径均能成功。历史失败树仍显示 sheet 内字段获得焦点但值为 `ᇿኖ`，随后合成超时；不能据此确定是产品、输入源还是 XCTest 问题，也不能声称此次修复了根因。
+- 未发现本次范围内需要修改生产实现的新缺陷。历史输入间歇失败继续保留，未扩大产品行为或改变需求。
+
+### 实际执行证据
+
+| 检查 | 结果 | 证据 |
+| --- | --- | --- |
+| 批量搜索初次运行 | **失败**，11.627 秒；查询 `1` 输入正确，但新测试错误地预期只返回一集，已按规格修正为 12 条 | `/tmp/ZenPlayer-mac-input-r1/tests.xcresult` |
+| 修正后批量搜索 | **通过**，1 项，18.883 秒 | `/tmp/ZenPlayer-mac-input-r2/tests.xcresult` |
+| 同二进制重复批量搜索 | **通过**，同一测试 5 轮，0 失败／跳过；每轮 4 次精确值断言，共 20 次；并非 5 个独立场景 | `/tmp/ZenPlayer-mac-input-r2/repeated.xcresult`、`repeated.log` |
+| 原生文本框对照 | **通过**，1 项，4.625 秒，完整输入 `第１２集` | `/tmp/ZenPlayer-mac-native-input-probe/tests.xcresult` |
+| 实际 Unicode 跳集 | **通过**，1 项，75.268 秒；输入逐字一致、Return 提交、清筛选定位实际第 12 集并保留暂停会话 | `/tmp/ZenPlayer-mac-unicode-current/tests.xcresult` |
+
+上述定向运行 build-for-testing／test-without-building 均成功，运行器的签名／sandbox 检查通过。原生对照附件 `/tmp/ZenPlayer-mac-native-input-probe-attachments/B537F0FB-655C-46A6-94CD-26F5DDB9066E.txt` 显示完整值且 Keyboard Focused；历史失败附件为 `/tmp/ZenPlayer-mac-unicode-old-attachments/D8AC9AF5-A454-489A-A09B-33D4208EDA04.txt`。窗口／字段树不是实际输入法组合输入或 VoiceOver 验收。日志含内部 QoS 警告，不作为已测时延。
+
+复现（output 须换为未存在的目录）：
+
+```sh
+python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-mac-input-r2 --package-cache /tmp/ZenPlayer-M0-mac/SourcePackages --only-testing testBatchSearchInputRetainsExactText
+python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-mac-native-input-probe --package-cache /tmp/ZenPlayer-M0-mac/SourcePackages --native-input-probe
+python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-mac-unicode-current --package-cache /tmp/ZenPlayer-M0-mac/SourcePackages --only-testing testCatalogSortingAndKeyboardJumpPreservePausedSession --jump-input '第１２集'
+```
+
+重复运行使用 `mac-input-r2` 同一临时工程／derived data，`test-without-building -only-testing:StageUITests/StageUITests/testBatchSearchInputRetainsExactText -run-tests-until-failure -test-iterations 5 -resultBundlePath /tmp/ZenPlayer-mac-input-r2/repeated.xcresult`，其余参数与单轮相同。5 轮分别为 18.878／18.613／18.493／18.564／18.542 秒，不宣称输入到渲染 P95。
+
+**未重跑／未验证**：本次未运行增加用例后的完整 11 项套件；保留上一轮完整 10 项通过证据。本轮没有生产变更，两平台各 86 项 App XCTest／构建复用前述证据，未重新执行。历史间歇失败根因、真实 IME／连续快速输入、iPhone 后台／锁屏／PiP、VoiceOver／Reduce Motion、两秒高亮、参考机性能、真实下载／分享／音效及升级迁移缺口未关闭。3.2 仍未勾选，阶段保持 In Verification，不建议 Done。
+
+本地交付标题：`补充批量搜索输入与 Unicode 对照回归`；仅本地提交，不 push／PR／sync／archive／发布。提交身份可用 `git log -1 --format='%H%n%B' --grep='^补充批量搜索输入与 Unicode 对照回归$'` 查询。
+
+交付检查：M4 strict 校验、Python AST／help、互斥参数在创建输出前拒绝、Git diff 检查均通过。当前 App／UI 可执行输入及工程与 Unicode 最终运行的 context.json 一致；运行后只改脚本 help 和文档。与上一轮完整 10 项输入比较，116 个生产文件及工程 hash 不变。新增两份原生诊断源码已单独 review；本次共提交 8 个 Harness／文档文件。
