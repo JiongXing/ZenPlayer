@@ -10,7 +10,7 @@ final class StageUITests: XCTestCase {
         let window = app.windows.firstMatch
         clickCenter(window.buttons["繼續收聽"].firstMatch, in: window)
         clickCenter(queueMini(in: window, episode: 1), in: window)
-        clickCenter(window.buttons["暫停"], in: window)
+        setNativePlayback(false, in: window)
         let playlist = window.buttons["player.playlist"]
         clickCenter(playlist, in: window)
         let first = app.buttons["player.playlist.episode.900101"]
@@ -20,12 +20,12 @@ final class StageUITests: XCTestCase {
         XCTAssertTrue(app.buttons["player.playlist.episode.900105"].exists)
         capture(app, name: "mac-player-playlist-current")
         first.click()
-        XCTAssertTrue(window.buttons["播放"].waitForExistence(timeout: 5))
-        XCTAssertFalse(window.buttons["暫停"].exists)
+        XCTAssertTrue(wait { self.nativeIsPaused(in: window) })
+        XCTAssertFalse(nativeIsPlaying(in: window))
         clickCenter(playlist, in: window)
         app.buttons["player.playlist.episode.900105"].click()
         XCTAssertTrue(window.staticTexts["Mac 連播驗證-5"].waitForExistence(timeout: 5))
-        clickCenter(window.buttons["暫停"], in: window)
+        setNativePlayback(false, in: window)
         XCTAssertFalse(window.buttons["下一集"].isEnabled)
         clickCenter(playlist, in: window)
         XCTAssertEqual(app.buttons["player.playlist.episode.900105"].value as? String, "目前播放的單集")
@@ -37,9 +37,46 @@ final class StageUITests: XCTestCase {
         goBack(window)
         XCTAssertTrue(playlist.waitForExistence(timeout: 5))
         XCTAssertTrue(window.staticTexts["Mac 連播驗證-5"].exists)
-        XCTAssertTrue(window.buttons["播放"].exists)
-        XCTAssertFalse(window.buttons["暫停"].exists)
+        XCTAssertTrue(nativeIsPaused(in: window))
+        XCTAssertFalse(nativeIsPlaying(in: window))
         capture(app, name: "mac-player-playlist-return-paused")
+    }
+
+    func testMinimalPlayerSettingsAndNativeControls() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--stage-seed-queue", "--stage-primary-window"]
+        launch(app)
+        let window = app.windows.firstMatch
+        clickCenter(window.buttons["繼續收聽"].firstMatch, in: window)
+        clickCenter(queueMini(in: window, episode: 1), in: window)
+        clickCenter(window.buttons["下一集"], in: window)
+        XCTAssertTrue(window.staticTexts["Mac 連播驗證-2"].waitForExistence(timeout: 5))
+        setNativePlayback(false, in: window)
+        XCTAssertFalse(window.buttons["停止播放"].exists)
+        XCTAssertFalse(window.checkBoxes["player.autoAdvance"].exists)
+        XCTAssertFalse(window.buttons["player.denoise.50"].exists)
+        let shot = XCTAttachment(screenshot: window.screenshot())
+        shot.name = "mac-minimal-player"
+        shot.lifetime = .keepAlways
+        add(shot)
+        setNativePlayback(true, in: window)
+        expandPlayerSettings(in: window)
+        XCTAssertTrue(nativeIsPlaying(in: window))
+        clickCenter(window.checkBoxes["player.autoAdvance"], in: window)
+        XCTAssertTrue(nativeIsPlaying(in: window), "关闭连播不暂停当前播放")
+        clickCenter(window.buttons["player.denoise.50"], in: window)
+        clickCenter(window.buttons["player.amplification.2"], in: window)
+        let disclosure = window.descendants(matching: .any).matching(identifier: "player.settings").firstMatch
+        XCTAssertTrue(disclosure.label.contains("50%") && disclosure.label.contains("2x"))
+        clickCenter(disclosure, in: window)
+        XCTAssertTrue(nativeIsPlaying(in: window))
+        setNativePlayback(false, in: window)
+        expandPlayerSettings(in: window)
+        XCTAssertTrue(nativeIsPaused(in: window))
+        XCTAssertEqual((window.checkBoxes["player.autoAdvance"].value as? NSNumber)?.intValue, 0)
+        capture(app, name: "mac-minimal-settings-persist")
+        stopFullPlayer(app, in: window)
     }
 
     override func tearDownWithError() throws {
@@ -54,7 +91,7 @@ final class StageUITests: XCTestCase {
         var window = app.windows.firstMatch
         clickCenter(window.buttons["繼續收聽"].firstMatch, in: window)
         clickCenter(mini(in: window), in: window)
-        clickCenter(window.buttons["暫停"], in: window)
+        setNativePlayback(false, in: window)
         clickCenter(window.buttons["player.playlist"], in: window)
         XCTAssertTrue(app.staticTexts["暫無所屬講集資訊"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["player.playlist.episode.900002"].exists)
@@ -82,7 +119,8 @@ final class StageUITests: XCTestCase {
         window = app.windows.firstMatch
         clickCenter(window.buttons["繼續收聽"].firstMatch, in: window)
         clickCenter(queueMini(in: window, episode: 1), in: window)
-        XCTAssertEqual((window.checkBoxes["播完自動播放下一集"].value as? NSNumber)?.intValue, 1)
+        expandPlayerSettings(in: window)
+        XCTAssertEqual((window.checkBoxes["player.autoAdvance"].value as? NSNumber)?.intValue, 1)
         clickCenter(window.buttons["player.playlist"], in: window)
         let second = app.buttons["player.playlist.episode.900102"]
         let advanced = wait { second.value as? String == "目前播放的單集" }
@@ -101,7 +139,7 @@ final class StageUITests: XCTestCase {
         openThirtySeries(app)
         enterJump("1", app: app)
         clickCenter(thirtyRow(in: window, number: 1), in: window)
-        XCTAssertTrue(window.buttons["暫停"].waitForExistence(timeout: 10))
+        XCTAssertTrue(wait { self.nativeIsPlaying(in: window) })
         returnFromSeriesPlayerToHome(window)
         var firstPosition = -1.0
         for number in 1...30 {
@@ -130,7 +168,7 @@ final class StageUITests: XCTestCase {
         }
         clickCenter(thirtyMini(in: window, number: 30), in: window)
         XCTAssertFalse(window.buttons["下一集"].isEnabled)
-        clickCenter(window.buttons["停止播放"], in: window)
+        stopFullPlayer(app, in: window)
         goBack(window)
         clickCenter(window.descendants(matching: .tab).matching(identifier: "person").firstMatch, in: window)
         clickCenter(window.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "最近播放")).firstMatch, in: window)
@@ -164,7 +202,7 @@ final class StageUITests: XCTestCase {
         XCTAssertEqual(listenedSeconds(in: thirtyRow(in: window, number: 1).label), firstPosition, accuracy: 1)
         let selectedAt = Date()
         clickCenter(thirtyRow(in: window, number: 1), in: window)
-        XCTAssertTrue(window.buttons["暫停"].waitForExistence(timeout: 10))
+        XCTAssertTrue(wait { self.nativeIsPlaying(in: window) })
         returnFromSeriesPlayerToHome(window)
         XCTAssertTrue(window.staticTexts["Mac 三十集-1"].waitForExistence(timeout: 5))
         let restored = queuePosition(in: window)
@@ -304,7 +342,7 @@ final class StageUITests: XCTestCase {
             locateLongHistory(app)
             clickCenter(longHistoryRow(in: window, number: 12), in: window)
         }
-        XCTAssertTrue(window.buttons["暫停"].waitForExistence(timeout: 10))
+        XCTAssertTrue(wait { self.nativeIsPlaying(in: window) })
         goBack(window)
         if resumeFromDownload {
             goBack(window)
@@ -469,7 +507,7 @@ final class StageUITests: XCTestCase {
         capture(app, name: "mac-queue-filter-only-first-before-play")
         clickCenter(first, in: window)
         XCTAssertTrue(window.staticTexts["Mac 連播驗證-1"].waitForExistence(timeout: 5))
-        XCTAssertTrue(window.buttons["暫停"].waitForExistence(timeout: 5))
+        XCTAssertTrue(wait { self.nativeIsPlaying(in: window) })
         XCTAssertTrue(window.buttons["下一集"].isEnabled, "仅一个搜索结果也必须保留完整队列")
         goBack(window)
         XCTAssertEqual(search.value as? String, "1")
@@ -494,7 +532,7 @@ final class StageUITests: XCTestCase {
         XCTAssertTrue(window.staticTexts["Mac 連播驗證-5"].waitForExistence(timeout: 5))
         XCTAssertFalse(window.buttons["下一集"].isEnabled)
         capture(app, name: "mac-filtered-entry-keeps-last-episode-five")
-        clickCenter(window.buttons["停止播放"], in: window)
+        stopFullPlayer(app, in: window)
     }
 
     func testPartialCatalogAndDuplicateOrZeroEpisodeLocation() throws {
@@ -575,7 +613,7 @@ final class StageUITests: XCTestCase {
         waitForPosition(in: window, greaterThan: 31)
         XCTAssertTrue(mini(in: window).label.contains("正在收聽"))
         XCTAssertTrue(error.exists, "分类错误与本地播放同时存在")
-        XCTAssertFalse(window.buttons["停止播放"].exists, "首页直接续听无需打开完整页")
+        XCTAssertFalse(window.buttons["player.playlist"].exists, "首页直接续听无需打开完整页")
         capture(app, name: "mac-category-failure-local-playing")
         clickCenter(window.buttons["pause.fill"], in: window)
         XCTAssertTrue(wait { self.mini(in: window).label.contains("已暫停") })
@@ -659,11 +697,12 @@ final class StageUITests: XCTestCase {
         XCTAssertTrue(second.waitForExistence(timeout: 5))
         XCTAssertTrue(wait { second.label.contains("正在收聽") && self.queuePosition(in: window) >= 7 })
         clickCenter(second, in: window)
-        XCTAssertEqual((window.checkBoxes["播完自動播放下一集"].value as? NSNumber)?.intValue, 0)
+        expandPlayerSettings(in: window)
+        XCTAssertEqual((window.checkBoxes["player.autoAdvance"].value as? NSNumber)?.intValue, 0)
         XCTAssertTrue(window.buttons["上一集"].isEnabled)
         XCTAssertTrue(window.buttons["下一集"].isEnabled)
         capture(app, name: "mac-home-next-keeps-queue-and-preference")
-        clickCenter(window.buttons["停止播放"], in: window)
+        stopFullPlayer(app, in: window)
         app.typeKey("q", modifierFlags: .command)
         XCTAssertTrue(wait { app.state == .notRunning })
         app.launchArguments = ["--stage-verify-queue-off", "--stage-primary-window"]
@@ -691,14 +730,16 @@ final class StageUITests: XCTestCase {
         XCTAssertTrue(window.staticTexts["Mac 連播驗證-2"].waitForExistence(timeout: 5))
         let previous = window.buttons["上一集"]
         let next = window.buttons["下一集"]
-        let autoAdvance = window.checkBoxes["播完自動播放下一集"]
+        expandPlayerSettings(in: window)
+        let autoAdvance = window.checkBoxes["player.autoAdvance"]
         XCTAssertTrue(previous.isEnabled)
         XCTAssertTrue(next.isEnabled)
         XCTAssertEqual((autoAdvance.value as? NSNumber)?.intValue, 1)
+        expandPlayerSettings(in: window)
         clickCenter(autoAdvance, in: window)
         XCTAssertEqual((autoAdvance.value as? NSNumber)?.intValue, 0)
         capture(app, name: "mac-queue-toggle-off-keeps-playing")
-        XCTAssertTrue(window.buttons["暫停"].exists, "关闭连播不应立即暂停当前集")
+        XCTAssertTrue(nativeIsPlaying(in: window), "关闭连播不应立即暂停当前集")
         goBack(window)
         let before = queuePosition(in: window)
         XCTAssertGreaterThanOrEqual(before, 7)
@@ -707,14 +748,16 @@ final class StageUITests: XCTestCase {
         clickCenter(next, in: window)
         XCTAssertTrue(window.staticTexts["Mac 連播驗證-5"].waitForExistence(timeout: 5))
         XCTAssertFalse(next.isEnabled, "末集不能越界")
+        expandPlayerSettings(in: window)
         clickCenter(autoAdvance, in: window)
         XCTAssertEqual((autoAdvance.value as? NSNumber)?.intValue, 1)
-        XCTAssertTrue(window.buttons["暫停"].exists, "必须在末集仍播放时启用连播再验证结束边界")
+        XCTAssertTrue(nativeIsPlaying(in: window), "必须在末集仍播放时启用连播再验证结束边界")
         XCTAssertTrue(window.staticTexts["已聽完"].waitForExistence(timeout: 25))
         XCTAssertTrue(window.staticTexts["Mac 連播驗證-5"].exists)
-        XCTAssertFalse(window.buttons["暫停"].exists)
+        XCTAssertFalse(nativeIsPlaying(in: window))
         XCTAssertFalse(next.isEnabled)
         capture(app, name: "mac-queue-last-ended-with-auto-on")
+        expandPlayerSettings(in: window)
         clickCenter(autoAdvance, in: window)
         XCTAssertEqual((autoAdvance.value as? NSNumber)?.intValue, 0)
         app.typeKey("q", modifierFlags: .command)
@@ -732,11 +775,12 @@ final class StageUITests: XCTestCase {
         let resumed = queueMini(in: reopened, episode: 2)
         XCTAssertTrue(resumed.waitForExistence(timeout: 5))
         clickCenter(resumed, in: reopened)
-        XCTAssertEqual((reopened.checkBoxes["播完自動播放下一集"].value as? NSNumber)?.intValue, 0)
+        expandPlayerSettings(in: reopened)
+        XCTAssertEqual((reopened.checkBoxes["player.autoAdvance"].value as? NSNumber)?.intValue, 0)
         clickCenter(reopened.buttons["上一集"], in: reopened)
         XCTAssertTrue(reopened.staticTexts["Mac 連播驗證-1"].waitForExistence(timeout: 5))
         XCTAssertFalse(reopened.buttons["上一集"].isEnabled, "首集不能越界")
-        XCTAssertTrue(reopened.buttons["暫停"].exists, "手动上一集应开始重听")
+        XCTAssertTrue(nativeIsPlaying(in: reopened), "手动上一集应开始重听")
         goBack(reopened)
         XCTAssertTrue(queueMini(in: reopened, episode: 1).waitForExistence(timeout: 5))
         let replay = queuePosition(in: reopened, duration: "0:10")
@@ -866,7 +910,7 @@ final class StageUITests: XCTestCase {
         }
 
         clickCenter(mini(in: window), in: window)
-        clickCenter(window.buttons["停止播放"], in: window)
+        stopFullPlayer(app, in: window)
         XCTAssertFalse(mini(in: window).exists)
         goBack(window)
         let downloads = window.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "下載完成")).firstMatch
@@ -972,11 +1016,42 @@ final class StageUITests: XCTestCase {
         element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
     }
 
+    private func nativeIsPlaying(in window: XCUIElement) -> Bool {
+        let control = window.checkBoxes["播放/暫停"]
+        return control.exists && (control.value as? NSNumber)?.intValue == 1
+    }
+
+    private func nativeIsPaused(in window: XCUIElement) -> Bool {
+        let control = window.checkBoxes["播放/暫停"]
+        return control.exists && (control.value as? NSNumber)?.intValue == 0
+    }
+
+    private func setNativePlayback(_ playing: Bool, in window: XCUIElement) {
+        let control = window.checkBoxes["播放/暫停"]
+        XCTAssertTrue(control.waitForExistence(timeout: 5))
+        if nativeIsPlaying(in: window) != playing { clickCenter(control, in: window) }
+        XCTAssertTrue(wait { playing ? self.nativeIsPlaying(in: window) : self.nativeIsPaused(in: window) })
+    }
+
+    private func expandPlayerSettings(in window: XCUIElement) {
+        let disclosure = window.descendants(matching: .any).matching(identifier: "player.settings").firstMatch
+        XCTAssertTrue(disclosure.waitForExistence(timeout: 5))
+        if !window.checkBoxes["player.autoAdvance"].exists {
+            clickCenter(disclosure, in: window)
+        }
+        XCTAssertTrue(window.checkBoxes["player.autoAdvance"].waitForExistence(timeout: 5))
+    }
+
+    private func stopFullPlayer(_ app: XCUIApplication, in window: XCUIElement) {
+        clickCenter(window.menuButtons["player.more"], in: window)
+        app.menuItems["停止播放"].click()
+        XCTAssertTrue(wait { !window.buttons["player.playlist"].exists })
+    }
+
     private func assertPausedFullPlayer(_ window: XCUIElement) {
-        XCTAssertTrue(window.buttons["停止播放"].waitForExistence(timeout: 5))
-        XCTAssertTrue(window.staticTexts["已暫停"].exists)
-        XCTAssertTrue(window.buttons["播放"].exists)
-        XCTAssertFalse(window.buttons["暫停"].exists)
+        XCTAssertTrue(window.buttons["player.playlist"].waitForExistence(timeout: 5))
+        XCTAssertTrue(nativeIsPaused(in: window))
+        XCTAssertFalse(nativeIsPlaying(in: window))
         XCTAssertFalse(mini(in: window).exists)
     }
 

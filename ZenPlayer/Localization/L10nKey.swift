@@ -108,6 +108,10 @@ enum L10nKey: String, CaseIterable {
     case playerSeriesDetails = "player.series_details"
     case playerSeriesUnavailable = "player.series_unavailable"
     case playerPlaylistClose = "player.playlist_close"
+    case playerSettings = "player.settings"
+    case playerSettingsSummary = "player.settings_summary"
+    case playerSettingsExpanded = "player.settings_expanded"
+    case playerSettingsCollapsed = "player.settings_collapsed"
 
     case myTitle = "my.title"
     case myRecentPlayback = "my.recent_playback"

@@ -184,9 +184,14 @@ final class StageUITests: XCTestCase {
     }
 
     private func assertPausedFullPlayer(_ app: XCUIApplication) {
-        XCTAssertTrue(app.staticTexts["已暫停"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["暫停"].exists)
-        XCTAssertFalse(app.buttons["更多"].exists)
+        XCTAssertTrue(app.buttons["player.playlist"].waitForExistence(timeout: 5))
+        let native = app.buttons["Play/Pause"]
+        if !native.exists {
+            app.images["AudioOnlyIndicator"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1)).tap()
+        }
+        XCTAssertTrue(native.waitForExistence(timeout: 5))
+        XCTAssertEqual(native.label, "播放")
+        XCTAssertTrue(app.buttons["player.more"].exists)
         capture(app, name: "paused-full-player")
     }
 

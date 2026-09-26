@@ -21,62 +21,69 @@ struct PlayerView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 14) {
+            VStack(spacing: 20) {
                 if let current = viewModel.currentContext {
-                    Text(current.episode.title).font(.headline)
-                    Button { showsPlaylist = true } label: {
-                        Label(L10n.text(.playerPlaylist), systemImage: "list.bullet")
-                            .frame(minHeight: 44)
-                    }
-                    .accessibilityIdentifier("player.playlist")
-                    #if os(macOS)
-                    .popover(isPresented: $showsPlaylist, arrowEdge: .bottom) {
-                        playlistPanel.onDisappear(perform: finishPlaylistDismissal)
-                    }
-                    #endif
-                    Text(viewModel.sessionStatus).font(.caption)
-                    HStack {
-                        Button { viewModel.togglePlayback() } label: {
-                            Label(L10n.text(viewModel.session.phase == .failed ? .progressRetry : viewModel.isPlaying ? .sessionPause : .sessionPlay), systemImage: viewModel.session.phase == .failed ? "arrow.clockwise" : viewModel.isPlaying ? "pause.fill" : "play.fill")
-                        }
-                        .frame(minWidth: 44, minHeight: 44)
-                        Button(L10n.text(.sessionStop)) { viewModel.stopPlayback() }
-                            .frame(minHeight: 44)
-                    }
-                }
-                if let player = viewModel.player {
-                    mediaPlayerArea(player: player)
-                } else if viewModel.isPreparingPlayback {
-                    Group {
-                        if viewModel.showsLoading { ProgressView(L10n.text(.playerLoading)) }
-                        else { Text(viewModel.sessionStatus) }
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 220)
-                } else if let error = viewModel.errorMessage {
-                    errorView(message: error)
-                } else {
-                    Text(L10n.text(.sessionStopped))
-                        .frame(maxWidth: .infinity, minHeight: 220)
+                    Text(current.episode.title)
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
-                if viewModel.hasSession { PlaybackQueueControls() }
+                if let player = viewModel.player {
+                    mediaPlayerArea(player: player)
+                } else if viewModel.session.phase != .failed {
+                    Group {
+                        if viewModel.isPreparingPlayback {
+                            if viewModel.showsLoading { ProgressView(L10n.text(.playerLoading)) }
+                            else { Text(viewModel.sessionStatus) }
+                        } else {
+                            Text(L10n.text(.sessionStopped))
+                        }
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 220)
+                }
+
+                // 失败与加载反馈不依赖原生控件，保留明确的恢复入口。
+                if viewModel.session.phase == .failed {
+                    errorView(message: viewModel.sessionStatus)
+                } else if viewModel.player != nil && viewModel.showsLoading {
+                    ProgressView(L10n.text(.playerLoading))
+                } else if viewModel.session.phase == .ended {
+                    Text(viewModel.sessionStatus).font(.caption).foregroundStyle(.secondary)
+                }
+
+                if viewModel.hasSession {
+                    PlaybackQueueControls { playlistButton }
+                }
                 ProgressSaveNotice(store: viewModel.progressStore)
 
                 if viewModel.canSwitchMediaType {
                     mediaTypeSwitcher
                 }
-
-                if viewModel.player != nil {
-                    controlPanel
+                if viewModel.hasSession {
+                    PlayerSettingsView()
                 }
-
-                Spacer(minLength: 0)
             }
+            .frame(maxWidth: 720)
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.vertical, 16)
+            .frame(maxWidth: .infinity)
         }
         .background(pageBackground)
         .navigationBarBackButtonHidden(false)
+        .toolbar {
+            if viewModel.hasSession {
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        Button(L10n.text(.sessionStop), role: .destructive) { viewModel.stopPlayback() }
+                    } label: {
+                        Image(systemName: "ellipsis").frame(width: 44, height: 44)
+                    }
+                    .accessibilityLabel(L10n.text(.sessionMore))
+                    .accessibilityIdentifier("player.more")
+                }
+            }
+        }
         #if os(iOS)
         .sheet(isPresented: $showsPlaylist, onDismiss: finishPlaylistDismissal) {
             playlistPanel
@@ -102,6 +109,24 @@ struct PlayerView: View {
         }
     }
 
+    private var playlistButton: some View {
+        Button { showsPlaylist = true } label: {
+            Image(systemName: "list.bullet")
+                .font(.title3)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(L10n.text(.playerPlaylist))
+        .accessibilityIdentifier("player.playlist")
+        .help(L10n.string(.playerPlaylist))
+        #if os(macOS)
+        .popover(isPresented: $showsPlaylist, arrowEdge: .bottom) {
+            playlistPanel.onDisappear(perform: finishPlaylistDismissal)
+        }
+        #endif
+    }
+
     private var playlistPanel: some View {
         PlayerPlaylistView { destination in
             pendingSeriesDestination = destination
@@ -115,59 +140,48 @@ struct PlayerView: View {
     }
 
     private var mediaTypeSwitcher: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 4) {
             ForEach(viewModel.availableMediaTypes) { mediaType in
                 Button {
-                    Task {
-                        await viewModel.switchMediaType(to: mediaType)
-                    }
+                    Task { await viewModel.switchMediaType(to: mediaType) }
                 } label: {
-                    Label(mediaTypeLabel(for: mediaType), systemImage: mediaTypeIcon(for: mediaType))
-                        .font(.footnote.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
-                        .foregroundStyle(
-                            viewModel.selectedMediaType == mediaType
-                            ? .white
-                            : mediaTypeTintColor(for: mediaType)
-                        )
-                        .background(
-                            Capsule(style: .continuous)
-                                .fill(
-                                    viewModel.selectedMediaType == mediaType
-                                    ? mediaTypeTintColor(for: mediaType)
-                                    : mediaTypeTintColor(for: mediaType).opacity(0.12)
-                                )
-                        )
+                    Text(mediaTypeLabel(for: mediaType))
+                        .font(.subheadline.weight(viewModel.selectedMediaType == mediaType ? .semibold : .regular))
+                        .padding(.horizontal, 24)
+                        .frame(minWidth: 88, minHeight: 44)
+                        .background {
+                            if viewModel.selectedMediaType == mediaType {
+                                RoundedRectangle(cornerRadius: 8).fill(.background)
+                            }
+                        }
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityAddTraits(viewModel.selectedMediaType == mediaType ? .isSelected : [])
+                .accessibilityIdentifier("player.media.\(mediaType.rawValue)")
                 .disabled(viewModel.isPreparingPlayback)
-                .opacity(viewModel.isPreparingPlayback ? 0.7 : 1)
             }
         }
-        .padding(6)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white.opacity(0.72))
-        )
+        .padding(4)
+        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
     }
 
     private func errorView(message: String) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary)
-            Text(L10n.text(.playerCannotPlay))
+        VStack(spacing: 12) {
+            Label(L10n.text(.playerCannotPlay), systemImage: "exclamationmark.triangle")
                 .font(.headline)
-                .foregroundStyle(.white)
             Text(message)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+            Button { viewModel.togglePlayback() } label: {
+                Label(L10n.text(.progressRetry), systemImage: "arrow.clockwise")
+                    .frame(minHeight: 44)
+            }
+            .accessibilityIdentifier("player.retry")
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 16)
     }
 
     @ViewBuilder
@@ -197,90 +211,12 @@ struct PlayerView: View {
         .id(viewModel.selectedMediaType)
     }
 
-    private var controlPanel: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(L10n.text(.playerVoiceDenoise))
-                    .font(.headline)
-                    .foregroundStyle(Color(red: 0.4, green: 0.3, blue: 0.2))
-
-                HStack(spacing: 8) {
-                    ForEach(PlayerViewModel.DenoiseLevel.allCases, id: \.rawValue) { level in
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                viewModel.denoiseLevel = level
-                            }
-                        } label: {
-                            Text(level.label)
-                                .font(.footnote.weight(.semibold))
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.7)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 9)
-                                .foregroundStyle(viewModel.denoiseLevel == level ? .white : Color(red: 0.5, green: 0.4, blue: 0.3))
-                                .background(
-                                    Capsule(style: .continuous)
-                                        .fill(viewModel.denoiseLevel == level ? Color(red: 0.8, green: 0.6, blue: 0.4) : Color(red: 0.95, green: 0.9, blue: 0.85))
-                                )
-                                .shadow(color: viewModel.denoiseLevel == level ? Color(red: 0.8, green: 0.6, blue: 0.4).opacity(0.3) : .clear, radius: 4, x: 0, y: 2)
-                        }
-                        .buttonStyle(.plain)
-                        .frame(maxWidth: .infinity)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            Divider()
-                .background(Color(red: 0.9, green: 0.85, blue: 0.8))
-
-            VStack(alignment: .leading, spacing: 12) {
-                Text(L10n.text(.playerVolumeBoost))
-                    .font(.headline)
-                    .foregroundStyle(Color(red: 0.4, green: 0.3, blue: 0.2))
-
-                HStack(spacing: 8) {
-                    ForEach(PlayerViewModel.supportedAmplificationOptions, id: \.self) { option in
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                viewModel.amplificationMultiplier = option
-                            }
-                        } label: {
-                            Text(PlayerViewModel.amplificationLabel(option))
-                                .font(.footnote.weight(.semibold))
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.7)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 9)
-                                .foregroundStyle(viewModel.amplificationMultiplier == option ? .white : Color(red: 0.5, green: 0.4, blue: 0.3))
-                                .background(
-                                    Capsule(style: .continuous)
-                                        .fill(viewModel.amplificationMultiplier == option ? Color(red: 0.8, green: 0.6, blue: 0.4) : Color(red: 0.95, green: 0.9, blue: 0.85))
-                                )
-                                .shadow(color: viewModel.amplificationMultiplier == option ? Color(red: 0.8, green: 0.6, blue: 0.4).opacity(0.3) : .clear, radius: 4, x: 0, y: 2)
-                        }
-                        .buttonStyle(.plain)
-                        .frame(maxWidth: .infinity)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(red: 0.98, green: 0.96, blue: 0.94))
-                .shadow(color: Color(red: 0.8, green: 0.6, blue: 0.4).opacity(0.15), radius: 10, x: 0, y: 5)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Color(red: 0.9, green: 0.85, blue: 0.8), lineWidth: 1)
-                )
-        )
-    }
-
     private var pageBackground: Color {
-        Color(red: 0.92, green: 0.88, blue: 0.82).opacity(0.3)
+        #if os(iOS)
+        Color(uiColor: .systemGroupedBackground)
+        #else
+        Color(nsColor: .windowBackgroundColor)
+        #endif
     }
 
     private func mediaTypeLabel(for mediaType: PlaybackMediaType) -> String {
@@ -292,23 +228,7 @@ struct PlayerView: View {
         }
     }
 
-    private func mediaTypeIcon(for mediaType: PlaybackMediaType) -> String {
-        switch mediaType {
-        case .audio:
-            return "headphones"
-        case .video:
-            return "video.fill"
-        }
-    }
 
-    private func mediaTypeTintColor(for mediaType: PlaybackMediaType) -> Color {
-        switch mediaType {
-        case .audio:
-            return .orange
-        case .video:
-            return .blue
-        }
-    }
 }
 
 private extension View {

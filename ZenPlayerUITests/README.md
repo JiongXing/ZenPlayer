@@ -64,6 +64,8 @@ python3 Scripts/run-mac-stage-ui-tests.py \
 
 播放页弹出列表新增两个可定向运行的用例：`testPlayerPlaylistJumpAndSeriesRoundTrip` 验证当前集点击不恢复暂停、1→5 跳选和讲集详情往返；`testPlayerPlaylistMissingMetadataPartialListAndLiveHighlight` 验证无关联降级、21 条部分队列的第 12 集首次定位，以及打开面板期间自然连播更新标记。两者复用下述队列和目录夹具，以同样的 `--only-testing <方法名>` 运行。当前结果、iOS 临时验证工程及截图见 [播放列表验证记录](../openspec/changes/show-player-series-playlist/verification.md)。
 
+简约播放页改版后，Mac 完整页用例改为操作 AVKit 的「播放/暫停」原生控件；停止需打开 `player.more` 菜单，连播需先展开 `player.settings`。新增 `testMinimalPlayerSettingsAndNativeControls` 验证原生暂停／继续、展开收起不打断播放、连播关闭、音效档位摘要与菜单停止。iOS 完整页断言使用 `Play/Pause` 原生控件。真机、两端改版 UI、大字深色及失败反馈证据见 [简约播放页验证记录](../openspec/changes/simplify-player-layout/verification.md)。
+
 新增 `MacQueueFixture.swift` 只复制进临时 App。`--stage-seed-queue` 写入固定 1／2／5 三集快照、10／120／15 秒本地静音 WAV、完成下载索引和单集进度（第 1 集 1 秒、第 2 集 7 秒）；远端均为 `.invalid`。仅写本验证 App 的三个专属单集键及一个固定快照版本，保留其他记录／下载。每次播种重新建立这些样本的起点；只有本验证 App 的 `playback.autoAdvance` 偏好被清除，以验证产品默认开启。`--stage-auto-off` 可设置已关闭的起点。
 
 - `testNaturalQueueAdvanceControlsAndColdPreference`：首页一键启动本地第 1 集，真实 AVPlayer 自然结束进入第 2 集并恢复其进度；实际开关关闭不立即暂停、手动下一集到 5；连播开启时末集结束不循环；正常退出后只读验证完成状态／第二集进度／快照／关闭偏好，再从首页恢复第二集，手动上一集重听已完成的第一集，首尾按钮禁用。
