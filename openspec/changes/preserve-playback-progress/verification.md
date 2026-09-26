@@ -232,3 +232,11 @@ xcodebuild -project ZenPlayer.xcodeproj -scheme ZenPlayer -destination 'platform
 本轮未复跑真机及 UI 集成操作，既有 Developer Mode 阻塞和 I／D 验证缺口仍有效。审查修复未降低任务完成条件，任务仍 **6/13**，Roadmap 仍 **In Verification**。本地阶段提交不等于 M0 验收或发布批准；尚缺原生控件、后台／锁屏／PiP、升级故障演练及下载／分享／源回退／降噪实际回归证据。
 
 暂存后 `git diff --cached --check` 首次发现两个新模型文件末尾多余空行，已移除并重验通过；只有空白变化，复用上述构建／测试证据。
+
+## 2026-09-26 macOS 删除下载与失败恢复补验
+
+持续目标的 M1～M4 回归补充 M0 S20／AT-19-delete 的 macOS 子断言，未改存储／迁移／DownloadManager 生产实现。隔离验证 App 通过自己的完成下载索引播放静音 WAV（远端 .invalid），暂停／停止后在下载列表右键删除。无播种冷启动的只读断言确认实际文件已不存在、进度文件仍可解码且至少 30 秒；首页保留删除前位置。再从历史打开同集，远端失败出现重试，退出后重开位置仍未变。
+
+最终 `/tmp/ZenPlayer-mac-entry-final-r4/tests.xcresult` **3 项、0 失败、118.909 秒**，其中 `testHistoryDownloadEntryAndDeletionRetainsProgress` 73.411 秒。构建、原生完整页崩溃修复、两端 86 项回归及复现／限制详见 [M1 记录](../unify-playback-session/verification.md#2026-09-26-mac-完整播放页崩溃与入口回归)。样本只在独立 bundle／sandbox 中生成，没有修改真实用户数据。
+
+该证据不覆盖 iPhone 删除下载、外部目录书签授权、实际传输／分享、强杀／升级中断或真实媒体听感。5.1 及整个 M0 保持未完成验收，不因一个数据安全子断言通过改为 Done。

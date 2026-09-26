@@ -14,6 +14,7 @@ Goals：复用现有 PlayerViewModel 作为 App 级媒体所有者，避免第�
 - 所有暂停／继续／停止和 iOS 系统控制走相同模型方法。停止递增媒体身份并移除观察者、系统命令、音频会话；中断前记录是否在播放，手动暂停撤销恢复资格；系统中断导致的原生暂停观察不撤销资格，重复开始通知幂等。
 - KVO 和通知携带 player/item/token；准备／播放中途失败及 30 秒无进展时取消有效请求，保留当前目标与进度用于重试。轻量可取消监测任务只在活动会话存在，按单调时钟判定，暂停不超时。
 - 切源读取即时 AVPlayer 状态避免 KVO 延迟导致暂停意图丢失；失败重试保留失败前意图。原生控件仍操作同一 AVPlayer；其 rate／timeControlStatus 观察将变化反馈到统一状态。视图不能自动 play；加载恢复完成后仅执行当前意图。
+- macOS Debug／Release 显式保留系统 AVKit 框架链接（`-needed_framework AVKit`）。实际 Xcode 27 产物只自动链接了 `_AVKit_SwiftUI`，进入 VideoPlayer 时无法解析其 AVPlayerView 父类并崩溃；系统框架的动态类型依赖不能依靠直接符号引用自动推导。保留既有 VideoPlayer 与 AVPlayer 所有权，不增加替代渲染器或修改 iOS 链接选项。
 
 ## Risks / Trade-offs
 

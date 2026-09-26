@@ -66,6 +66,7 @@ def main():
         "head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip(),
         "destination": "platform=macOS", "bundleID": BUNDLE_ID,
         "bootstrap": "temporary App initializer seeds its own sandbox before creating PlayerViewModel",
+        "projectSHA256": hashlib.sha256((repo / "ZenPlayer.xcodeproj/project.pbxproj").read_bytes()).hexdigest(),
         "sha256": {str(p.relative_to(repo)): hashlib.sha256(p.read_bytes()).hexdigest()
                    for directory in ("ZenPlayer", "ZenPlayerUITests", "Scripts")
                    for p in sorted((repo / directory).rglob("*")) if p.is_file() and "__pycache__" not in p.parts}

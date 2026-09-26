@@ -6,6 +6,104 @@ final class StageUITests: XCTestCase {
         XCUIApplication().terminate()
     }
 
+    func testHistoryDownloadEntryAndDeletionRetainsProgress() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--stage-seed"]
+        app.launch()
+        let window = app.windows.firstMatch
+        XCTAssertTrue(window.waitForExistence(timeout: 15))
+        window.buttons["繼續收聽"].firstMatch.click()
+        waitForPosition(in: window, greaterThan: 31)
+        clickCenter(window.buttons["pause.fill"], in: window)
+        XCTAssertTrue(wait { self.mini(in: window).label.contains("已暫停") })
+        let paused = position(in: window)
+        clickCenter(mini(in: window), in: window)
+        assertPausedFullPlayer(window)
+        capture(app, name: "mac-paused-full-player")
+        goBack(window)
+        XCTAssertTrue(mini(in: window).waitForExistence(timeout: 5))
+        let myTab = window.descendants(matching: .tab).matching(identifier: "person").firstMatch
+        clickCenter(myTab, in: window)
+
+        for feature in ["最近播放", "下載完成"] {
+            let link = window.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", feature)).firstMatch
+            XCTAssertTrue(link.waitForExistence(timeout: 5))
+            clickCenter(link, in: window)
+            XCTAssertTrue(mini(in: window).waitForExistence(timeout: 5))
+            clickCenter(mini(in: window), in: window)
+            assertPausedFullPlayer(window)
+            goBack(window)
+            let record = fixtureRecord(in: window)
+            XCTAssertTrue(record.waitForExistence(timeout: 5))
+            clickCenter(record, in: window)
+            assertPausedFullPlayer(window)
+            capture(app, name: "mac-\(feature)-same-paused-session")
+            goBack(window)
+            XCTAssertTrue(record.waitForExistence(timeout: 5))
+            goBack(window)
+        }
+
+        clickCenter(mini(in: window), in: window)
+        clickCenter(window.buttons["停止播放"], in: window)
+        XCTAssertFalse(mini(in: window).exists)
+        goBack(window)
+        let downloads = window.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "下載完成")).firstMatch
+        clickCenter(downloads, in: window)
+        let record = fixtureRecord(in: window)
+        XCTAssertTrue(record.waitForExistence(timeout: 5))
+        record.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).rightClick()
+        // 限定窗口内的上下文菜单，避免命中菜单栏“编辑”中的同名动作。
+        let delete = window.menuItems["trash"]
+        XCTAssertTrue(delete.waitForExistence(timeout: 5))
+        delete.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
+        XCTAssertTrue(wait { !self.fixtureRecord(in: window).exists })
+        capture(app, name: "mac-deleted-download")
+        app.typeKey("q", modifierFlags: .command)
+        XCTAssertTrue(wait { app.state == .notRunning })
+        // 临时 App 启动只读核实实际文件已删／进度文件仍在，不重新播种。
+        app.launchArguments = ["--stage-verify-deleted"]
+        app.launch()
+        let reopened = app.windows.firstMatch
+        XCTAssertTrue(reopened.buttons["繼續收聽"].firstMatch.waitForExistence(timeout: 15))
+        XCTAssertEqual(position(in: reopened), paused, accuracy: 1)
+        XCTAssertFalse(mini(in: reopened).exists)
+        capture(app, name: "mac-progress-after-download-deletion")
+        clickCenter(reopened.descendants(matching: .tab).matching(identifier: "person").firstMatch, in: reopened)
+        let history = reopened.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "最近播放")).firstMatch
+        clickCenter(history, in: reopened)
+        clickCenter(fixtureRecord(in: reopened), in: reopened)
+        // 本地文件已删且 .invalid 远端不可用；错误不能把已保存位置覆写为初始零。
+        XCTAssertTrue(reopened.buttons["重試"].firstMatch.waitForExistence(timeout: 45))
+        capture(app, name: "mac-deleted-media-reopen-failed")
+        app.typeKey("q", modifierFlags: .command)
+        XCTAssertTrue(wait { app.state == .notRunning })
+        app.launch() // 仍为只读验证参数。
+        XCTAssertTrue(app.windows.firstMatch.buttons["繼續收聽"].firstMatch.waitForExistence(timeout: 15))
+        XCTAssertEqual(position(in: app.windows.firstMatch), paused, accuracy: 1)
+    }
+
+    func testClosingLastWindowKeepsSessionUntilQuit() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--stage-seed"]
+        app.launch()
+        let window = app.windows.firstMatch
+        XCTAssertTrue(window.waitForExistence(timeout: 15))
+        window.buttons["繼續收聽"].firstMatch.click()
+        waitForPosition(in: window, greaterThan: 31)
+        let before = position(in: window)
+        window.buttons["_XCUI:CloseWindow"].click()
+        XCTAssertTrue(wait { app.windows.count == 0 })
+        XCTAssertNotEqual(app.state, .notRunning)
+        app.typeKey("n", modifierFlags: .command)
+        let reopened = app.windows.firstMatch
+        XCTAssertTrue(reopened.waitForExistence(timeout: 5))
+        XCTAssertTrue(mini(in: reopened).label.contains("正在收聽"))
+        waitForPosition(in: reopened, greaterThan: before + 2)
+        capture(app, name: "mac-session-after-last-window-reopen")
+    }
+
     func testSharedWindowsFocusCloseQuitAndColdResume() throws {
         continueAfterFailure = false
         let app = XCUIApplication()
@@ -67,6 +165,28 @@ final class StageUITests: XCTestCase {
 
     private func mini(in window: XCUIElement) -> XCUIElement {
         window.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Mac 靜音生命週期驗證, 1, ")).firstMatch
+    }
+
+    private func fixtureRecord(in window: XCUIElement) -> XCUIElement {
+        window.buttons.matching(NSPredicate(format: "label CONTAINS %@ AND NOT label BEGINSWITH %@",
+                                           "Mac 靜音生命週期驗證", "Mac 靜音生命週期驗證, 1, ")).firstMatch
+    }
+
+    private func clickCenter(_ element: XCUIElement, in window: XCUIElement) {
+        XCTAssertTrue(element.waitForExistence(timeout: 5))
+        XCTAssertTrue(window.frame.contains(element.frame))
+        element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
+    }
+
+    private func assertPausedFullPlayer(_ window: XCUIElement) {
+        XCTAssertTrue(window.buttons["停止播放"].waitForExistence(timeout: 5))
+        XCTAssertTrue(window.staticTexts["已暫停"].exists)
+        XCTAssertFalse(window.buttons["pause.fill"].exists)
+        XCTAssertFalse(mini(in: window).exists)
+    }
+
+    private func goBack(_ window: XCUIElement) {
+        clickCenter(window.toolbars.buttons.firstMatch, in: window)
     }
 
     private func position(in window: XCUIElement) -> Double {

@@ -136,3 +136,43 @@ python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-mac-lifecycle-
 本地提交标题：`补充 macOS 多窗口与退出续听隔离回归`，提交身份用 `git log -1 --format='%H%n%B' --grep='^补充 macOS 多窗口与退出续听隔离回归$'` 查询。不 push、PR、主规格同步、归档或发布。
 
 提交前检查通过：5 个 change 的 OpenSpec strict 校验；新增 Python 脚本 AST／help／拒绝仓库内输出与缺失依赖缓存的 smoke；7 个 Markdown 文件链接；Git 范围与空白检查（包含新增文件审查）。未发现新增需改动生产代码的 review 问题。未完成的验收保留为未完成，不将本地提交视为阶段 Done。
+
+## 2026-09-26 Mac 完整播放页崩溃与入口回归
+
+基线 `baab993`，开始工作区干净。继续本轮目标的 M1～M4 集成验收；没有新业务功能或下一里程碑。iPhone 设备再次查询仍为 Developer Mode Disabled（`/tmp/ZenPlayer-device-continuation.json`），本轮未向手机安装 App。
+
+### P1：进入完整播放页的实际崩溃
+
+`/tmp/ZenPlayer-mac-entry-r1/tests.xcresult` 实际从迷你条进入 PlayerView 时 App SIGABRT。系统日志原文：`failed to demangle superclass of VideoPlayerView from mangled name 'So12AVPlayerViewC': unknown error`。崩溃栈为 `_AVKit_SwiftUI → getSuperclassMetadata → swift fatalError`，独立验证 bundle 与时间一致；报告 `~/Library/Logs/DiagnosticReports/ZenPlayer-2026-09-26-151756.ips`。`otool -L` 确认失败产物有 `_AVKit_SwiftUI`、没有 `AVKit.framework`，不是从测试按钮不存在反推根因。
+
+修复仅为 App target Debug／Release 增加 macOS 条件链接选项 `$(inherited) -Wl,-needed_framework,AVKit`，确保动态引用的 AVPlayerView 父类所在系统框架被加载且不被裁剪。不改既有 VideoPlayer、会话所有者、存储、签名、版本、第三方依赖或 iOS 链接选项。工程对象比较确认仅这两个配置项变化；设计已记录原因。
+
+首次失败包含 1 个通过、2 个失败：最后窗口关闭测试通过；完整页触发产品崩溃；后续旧生命周期测试的 runner 在 `XCTCrashLogTracker.waitForPendingCrashlogs()` 崩溃，不能把该测试登记通过。修复后 `/tmp/ZenPlayer-mac-entry-avkit-r2` 完整页及同集往返已执行，最终 2 通过／1 失败：删除动作与菜单栏“编辑→删除”同名导致 XCTest 查询歧义，已限定为窗口内上下文菜单的 trash 标识，未改产品删除逻辑。
+
+### 实际通过的入口和数据子断言
+
+`/tmp/ZenPlayer-mac-entry-final/{build,tests}.xcresult`：**3 项 UI 测试、0 失败、0 跳过，108.875 秒**。测试使用隔离 App 自己的静音文件、完成下载索引与 30 秒进度；远端改为不可解析的 `.invalid` 地址，真实 AVPlayer 位置推进依赖实际本地索引。保持 sandbox，不接触生产容器。相较上一节增加：
+
+- 最后窗口关闭后进程仍在，Command-N 重开仍是正在收听并继续推进位置。
+- 迷你条打开完整页保持暂停且不显示重复迷你条；历史／下载列表的控制页打开和返回保持原列表，从同集记录重进仍暂停。
+- 停止后在实际下载列表右键删除；无播种冷启动的只读断言核实文件已不存在、原进度文件仍可解码且至少 30 秒；首页显示删除前的暂停位置，没有活动会话。
+
+结合既有两端 PlayerViewModel 请求身份／同键测试、三类入口源码走读和 iOS 模拟器跨页证据，1.2 工程完成条件满足，现 4/6。实际系列条目跨更多样本、原生音视频／全屏、VoiceOver／Reduce Motion、iPhone 生命周期等仍在 2.2／3.2 的验收范围，不因 1.2 勾选宣布整个 M1 或 AT 完成。
+
+### 构建与回归
+
+生产工程的 macOS 和 iOS Simulator `xcodebuild test` **各 86 项、0 失败**，包含 App 编译，证据 `/tmp/ZenPlayer-avkit-review-{mac,ios}.{xcresult,log}`。命令沿用 scheme ZenPlayer、既有 `/tmp/ZenPlayer-M0-{mac,ios}` derived data 和 iPhone 17 UUID，`-parallel-testing-enabled NO -collect-test-diagnostics never`。App 数据容器未用于这些单元测试。
+
+macOS Release 构建通过：`/tmp/ZenPlayer-avkit-release.{xcresult,log}`，命令为 `xcodebuild -project ZenPlayer.xcodeproj -scheme ZenPlayer -configuration Release -destination 'platform=macOS' -derivedDataPath /tmp/ZenPlayer-avkit-release -clonedSourcePackagesDirPath /tmp/ZenPlayer-M0-mac/SourcePackages -resultBundlePath /tmp/ZenPlayer-avkit-release.xcresult build`。Debug UI 产物与 Release 可执行文件的 `otool -L` 均确认存在 AVKit 和 `_AVKit_SwiftUI`。Release 仅构建与链接检查，未把它写成 Release UI 运行通过。
+
+### 最终补充回归与交付
+
+随后补上“删除下载后从历史打开不可用远端，失败后重启也不覆零”的实际链路，最终 `/tmp/ZenPlayer-mac-entry-final-r4/{build,tests}.xcresult` 均通过：**3 项、0 失败、0 跳过，118.909 秒**。该轮对应当前全部 77 个 Swift／Python／本地化输入与生产 pbxproj SHA-256，已逐项核对；13 份窗口树附件导出到 `/tmp/ZenPlayer-mac-entry-final-r4-attachments/`。菜单歧义和原生完整页崩溃均不再出现。
+
+复现：`python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-mac-entry-final-r4 --package-cache /tmp/ZenPlayer-M0-mac/SourcePackages`，重新执行须换新 output。只读删除核实只在隔离验证 App 启动时执行，生产代码没有测试入口。终端未读取或修改任何生产容器；测试结束通过 tearDown 终止验证 App。
+
+M1 仍 In Verification（4/6）；M0／M2～M4 原设备与总验收门槛不变。没有验证 iPhone 真机后台／锁屏／PiP、真实音视频听感、原生全屏、VoiceOver／Reduce Motion、参考设备端到端性能、实际下载传输／分享／降噪增强或安装升级。已知外接屏 XCTest 截图／自动 hit point 限制继续明确保留，坐标点击后的实际状态断言不等于辅助功能通过。
+
+本次本地提交标题：`修复 macOS 完整播放页崩溃并验证下载删除保留进度`；用 `git log -1 --format='%H%n%B' --grep='^修复 macOS 完整播放页崩溃并验证下载删除保留进度$'` 查询实际提交身份。不 push／PR／sync／archive／发布。
+
+提交前检查通过：5 个 change 的 OpenSpec strict 校验；OpenSpec apply 读取 4/6 完成且仍有 2 项未完成；工程 plutil 解析、Python AST／CLI help、34 个相对文件链接和 Git 空白／范围检查。Review 核对过 12 个改动文件；无其他暂存、未暂存或新增用户文件混入，已修复问题均有实际回归证据，未完成验收仍明确保留。

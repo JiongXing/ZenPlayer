@@ -4,15 +4,28 @@ import Foundation
 @MainActor
 enum MacStageFixture {
     static func seedIfRequested() {
-        guard ProcessInfo.processInfo.arguments.contains("--stage-seed") else { return }
+        let arguments = ProcessInfo.processInfo.arguments
+        let shouldSeed = arguments.contains("--stage-seed")
+        let shouldVerifyDeletion = arguments.contains("--stage-verify-deleted")
+        guard shouldSeed || shouldVerifyDeletion else { return }
         let bundle = "com.jxing.ZenPlayer.MacStageValidation"
         precondition(Bundle.main.bundleIdentifier == bundle)
         precondition(NSHomeDirectory().contains("/Library/Containers/\(bundle)/Data"))
         do {
             let support = URL.applicationSupportDirectory
             let directory = support.appendingPathComponent("StageValidation")
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             let media = directory.appendingPathComponent("silent.wav")
+            let key = "900002|https://mac-stage-validation.invalid/"
+            let records = support.appendingPathComponent("PlaybackProgress/v1/records")
+            let name = FileProgressPersistence.digest(Data(key.utf8)) + ".json"
+            if shouldVerifyDeletion {
+                precondition(!FileManager.default.fileExists(atPath: media.path), "删除下载后样本文件仍存在")
+                let data = try Data(contentsOf: records.appendingPathComponent(name))
+                let saved = try JSONDecoder().decode(PlaybackProgress.self, from: data)
+                precondition(saved.positionSeconds >= 30, "删除下载后进度丢失")
+                return
+            }
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             var wav = Data("RIFF".utf8)
             func append<T: FixedWidthInteger>(_ number: T) {
                 var value = number.littleEndian
@@ -27,23 +40,39 @@ enum MacStageFixture {
             wav.append(Data(count: 2_880_000))
             try wav.write(to: media, options: .atomic)
 
+            let remoteURL = "https://mac-stage-validation.invalid/silent.wav"
             let context: [String: Any] = [
                 "episode": ["id": 900002, "num": "MAC-UI-001", "title": "Mac 靜音生命週期驗證", "episode": "1",
-                            "mp4Url": "", "vodUrl": "", "mp3Url": media.absoluteString,
+                            "mp4Url": "", "vodUrl": "", "mp3Url": remoteURL,
                             "coverUrl": "", "textUrl": "", "filesize": wav.count, "duration": 180_000],
                 "serverUrl": "https://mac-stage-validation.invalid/", "preferredMediaType": "audio"
             ]
-            let key = "900002|https://mac-stage-validation.invalid/"
             let now = Date().timeIntervalSinceReferenceDate
             let record: [String: Any] = [
                 "schemaVersion": 1, "legacyKey": key, "context": context, "positionSeconds": 30,
                 "durationSeconds": 180, "state": "inProgress", "lastListenedAt": now,
                 "updatedAt": now, "revision": 1, "origin": "mac-ui-validation"
             ]
-            let records = support.appendingPathComponent("PlaybackProgress/v1/records")
             try FileManager.default.createDirectory(at: records, withIntermediateDirectories: true)
-            let name = FileProgressPersistence.digest(Data(key.utf8)) + ".json"
             try JSONSerialization.data(withJSONObject: record).write(to: records.appendingPathComponent(name), options: .atomic)
+
+            let downloads = URL.documentsDirectory.appendingPathComponent("ZenPlayerDownloads")
+            try FileManager.default.createDirectory(at: downloads, withIntermediateDirectories: true)
+            let manifestURL = downloads.appendingPathComponent("download_manifest.json")
+            var manifest: [String: Any] = ["version": 2, "records": [String: Any]()]
+            if FileManager.default.fileExists(atPath: manifestURL.path) {
+                manifest = try JSONSerialization.jsonObject(with: Data(contentsOf: manifestURL)) as! [String: Any]
+                precondition(manifest["version"] as? Int == 2)
+            }
+            var downloadsByKey = manifest["records"] as! [String: Any]
+            downloadsByKey["900002_mp3"] = [
+                "episodeId": 900002, "type": "mp3", "remoteURL": remoteURL,
+                "destinationRelativePath": media.path, "playbackContext": context,
+                "status": "completed", "progress": 1,
+                "completedAt": Date().timeIntervalSince1970, "updatedAt": Date().timeIntervalSince1970
+            ]
+            manifest["records"] = downloadsByKey
+            try JSONSerialization.data(withJSONObject: manifest).write(to: manifestURL, options: .atomic)
         } catch {
             preconditionFailure("隔离 Mac 样本准备失败：\(error)")
         }

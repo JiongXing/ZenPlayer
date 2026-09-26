@@ -380,6 +380,10 @@ AE72F93051C229F3FC87613C = {isa = PBXFileReference; lastKnownFileType = sourceco
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14;
 				MARKETING_VERSION = 1.1.0;
+				"OTHER_LDFLAGS[sdk=macosx*]" = (
+					"$(inherited)",
+					"-Wl,-needed_framework,AVKit",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.jiongxing.ZenPlayer;
 				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]" = com.dunkong.zenplayer;
 				"PRODUCT_BUNDLE_IDENTIFIER[sdk=macosx*]" = com.dunkong.zenplayer;
@@ -433,6 +437,10 @@ AE72F93051C229F3FC87613C = {isa = PBXFileReference; lastKnownFileType = sourceco
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14;
 				MARKETING_VERSION = 1.1.0;
+				"OTHER_LDFLAGS[sdk=macosx*]" = (
+					"$(inherited)",
+					"-Wl,-needed_framework,AVKit",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.jiongxing.ZenPlayer;
 				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]" = com.dunkong.zenplayer;
 				"PRODUCT_BUNDLE_IDENTIFIER[sdk=macosx*]" = com.dunkong.zenplayer;
