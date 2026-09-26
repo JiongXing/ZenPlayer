@@ -731,42 +731,12 @@
         }
       }
     },
-    "player.settings_expanded" : {
+    "player.original" : {
       "localizations" : {
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "已展開"
-          }
-        }
-      }
-    },
-    "player.settings_collapsed" : {
-      "localizations" : {
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已收合"
-          }
-        }
-      }
-    },
-    "player.settings" : {
-      "localizations" : {
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "播放設定"
-          }
-        }
-      }
-    },
-    "player.settings_summary" : {
-      "localizations" : {
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ · %@"
+            "value" : "原音"
           }
         }
       }
@@ -777,6 +747,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "講集與播放列表"
+          }
+        }
+      }
+    },
+    "player.playlist_close" : {
+      "localizations" : {
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "關閉播放列表"
           }
         }
       }
@@ -811,22 +791,42 @@
         }
       }
     },
-    "player.playlist_close" : {
+    "player.settings" : {
       "localizations" : {
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "關閉播放列表"
+            "value" : "播放設定"
           }
         }
       }
     },
-    "player.original" : {
+    "player.settings_collapsed" : {
       "localizations" : {
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "原音"
+            "value" : "已收合"
+          }
+        }
+      }
+    },
+    "player.settings_expanded" : {
+      "localizations" : {
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已展開"
+          }
+        }
+      }
+    },
+    "player.settings_summary" : {
+      "localizations" : {
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · %@"
           }
         }
       }
@@ -1300,6 +1300,9 @@
           }
         }
       }
+    },
+    "ZenPlayer" : {
+
     },
     "下载%@" : {
       "extractionState" : "stale",
