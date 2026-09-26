@@ -19,6 +19,7 @@ struct EpisodeRowView: View {
     /// 下载管理器（由父视图传入）
     var downloadManager: DownloadManager
     var queueSnapshot: QueueSnapshot? = nil
+    var isListeningTarget = false
 
     @State private var isHovered = false
     #if os(iOS)
@@ -90,6 +91,8 @@ struct EpisodeRowView: View {
                 Text(episode.title)
                     .font(.subheadline)
                     .lineLimit(1)
+                EpisodeProgressBadge(context: playbackContext)
+                if isListeningTarget { Text(L10n.text(.resumeLocated)).font(.caption).bold() }
 
                 HStack(spacing: 8) {
                     Text(L10n.string(.episodeFormat, episode.episode))
@@ -125,6 +128,8 @@ struct EpisodeRowView: View {
                 Text(episode.title)
                     .font(.body)
                     .lineLimit(1)
+                EpisodeProgressBadge(context: playbackContext)
+                if isListeningTarget { Text(L10n.text(.resumeLocated)).font(.caption).bold() }
                 Text("第 \(episode.episode) 集")
                     .font(.caption)
                     .foregroundStyle(.tertiary)

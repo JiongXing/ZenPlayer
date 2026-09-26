@@ -35,6 +35,9 @@ struct ContentView: View {
             .navigationDestination(for: SeriesItem.self) { series in
                 SeriesDetailView(series: series)
             }
+            .navigationDestination(for: SeriesDestination.self) { destination in
+                SeriesDetailView(destination: destination)
+            }
             .navigationDestination(for: PlaybackContext.self) { context in
                 PlayerView(context: context)
             }

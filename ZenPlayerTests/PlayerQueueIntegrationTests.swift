@@ -199,6 +199,65 @@ final class PlayerQueueIntegrationTests: XCTestCase {
         await finish(model)
     }
 
+    func testHomeContinueRestoresLegacyEntrySeriesAndRetriesSameFailedTarget() async throws {
+        let environment = try ProgressTestEnvironment()
+        let model = try makeModel(environment, offline: true)
+        defer { model.stopPlayback() }
+        let snapshot = testQueue()
+        let known = try XCTUnwrap(snapshot.context(at: 1, preferred: .audio))
+        model.queueStore.register(snapshot)
+        model.progressStore.update(known, position: 1.5, duration: 4, event: .advance)
+        // 旧历史／下载入口只有原键；已有系列关联仍能贯通到首页动作。
+        let oldEntry = testContext(id: 2)
+        model.continueListening(oldEntry)
+        XCTAssertTrue(model.isPreparingPlayback)
+        let preparingRequest = model.session.request
+        model.continueListening(oldEntry)
+        XCTAssertEqual(model.session.request, preparingRequest)
+        try await waitUntil { !model.isPreparingPlayback && model.player?.currentItem?.status == .readyToPlay }
+        model.pausePlayback()
+        XCTAssertGreaterThanOrEqual(model.currentPosition, 1.45)
+        XCTAssertEqual(model.currentContext?.series?.snapshotID, snapshot.id)
+        let existing = model.player
+        model.continueListening(oldEntry)
+        XCTAssertTrue(model.player === existing)
+        XCTAssertTrue(model.session.wantsPlayback)
+        model.stopPlayback()
+        try FileManager.default.removeItem(at: environment.directory.appendingPathComponent("2.wav"))
+        model.continueListening(oldEntry)
+        XCTAssertEqual(model.session.phase, .failed)
+        try silentWave().write(to: environment.directory.appendingPathComponent("2.wav"))
+        model.continueListening(oldEntry)
+        try await waitUntil { !model.isPreparingPlayback && model.player?.currentItem?.status == .readyToPlay }
+        XCTAssertEqual(model.currentContext?.episode.id, 2)
+        XCTAssertTrue(model.session.wantsPlayback)
+        XCTAssertEqual(model.queue.index, 1)
+        await finish(model)
+    }
+
+    func testExplicitContinueOfEndedEpisodeRestartsFromZero() async throws {
+        let environment = try ProgressTestEnvironment()
+        let model = try makeModel(environment)
+        defer { model.stopPlayback() }
+        model.queueStore.autoAdvance = false
+        let context = try XCTUnwrap(testQueue().context(at: 1))
+        model.continueListening(context)
+        try await waitUntil { !model.isPreparingPlayback && model.player?.currentItem?.status == .readyToPlay }
+        model.pausePlayback()
+        await model.seek(to: 3.8)
+        model.resumePlayback()
+        try await waitUntil { model.session.phase == .ended }
+        XCTAssertEqual(model.progressStore.record(for: context)?.state, .completed)
+        let endedPlayer = model.player
+        model.continueListening(context)
+        try await waitUntil { !model.isPreparingPlayback && model.player?.currentItem?.status == .readyToPlay }
+        model.pausePlayback()
+        XCTAssertFalse(model.player === endedPlayer)
+        XCTAssertLessThan(model.currentPosition, 0.5)
+        XCTAssertEqual(model.currentContext?.episode.id, context.episode.id)
+        await finish(model)
+    }
+
     private func makeModel(_ environment: ProgressTestEnvironment, offline: Bool = false, audioOnly: Bool = false,
                            processor: (() -> any PlaybackAudioProcessing)? = nil) throws -> PlayerViewModel {
         for id in [1, 2, 5] { try silentWave().write(to: environment.directory.appendingPathComponent("\(id).wav")) }

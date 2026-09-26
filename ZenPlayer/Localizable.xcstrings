@@ -1165,6 +1165,96 @@
           }
         }
       }
+    },
+    "resume.title": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "繼續收聽"
+          }
+        }
+      }
+    },
+    "resume.continue": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "繼續收聽"
+          }
+        }
+      }
+    },
+    "resume.next": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "繼續下一集"
+          }
+        }
+      }
+    },
+    "resume.position": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已聽 %@ / %@"
+          }
+        }
+      }
+    },
+    "resume.not_started": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未收聽"
+          }
+        }
+      }
+    },
+    "resume.listened": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已聽 %@"
+          }
+        }
+      }
+    },
+    "resume.located": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目前定位"
+          }
+        }
+      }
+    },
+    "resume.locate": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "定位上次收聽"
+          }
+        }
+      }
+    },
+    "resume.open_series": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "返回系列並定位此集"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

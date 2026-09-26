@@ -10,21 +10,14 @@ import SwiftUI
 /// 首页视图 - 展示一级类目列表
 struct HomeView: View {
     @State private var viewModel = HomeViewModel()
+    @Environment(PlayerViewModel.self) private var playbackSession
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     private let columnSpacing: CGFloat = 14
 
     var body: some View {
         GeometryReader { proxy in
-            Group {
-                if viewModel.isLoading && viewModel.categories.isEmpty {
-                    loadingView
-                } else if let error = viewModel.errorMessage, viewModel.categories.isEmpty {
-                    errorView(message: error)
-                } else {
-                    contentView(containerWidth: proxy.size.width)
-                }
-            }
+            contentView(containerWidth: proxy.size.width)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .animation(.easeInOut(duration: 0.3), value: viewModel.categories.isEmpty)
@@ -44,8 +37,14 @@ struct HomeView: View {
         let columnWidth = max((availableWidth - columnSpacing) / 2, 0)
 
         return ScrollView {
-            VStack(spacing: 24) {
-                headerView
+            VStack(spacing: 0) {
+                headerView.padding(.bottom, 24)
+                HomeResumeCard(session: playbackSession)
+                if viewModel.isLoading && viewModel.categories.isEmpty {
+                    loadingView.padding(.vertical, 24)
+                } else if let error = viewModel.errorMessage, viewModel.categories.isEmpty {
+                    errorView(message: error).padding(.vertical, 24)
+                }
 
                 LazyVStack(alignment: .leading, spacing: columnSpacing) {
                     ForEach(Array(categoryRows.enumerated()), id: \.offset) { _, row in

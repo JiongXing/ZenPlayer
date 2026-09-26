@@ -10,7 +10,15 @@ import Kingfisher
 
 /// 讲集详情页 - 展示讲集信息和播放列表
 struct SeriesDetailView: View {
-    let series: SeriesItem
+    let series: SeriesDestination
+    @State private var highlightedEpisodeID: Int?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    init(series: SeriesItem) {
+        self.series = SeriesDestination(id: series.id, title: series.title, url: series.url)
+    }
+
+    init(destination: SeriesDestination) { self.series = destination }
 
     @State private var viewModel = SeriesDetailViewModel()
     @Environment(PlayerViewModel.self) private var playbackSession
@@ -42,33 +50,60 @@ struct SeriesDetailView: View {
     // MARK: - 内容视图
 
     private func contentView(detail: SpeechDetailData) -> some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                // 讲集信息头部
-                headerView(detail: detail)
+        ScrollViewReader { reader in
+            ScrollView {
+                VStack(spacing: 0) {
+                    // 讲集信息头部
+                    headerView(detail: detail)
 
-                Divider()
-                    .padding(.horizontal, LayoutConstants.horizontalPadding(sizeClass: sizeClass))
+                    Divider()
+                        .padding(.horizontal, LayoutConstants.horizontalPadding(sizeClass: sizeClass))
 
-                // 播放列表标题栏
-                playlistHeader(detail: detail)
-
-                // 播放列表（缩小两侧边距，留更多空间展示标题与元信息）
-                LazyVStack(spacing: 4) {
-                    ForEach(viewModel.episodes) { episode in
-                        EpisodeRowView(
-                            episode: episode,
-                            serverUrl: detail.serverUrl,
-                            seriesType: detail.type,
-                            downloadManager: downloadManager,
-                            queueSnapshot: viewModel.queueSnapshot
-                        )
-                        .padding(.horizontal, 6)
+                    // 播放列表标题栏
+                    playlistHeader(detail: detail)
+                    if let target = ResumeCandidatePolicy.latestInSeries(episodes: viewModel.episodes, serverURL: detail.serverUrl,
+                                                                         records: playbackSession.progressStore.records.values) {
+                        Button(L10n.text(.resumeLocate)) { locate(target.context.episode.id, reader: reader) }
+                            .frame(minHeight: 44)
                     }
+
+                    // 播放列表（缩小两侧边距，留更多空间展示标题与元信息）
+                    LazyVStack(spacing: 4) {
+                        ForEach(viewModel.episodes) { episode in
+                            EpisodeRowView(
+                                episode: episode,
+                                serverUrl: detail.serverUrl,
+                                seriesType: detail.type,
+                                downloadManager: downloadManager,
+                                queueSnapshot: viewModel.queueSnapshot,
+                                isListeningTarget: highlightedEpisodeID == episode.id
+                            )
+                            .padding(.horizontal, 6)
+                            .id(episode.id)
+                            .overlay {
+                                if highlightedEpisodeID == episode.id {
+                                    RoundedRectangle(cornerRadius: 10).stroke(.tint, lineWidth: 2).allowsHitTesting(false)
+                                }
+                            }
+                        }
+                    }
+                    .padding(.bottom, 24)
                 }
-                .padding(.bottom, 24)
+            }
+            .task(id: viewModel.queueSnapshot?.id) {
+                if let target = series.targetEpisodeID, viewModel.episodes.contains(where: { $0.id == target }) {
+                    // 等待当前已加载列表进入布局后定位，不触发播放。
+                    await Task.yield()
+                    locate(target, reader: reader)
+                }
             }
         }
+    }
+
+    private func locate(_ episodeID: Int, reader: ScrollViewProxy) {
+        highlightedEpisodeID = episodeID
+        if reduceMotion { reader.scrollTo(episodeID, anchor: .center) }
+        else { withAnimation(.easeInOut) { reader.scrollTo(episodeID, anchor: .center) } }
     }
 
     // MARK: - 头部信息

@@ -21,7 +21,7 @@ final class SeriesDetailViewModel {
 
     /// 加载播放列表
     /// - Parameter url: 由二级类目数据中 `SeriesItem.url` 提供的完整请求地址
-    func loadSpeechDetail(url: String, series: SeriesItem) async {
+    func loadSpeechDetail(url: String, series: SeriesDestination) async {
         isLoading = true
         errorMessage = nil
 

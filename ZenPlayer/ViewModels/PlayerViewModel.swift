@@ -257,6 +257,16 @@ final class PlayerViewModel {
         }
     }
 
+    /// 首页明确续听允许同键失败重试／完成重听，活动媒体则保留既有实例。
+    func continueListening(_ context: PlaybackContext) {
+        if let current = currentContext,
+           RecentPlaybackRecord.recordID(for: current) == RecentPlaybackRecord.recordID(for: context), session.isActive {
+            if session.phase != .preparing, !session.wantsPlayback { resumePlayback() }
+            return
+        }
+        selectPlayback(context, force: true)
+    }
+
     func playAdjacent(_ offset: Int) {
         guard offset == -1 || offset == 1, let context = queue.context(offset: offset, preferred: selectedMediaType) else { return }
         selectPlayback(context, force: true, snapshot: queue.snapshot)

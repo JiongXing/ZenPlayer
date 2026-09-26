@@ -55,8 +55,8 @@ PRD 来源：用户附件 `/Users/jxing/Desktop/ZenPlayer_PRD_v1.0.md`，原样�
 - 不包含：云同步、远端行为埋点、搜索引擎和队列重构。
 - 依赖：M0／M1，与 M2 队列集成；清筛选定位与 M4 联调。
 - PRD：F2-01／F2-02，复用 F2-03～F2-06，F3-03 定位联动；验收 AT-13～AT-15、AT-19 定位部分，复验 AT-04 首页续听及 AT-16／AT-18 展示。
-- 状态：**Planned**；规划：待创建。阻塞：等待前述接口和阶段批准。
-- 变更：待创建；验证证据：暂无。
+- 状态：**In Verification**；代码、review 修复和两端 71 项测试通过，5/6 项完成；实际首页／系列 UI、可访问性与 M4 清筛选联调待验。M0～M2 设备缺口保留。
+- 变更：[surface-listening-progress](openspec/changes/surface-listening-progress/proposal.md)；[验证记录](openspec/changes/surface-listening-progress/verification.md)。
 
 ## 后续 · M4 搜索与总验收
 

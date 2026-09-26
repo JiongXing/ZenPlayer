@@ -31,6 +31,13 @@ struct RecentPlaybackListView: View {
                                     RecentPlaybackRowView(record: record)
                                 }
                                 .buttonStyle(.plain)
+                                if let reference = record.context.series {
+                                    NavigationLink(value: SeriesDestination(reference: reference, targetEpisodeID: record.context.episode.id)) {
+                                        Label(L10n.text(.resumeOpenSeries), systemImage: "list.bullet")
+                                            .frame(minHeight: 44)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
                             }
                         }
                     }

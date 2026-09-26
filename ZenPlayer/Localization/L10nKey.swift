@@ -50,6 +50,16 @@ enum L10nKey: String, CaseIterable {
     case progressCompleted = "progress.completed"
     case progressUnknownDuration = "progress.unknown_duration"
 
+    case resumeTitle = "resume.title"
+    case resumeContinue = "resume.continue"
+    case resumeNext = "resume.next"
+    case resumePosition = "resume.position"
+    case resumeNotStarted = "resume.not_started"
+    case resumeListened = "resume.listened"
+    case resumeLocated = "resume.located"
+    case resumeLocate = "resume.locate"
+    case resumeOpenSeries = "resume.open_series"
+
     case queueRestoring = "queue.restoring"
     case queueUnavailable = "queue.unavailable"
     case queueComplete = "queue.complete"
