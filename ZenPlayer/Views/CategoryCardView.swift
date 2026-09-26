@@ -13,10 +13,11 @@ struct CategoryCardView: View {
     let category: CategoryItem
 
     @State private var isHovered = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var cardBackground: Color {
 #if os(iOS)
-        Color(uiColor: .secondarySystemGroupedBackground)
+        Color("HomeSurface")
 #elseif os(macOS)
         Color(nsColor: .controlBackgroundColor)
 #else
@@ -68,14 +69,27 @@ struct CategoryCardView: View {
             .frame(maxWidth: .infinity)
             .aspectRatio(16 / 9, contentMode: .fit)
             .clipped()
+            .accessibilityHidden(true)
 
             // 文字信息
             VStack(alignment: .leading, spacing: 6) {
+                #if os(iOS)
+                Text(category.title)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(category.desc)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1, reservesSpace: true)
+                #else
                 Text(category.desc)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
+                #endif
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
@@ -89,6 +103,7 @@ struct CategoryCardView: View {
                 .strokeBorder(.quaternary, lineWidth: 1)
         }
         .compositingGroup()
+        .accessibilityElement(children: .combine)
         .shadow(
             color: shadowColor,
             radius: shadowRadius,

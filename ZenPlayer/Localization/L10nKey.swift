@@ -33,6 +33,7 @@ enum L10nKey: String, CaseIterable {
     case homeLoading = "home.loading"
     case homeLoadFailed = "home.load_failed"
     case homeRetry = "home.retry"
+    case homeBrowseCategories = "home.browse_categories"
 
     case contentSelectCategoryHint = "content.select_category_hint"
     case contentBrowseSeries = "content.browse_series"

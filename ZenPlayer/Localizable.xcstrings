@@ -599,6 +599,17 @@
         }
       }
     },
+    "home.browse_categories" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "瀏覽分類"
+          }
+        }
+      }
+    },
     "home.load_failed" : {
       "localizations" : {
         "zh-Hant" : {

@@ -12,6 +12,7 @@ struct HomeView: View {
     @State private var viewModel = HomeViewModel()
     @Environment(PlayerViewModel.self) private var playbackSession
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private let columnSpacing: CGFloat = 14
 
@@ -46,6 +47,25 @@ struct HomeView: View {
                     errorView(message: error).padding(.vertical, 24)
                 }
 
+                #if os(iOS)
+                if !viewModel.categories.isEmpty {
+                    Text(L10n.text(.homeBrowseCategories))
+                        .font(.title3.weight(.semibold))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.bottom, 14)
+                        .accessibilityAddTraits(.isHeader)
+                }
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: columnSpacing),
+                                         count: dynamicTypeSize.isAccessibilitySize ? 1 : 2),
+                          spacing: columnSpacing) {
+                    ForEach(viewModel.categories) { category in
+                        NavigationLink(value: category) {
+                            CategoryCardView(category: category)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                #else
                 LazyVStack(alignment: .leading, spacing: columnSpacing) {
                     ForEach(Array(categoryRows.enumerated()), id: \.offset) { _, row in
                         HStack(alignment: .top, spacing: columnSpacing) {
@@ -65,6 +85,7 @@ struct HomeView: View {
                         }
                     }
                 }
+                #endif
             }
             .frame(width: availableWidth, alignment: .topLeading)
             .padding(.horizontal, horizontalPadding)
@@ -82,7 +103,7 @@ struct HomeView: View {
 
     private var homeBackground: Color {
 #if os(iOS)
-        Color(uiColor: .systemGroupedBackground)
+        Color("HomeBackground")
 #elseif os(macOS)
         Color(nsColor: .windowBackgroundColor)
 #else
@@ -93,6 +114,21 @@ struct HomeView: View {
     // MARK: - 头部视图
 
     private var headerView: some View {
+        #if os(iOS)
+        VStack(alignment: .leading, spacing: 6) {
+            Text(viewModel.headerTitle)
+                .font(.largeTitle.weight(.bold))
+                .tracking(-0.8)
+                .accessibilityAddTraits(.isHeader)
+            if !viewModel.headerSubtitle.isEmpty {
+                Text(viewModel.headerSubtitle)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        #else
         VStack(spacing: 8) {
             Text(viewModel.headerTitle)
                 .font(.title)
@@ -106,6 +142,7 @@ struct HomeView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.bottom, 8)
+        #endif
     }
 
     // MARK: - 加载视图

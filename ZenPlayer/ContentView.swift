@@ -30,6 +30,9 @@ struct ContentView: View {
                     }
                     .tag(RootTab.my)
             }
+            #if os(iOS)
+            .tint(Color("HomeAccent"))
+            #endif
             .navigationDestination(for: MyView.Destination.self) { destination in
                 Group {
                     switch destination {
