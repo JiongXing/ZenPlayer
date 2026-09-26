@@ -47,7 +47,7 @@ python3 Scripts/run-mac-stage-ui-tests.py \
 
 测试启动参数 `--stage-primary-window` 让临时 fixture 在首个窗口成为主窗口时将其放到主屏可见区域，随即移除通知观察者。本机外接屏负坐标下曾出现点击未选中 Tab、搜索框未获焦点和拖窗失败；此设置只影响独立验证 App，不修改系统显示设置或生产 App 窗口。此配置不代表任意外接屏组合均已验收。
 
-`MacStageUITests.swift` 使用实际窗口、快捷键和控件，覆盖四个用例：
+`MacStageUITests.swift` 使用实际窗口、快捷键和控件，覆盖六个用例：
 
 - 两窗口暂停同步、关闭其中一个窗口保持会话、隐藏／失焦后媒体进度增加、Command-Q 退出、重开不自动播放并从已保存位置恢复。
 - 最后一个窗口关闭后进程仍在，Command-N 重开继续同一会话并实际推进位置。
@@ -59,3 +59,13 @@ python3 Scripts/run-mac-stage-ui-tests.py \
 本项仍不证明真实媒体听感、PiP／全屏、耳机／中断、异常强杀数据安全或所有 macOS 版本／窗口尺寸。完整矩阵以 change 的 verification.md 为准。
 
 Mac 搜索框逐键发送并核对累计值，以区分输入是否送达与搜索结果是否正确。本机曾在批量 `typeText` 长 ASCII 文本时丢两个字符；原因尚未确定，逐键回归不覆盖连续快速输入可靠性或性能目标。
+
+
+## Mac 系列连播与首页下一集
+
+新增 `MacQueueFixture.swift` 只复制进临时 App。`--stage-seed-queue` 写入固定 1／2／5 三集快照、10／120／15 秒本地静音 WAV、完成下载索引和单集进度（第 1 集 1 秒、第 2 集 7 秒）；远端均为 `.invalid`。仅写本验证 App 的三个专属单集键及一个固定快照版本，保留其他记录／下载。每次播种重新建立这些样本的起点；只有本验证 App 的 `playback.autoAdvance` 偏好被清除，以验证产品默认开启。`--stage-auto-off` 可设置已关闭的起点。
+
+- `testNaturalQueueAdvanceControlsAndColdPreference`：首页一键启动本地第 1 集，真实 AVPlayer 自然结束进入第 2 集并恢复其进度；实际开关关闭不立即暂停、手动下一集到 5；连播开启时末集结束不循环；正常退出后只读验证完成状态／第二集进度／快照／关闭偏好，再从首页恢复第二集，手动上一集重听已完成的第一集，首尾按钮禁用。
+- `testAutoAdvanceOffOffersNextWithItsOwnProgress`：连播关闭时首集自然结束不自动启动第二集；首页显示“繼續下一集”和第二集自身 7 秒进度，点击后直接播放并保留队列／关闭偏好；停止、退出后冷启动核实进度保留且未误播末集。
+
+`--stage-verify-queue`／`--stage-verify-queue-off` 仅在重启时读取专属进度文件、快照与偏好并断言，失败会阻止验证 App 启动；不重新播种，不从测试直接发送结束通知。各用例仍可用 `--only-testing <方法名>` 独立重跑，实际结果写入 M2／M3／M4 的 verification.md。此样本不证明真实音视频听感、网络类型回退、物理断网、PiP 或锁屏换集。

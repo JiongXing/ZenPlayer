@@ -176,3 +176,10 @@ M1 仍 In Verification（4/6）；M0／M2～M4 原设备与总验收门槛不变
 本次本地提交标题：`修复 macOS 完整播放页崩溃并验证下载删除保留进度`；用 `git log -1 --format='%H%n%B' --grep='^修复 macOS 完整播放页崩溃并验证下载删除保留进度$'` 查询实际提交身份。不 push／PR／sync／archive／发布。
 
 提交前检查通过：5 个 change 的 OpenSpec strict 校验；OpenSpec apply 读取 4/6 完成且仍有 2 项未完成；工程 plutil 解析、Python AST／CLI help、34 个相对文件链接和 Git 空白／范围检查。Review 核对过 12 个改动文件；无其他暂存、未暂存或新增用户文件混入，已修复问题均有实际回归证据，未完成验收仍明确保留。
+
+
+## 2026-09-26 完整页暂停断言与队列 UI 补充
+
+M2／M3 补验时发现 Mac 完整页使用文字“播放／暫停”按钮，旧测试对 `pause.fill` 的不存在断言不能单独证明暂停；既有“已暫停”状态及保存位置断言仍有效。本轮改为正向要求“播放”存在、“暫停”不存在，完整 Mac 6 项回归通过（`/tmp/ZenPlayer-mac-queue-r3/tests.xcresult`）。新队列用例也验证同一会话自然推进、关闭连播后媒体时间继续增加和冷启动不自动播放，后续加强定向通过（`/tmp/ZenPlayer-mac-queue-final/tests.xcresult`）；详情见 [M2 证据](../play-series-in-order/verification.md#2026-09-26-mac-实际连播与偏好回归)。
+
+没有修改生产会话实现。S8 明确包含 VoiceOver 使用条件，现有可访问性树／大字体／几何断言不能替代实际朗读与焦点操作，因此 2.2 继续未勾选；iPhone Developer Mode 实查仍 Disabled，3.2 也未完成。M1 保持 4/6、In Verification。本次仅本地提交 `补充 Mac 连播与首页下一集实际回归`。

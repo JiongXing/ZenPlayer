@@ -51,3 +51,50 @@ AT-07～AT-10／AT-12 的真实界面点击、锁屏自动换集、PiP／全屏�
 剩余风险：真实媒体／网络与平台回调顺序、完整页控制布局、快照样本覆盖不足。保持 In Verification，当前 5/6 项，不建议 Done。临时日志／xcresult 可能被系统清理，不作为永久归档。
 
 本地提交标题：`实现 M2 系列顺序连播与快照恢复`；本文件所属提交即交付版本，可用 `git log -1 --format='%H%n%B' --grep='^实现 M2 系列顺序连播与快照恢复$'` 查询。无 push／PR／发布／同步／归档。下一阶段推荐 M3 首页与系列续听，按持续目标继续实施；设备验收缺口在后续总验收继续追踪。
+
+
+## 2026-09-26 Mac 实际连播与偏好回归
+
+本轮基线 `main @ 1bf59f9`，开始时工作区干净。继续 3.2 的真实界面子断言，并联调 M3 完成后的首页候选；不改产品算法、签名、部署、依赖或主规格。
+
+新增 `ZenPlayerUITests/MacQueueFixture.swift`，仅由 Mac UI 脚本复制进独立 bundle `com.jxing.ZenPlayer.MacStageValidation`。fixture 在播放器创建前播种专属 1／2／5 三集完整快照、10／120／15 秒静音 WAV、完成下载索引及进度（第一集 1 秒、第二集 7 秒）。远端使用 `.invalid`，实际由 DownloadManager 找到本地文件；不用 mock 播放器或主动发送结束通知。只覆盖本样本的三个记录及固定快照版本，不清空其他记录／下载；只调整本验证 App 的连播偏好。
+
+`--stage-verify-queue`／`--stage-verify-queue-off` 在重启时只读核验实际磁盘记录、关联快照及关闭偏好。前者要求第一／末集 completed、中间集至少 7 秒；后者要求第一集 completed、第二集至少 7 秒、最后一集仍 notStarted。断言失败直接使验证 App 启动失败，不能靠重新播种掩盖保存问题。
+
+### 首轮失败与 review 修正
+
+- `/tmp/ZenPlayer-mac-queue-r1/tests.xcresult`：0 通过、1 失败。真实首集已自然进入第二集并恢复位置，但将 Mac CheckBox 的 NSNumber 值按 String 读取，后续动作未执行。修正为数值断言。
+- `/tmp/ZenPlayer-mac-queue-r2/tests.xcresult`：0 通过、1 失败。实际关闭值已变为 0，但测试误用迷你条的 `pause.fill` 图标标识查询完整页按钮；完整页使用文字“播放／暫停”。按真实控件修正，并增强既有完整页暂停断言，要求“播放”存在、“暫停”不存在，避免永不存在的图标查询给出虚假通过。
+- 为排除仅看按钮的间接证据，最终用例还检查关闭连播后实际媒体位置继续推进，并要求在末集仍播放时开启连播再观察自然结束。
+
+
+### 最终结果
+
+| 检查 | 实际结果 | 证据 |
+| --- | --- | --- |
+| 完整 Mac UI 套件 | **6 项、0 失败、0 跳过，273.553 秒** | `/tmp/ZenPlayer-mac-queue-r3/tests.xcresult`、`test.log` |
+| 加强后的连播定向回归 | **1 项、0 失败、0 跳过，60.011 秒** | `/tmp/ZenPlayer-mac-queue-final/tests.xcresult`、`test.log` |
+| 临时 App／UI 构建和隔离检查 | 两轮 build-for-testing／test-without-building 均 exit 0，签名／sandbox 校验通过 | 两目录 `build.xcresult`、`build.log`、`entitlements.plist` |
+| 生产源码回归 | 复用此前两端各 86 项 XCTest／App 编译通过证据；本轮未重跑 | `/tmp/ZenPlayer-avkit-review-{mac,ios}.xcresult`，App 源码／工程未变 |
+
+最后只为连播用例加入“关闭开关后真实媒体时间继续推进”及“末集仍播放时重新开启连播”两个加强条件，因此定向重跑该用例；其余五项及全部 helper 与完整通过轮次逐字相同。不能把 6+1 次执行算作 7 个独立场景。最新 78 个 Swift／Python／xcstrings 输入及工程 SHA-256 与待提交内容一致。
+
+已通过的实际子断言：本地首集自然结束进入第二集；第二集恢复自己的至少 7 秒进度；默认连播开启；关闭连播不立即暂停且媒体时间继续增加；手动下一集沿真实 1／2／5 顺序进入 5；连播开启时末集完成停留、不回第一集；首尾按钮禁用；关闭偏好在退出／冷启动后保留；已完成第一集经手动上一集从头重听。冷启动只读文件断言还证明前／末集完成、中间集进度和同一快照关联持久化成功。
+
+另一个用例证明关闭连播时首集自然结束不推进，首页正确展示下一集自己的 7 秒并单击续听；停止／重启后第 2 集位置保留，第 5 集仍 notStarted。M3 记录见 [首页下一集 UI](../surface-listening-progress/verification.md#2026-09-26-mac-完成后的首页接续)。
+
+已导出并核对 `/tmp/ZenPlayer-mac-queue-r3-attachments/` 中窗口树：首页下一集为 `已聽 0:07 / 2:00`；完整页关闭开关 value 0 且“暫停”按钮存在；末集“已聽完”、开关 value 1、“下一集” Disabled；冷启动首页回退到未完成第二集。这里是窗口树／断言证据，不是实际音质或截图目视验收。
+
+复现完整套件：
+
+```sh
+python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-mac-queue-r3 --package-cache /tmp/ZenPlayer-M0-mac/SourcePackages
+```
+
+定向加强用例在另一新 output 上增加 `--only-testing testNaturalQueueAdvanceControlsAndColdPreference`。重跑时必须使用尚不存在的 output；临时日志可能被系统清理。
+
+设备复查 `/tmp/ZenPlayer-device-queue-review.json`：已配对 iPhone 16 Pro 已连接，Developer Mode 仍 Disabled，devicectl 明确只能返回不完整设备信息。没有安装或更改真实设备。仍未验证：真实音视频听感、iPhone 锁屏／PiP／后台自动换集、真实网络断开和类型回退、搜索过滤后从实际系列行进入队列，以及下载传输／分享／降噪／音量等回归。本轮无生产代码缺陷修复；原 Unicode 事件合成和连续输入风险也未关闭。
+
+任务 3.2 继续未勾选，M2 仍 5/6、In Verification。交付标题 `补充 Mac 连播与首页下一集实际回归`；仅本地提交，不 push／PR／主规格同步／归档／发布。
+
+交付检查通过：M1／M2／M3／M4 四个 change strict 校验、Python AST／CLI help、14 个相对 Markdown 文件链接（不含锚点）、已跟踪差异与新增 fixture 行尾检查。Git 范围为 12 个测试 Harness／说明和现有 change 记录；116 个生产 App 文件与工程 hash 均未变化。

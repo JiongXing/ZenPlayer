@@ -60,6 +60,7 @@ def main():
     path.write_bytes(plistlib.dumps(project, sort_keys=False))
     shutil.copy2(repo / "ZenPlayerUITests/MacStageUITests.swift", work / "StageUITests/StageUITests.swift")
     shutil.copy2(repo / "ZenPlayerUITests/MacStageFixture.swift", work / "ZenPlayer/MacStageFixture.swift")
+    shutil.copy2(repo / "ZenPlayerUITests/MacQueueFixture.swift", work / "ZenPlayer/MacQueueFixture.swift")
     scheme_path = work / "ZenPlayer.xcodeproj/xcshareddata/xcschemes/ZenPlayer.xcscheme"
     scheme = ET.parse(scheme_path)
     test_action = scheme.getroot().find("TestAction")

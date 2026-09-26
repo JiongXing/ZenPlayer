@@ -6,6 +6,114 @@ final class StageUITests: XCTestCase {
         XCUIApplication().terminate()
     }
 
+    func testAutoAdvanceOffOffersNextWithItsOwnProgress() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--stage-seed-queue", "--stage-auto-off", "--stage-primary-window"]
+        app.launch()
+        let window = app.windows.firstMatch
+        XCTAssertTrue(window.staticTexts["Mac 連播驗證-1"].waitForExistence(timeout: 15))
+        clickCenter(window.buttons["繼續收聽"].firstMatch, in: window)
+        let first = queueMini(in: window, episode: 1)
+        XCTAssertTrue(first.waitForExistence(timeout: 5))
+        XCTAssertTrue(wait { first.label.contains("已聽完") })
+        let continueNext = window.buttons["繼續下一集"]
+        XCTAssertTrue(continueNext.waitForExistence(timeout: 10))
+        XCTAssertTrue(window.staticTexts["Mac 連播驗證-2"].exists)
+        XCTAssertEqual(queuePosition(in: window), 7, accuracy: 0.01)
+        XCTAssertFalse(queueMini(in: window, episode: 2).exists)
+        capture(app, name: "mac-home-next-after-auto-off-end")
+        clickCenter(continueNext, in: window)
+        let second = queueMini(in: window, episode: 2)
+        XCTAssertTrue(second.waitForExistence(timeout: 5))
+        XCTAssertTrue(wait { second.label.contains("正在收聽") && self.queuePosition(in: window) >= 7 })
+        clickCenter(second, in: window)
+        XCTAssertEqual((window.checkBoxes["播完自動播放下一集"].value as? NSNumber)?.intValue, 0)
+        XCTAssertTrue(window.buttons["上一集"].isEnabled)
+        XCTAssertTrue(window.buttons["下一集"].isEnabled)
+        capture(app, name: "mac-home-next-keeps-queue-and-preference")
+        clickCenter(window.buttons["停止播放"], in: window)
+        app.typeKey("q", modifierFlags: .command)
+        XCTAssertTrue(wait { app.state == .notRunning })
+        app.launchArguments = ["--stage-verify-queue-off", "--stage-primary-window"]
+        app.launch()
+        XCTAssertTrue(app.windows.firstMatch.staticTexts["Mac 連播驗證-2"].waitForExistence(timeout: 15))
+        XCTAssertFalse(queueMini(in: app.windows.firstMatch, episode: 2).exists)
+        capture(app, name: "mac-home-next-cold-progress-preserved")
+    }
+
+    func testNaturalQueueAdvanceControlsAndColdPreference() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--stage-seed-queue", "--stage-primary-window"]
+        app.launch()
+        let window = app.windows.firstMatch
+        XCTAssertTrue(window.staticTexts["Mac 連播驗證-1"].waitForExistence(timeout: 15))
+        clickCenter(window.buttons["繼續收聽"].firstMatch, in: window)
+        XCTAssertTrue(queueMini(in: window, episode: 1).waitForExistence(timeout: 5))
+        // 第一段本地 WAV 自然结束；不发送结束通知、不操作 seek 或下一集。
+        let second = queueMini(in: window, episode: 2)
+        XCTAssertTrue(second.waitForExistence(timeout: 20))
+        XCTAssertTrue(wait { second.label.contains("正在收聽") && self.queuePosition(in: window) >= 7 })
+        capture(app, name: "mac-queue-natural-1-to-2")
+        clickCenter(second, in: window)
+        XCTAssertTrue(window.staticTexts["Mac 連播驗證-2"].waitForExistence(timeout: 5))
+        let previous = window.buttons["上一集"]
+        let next = window.buttons["下一集"]
+        let autoAdvance = window.checkBoxes["播完自動播放下一集"]
+        XCTAssertTrue(previous.isEnabled)
+        XCTAssertTrue(next.isEnabled)
+        XCTAssertEqual((autoAdvance.value as? NSNumber)?.intValue, 1)
+        clickCenter(autoAdvance, in: window)
+        XCTAssertEqual((autoAdvance.value as? NSNumber)?.intValue, 0)
+        capture(app, name: "mac-queue-toggle-off-keeps-playing")
+        XCTAssertTrue(window.buttons["暫停"].exists, "关闭连播不应立即暂停当前集")
+        goBack(window)
+        let before = queuePosition(in: window)
+        XCTAssertGreaterThanOrEqual(before, 7)
+        XCTAssertTrue(wait { self.queuePosition(in: window) > before + 1 })
+        clickCenter(queueMini(in: window, episode: 2), in: window)
+        clickCenter(next, in: window)
+        XCTAssertTrue(window.staticTexts["Mac 連播驗證-5"].waitForExistence(timeout: 5))
+        XCTAssertFalse(next.isEnabled, "末集不能越界")
+        clickCenter(autoAdvance, in: window)
+        XCTAssertEqual((autoAdvance.value as? NSNumber)?.intValue, 1)
+        XCTAssertTrue(window.buttons["暫停"].exists, "必须在末集仍播放时启用连播再验证结束边界")
+        XCTAssertTrue(window.staticTexts["已聽完"].waitForExistence(timeout: 25))
+        XCTAssertTrue(window.staticTexts["Mac 連播驗證-5"].exists)
+        XCTAssertFalse(window.buttons["暫停"].exists)
+        XCTAssertFalse(next.isEnabled)
+        capture(app, name: "mac-queue-last-ended-with-auto-on")
+        clickCenter(autoAdvance, in: window)
+        XCTAssertEqual((autoAdvance.value as? NSNumber)?.intValue, 0)
+        app.typeKey("q", modifierFlags: .command)
+        XCTAssertTrue(wait { app.state == .notRunning })
+
+        // 冷启动只读核验上一集 completed、第二集有效进度、末集 completed、快照和关闭偏好。
+        app.launchArguments = ["--stage-verify-queue", "--stage-primary-window"]
+        app.launch()
+        let reopened = app.windows.firstMatch
+        XCTAssertTrue(reopened.staticTexts["Mac 連播驗證-2"].waitForExistence(timeout: 15))
+        XCTAssertFalse(queueMini(in: reopened, episode: 2).exists)
+        XCTAssertGreaterThanOrEqual(queuePosition(in: reopened), 7)
+        capture(app, name: "mac-queue-cold-fallback-to-unfinished-2")
+        clickCenter(reopened.buttons["繼續收聽"].firstMatch, in: reopened)
+        let resumed = queueMini(in: reopened, episode: 2)
+        XCTAssertTrue(resumed.waitForExistence(timeout: 5))
+        clickCenter(resumed, in: reopened)
+        XCTAssertEqual((reopened.checkBoxes["播完自動播放下一集"].value as? NSNumber)?.intValue, 0)
+        clickCenter(reopened.buttons["上一集"], in: reopened)
+        XCTAssertTrue(reopened.staticTexts["Mac 連播驗證-1"].waitForExistence(timeout: 5))
+        XCTAssertFalse(reopened.buttons["上一集"].isEnabled, "首集不能越界")
+        XCTAssertTrue(reopened.buttons["暫停"].exists, "手动上一集应开始重听")
+        goBack(reopened)
+        XCTAssertTrue(queueMini(in: reopened, episode: 1).waitForExistence(timeout: 5))
+        let replay = queuePosition(in: reopened, duration: "0:10")
+        XCTAssertGreaterThanOrEqual(replay, 0)
+        XCTAssertLessThan(replay, 7, "已完成集应从头重听，不恢复尾部")
+        capture(app, name: "mac-queue-relisten-first-from-start")
+    }
+
     func testCatalogSortingAndKeyboardJumpPreservePausedSession() throws {
         continueAfterFailure = false
         let app = XCUIApplication()
@@ -263,7 +371,8 @@ final class StageUITests: XCTestCase {
     private func assertPausedFullPlayer(_ window: XCUIElement) {
         XCTAssertTrue(window.buttons["停止播放"].waitForExistence(timeout: 5))
         XCTAssertTrue(window.staticTexts["已暫停"].exists)
-        XCTAssertFalse(window.buttons["pause.fill"].exists)
+        XCTAssertTrue(window.buttons["播放"].exists)
+        XCTAssertFalse(window.buttons["暫停"].exists)
         XCTAssertFalse(mini(in: window).exists)
     }
 
@@ -281,6 +390,22 @@ final class StageUITests: XCTestCase {
             expected.append(character)
             XCTAssertEqual(field.value as? String, expected)
         }
+    }
+
+    private func queueMini(in window: XCUIElement, episode: Int) -> XCUIElement {
+        window.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Mac 連播驗證-\(episode), \(episode), ")).firstMatch
+    }
+
+    private func queuePosition(in window: XCUIElement, duration: String = "2:00") -> Double {
+        let pattern = #"(\d+):(\d+) / "# + NSRegularExpression.escapedPattern(for: duration)
+        for element in window.staticTexts.allElementsBoundByIndex {
+            let text = (element.value as? String) ?? element.label
+            if let range = text.range(of: pattern, options: .regularExpression) {
+                let parts = text[range].components(separatedBy: " / ")[0].split(separator: ":")
+                return (Double(parts[0]) ?? 0) * 60 + (Double(parts[1]) ?? 0)
+            }
+        }
+        return -1
     }
 
     private func courseNumbers(in window: XCUIElement) -> [String] {
