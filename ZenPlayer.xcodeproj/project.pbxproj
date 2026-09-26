@@ -21,6 +21,14 @@ F0E271C51727971AD85771E1 = {isa = PBXBuildFile; fileRef = 47C915F2A919A254BBBD46
 E397B8D51A12C4CDD437C9E6 = {isa = PBXBuildFile; fileRef = 5417D66C2F34095661D21E40; };
 A45DA34D57D85D4A979834B9 = {isa = PBXBuildFile; fileRef = 3C7254C77E50F7B6F68AB5EB; };
 5804EAFC77E89F96DD59DDBC = {isa = PBXBuildFile; fileRef = 3AFA28F2C582DA4233F31F18; };
+AE628E0A73181293823FFE13 = {isa = PBXBuildFile; fileRef = 193336E27BAC6DBDB50C1054; };
+4B81F048E53808A6342908F8 = {isa = PBXBuildFile; fileRef = 4C8F55C810A585B69093D211; };
+338BDC47F797576A5756EEF4 = {isa = PBXBuildFile; fileRef = 8975C95BA31207D80CBBDAFB; };
+24430908AE84E04F5B05D4C2 = {isa = PBXBuildFile; fileRef = 663FF3439814CD5770F5E728; };
+616BE0E577910BDAD2D68E84 = {isa = PBXBuildFile; fileRef = 7B5B46C1E955299676DB3BE6; };
+6EBE484219C3BC6670B24740 = {isa = PBXBuildFile; fileRef = C7BC6BE134B77D1724A590C1; };
+16BB8F8E481106D85F8409CC = {isa = PBXBuildFile; fileRef = D7D5D69B934D212855DF9477; };
+4AB0C087BCE10A6A03FDBE67 = {isa = PBXBuildFile; fileRef = 2B0D8B55D6BA946E1328F555; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -39,6 +47,14 @@ EC8DA741C92B3568A0475534 = {isa = PBXFileReference; lastKnownFileType = sourceco
 5417D66C2F34095661D21E40 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Services/RecentPlaybackStore.swift"; sourceTree = SOURCE_ROOT; };
 3C7254C77E50F7B6F68AB5EB = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Services/PlaybackProgressGate.swift"; sourceTree = SOURCE_ROOT; };
 3AFA28F2C582DA4233F31F18 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/PlaybackSessionState.swift"; sourceTree = SOURCE_ROOT; };
+193336E27BAC6DBDB50C1054 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/PlaybackSeriesReference.swift"; sourceTree = SOURCE_ROOT; };
+4C8F55C810A585B69093D211 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/QueueSnapshot.swift"; sourceTree = SOURCE_ROOT; };
+8975C95BA31207D80CBBDAFB = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/PlaybackQueueState.swift"; sourceTree = SOURCE_ROOT; };
+663FF3439814CD5770F5E728 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Services/QueueSnapshotPersistence.swift"; sourceTree = SOURCE_ROOT; };
+7B5B46C1E955299676DB3BE6 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Services/QueueSnapshotStore.swift"; sourceTree = SOURCE_ROOT; };
+C7BC6BE134B77D1724A590C1 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Models/QueueMediaPolicy.swift"; sourceTree = SOURCE_ROOT; };
+D7D5D69B934D212855DF9477 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/Services/PlaybackAudioProcessing.swift"; sourceTree = SOURCE_ROOT; };
+2B0D8B55D6BA946E1328F555 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ZenPlayer/ViewModels/PlayerViewModel.swift"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -177,7 +193,7 @@ EC8DA741C92B3568A0475534 = {isa = PBXFileReference; lastKnownFileType = sourceco
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		62AB01C7BD8CDABF9CB25179 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (5804EAFC77E89F96DD59DDBC, A45DA34D57D85D4A979834B9, E397B8D51A12C4CDD437C9E6, F0E271C51727971AD85771E1, 5223F8458EC02927C4A6A20D, 317507668C101B18853A810A, DF300F72D7E96A9559966CE5, 3DBE02F2FDF951D1BC21934C, BE8DD8C3FC26DA595E9014E0, EE1F45202AC9EFF5CA1F67E1, AE281527F660C1F1C96BBBAE, F11DF3BD5C32ED229D2EEE9F, 10F358EDB89A10FC34F3E75C,); runOnlyForDeploymentPostprocessing = 0; };
+		62AB01C7BD8CDABF9CB25179 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (4AB0C087BCE10A6A03FDBE67, 16BB8F8E481106D85F8409CC, 6EBE484219C3BC6670B24740, 616BE0E577910BDAD2D68E84, 24430908AE84E04F5B05D4C2, 338BDC47F797576A5756EEF4, 4B81F048E53808A6342908F8, AE628E0A73181293823FFE13, 5804EAFC77E89F96DD59DDBC, A45DA34D57D85D4A979834B9, E397B8D51A12C4CDD437C9E6, F0E271C51727971AD85771E1, 5223F8458EC02927C4A6A20D, 317507668C101B18853A810A, DF300F72D7E96A9559966CE5, 3DBE02F2FDF951D1BC21934C, BE8DD8C3FC26DA595E9014E0, EE1F45202AC9EFF5CA1F67E1, AE281527F660C1F1C96BBBAE, F11DF3BD5C32ED229D2EEE9F, 10F358EDB89A10FC34F3E75C,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */

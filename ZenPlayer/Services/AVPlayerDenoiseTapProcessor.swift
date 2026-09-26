@@ -9,7 +9,7 @@ import AVFoundation
 import Foundation
 import MediaToolbox
 
-final class AVPlayerDenoiseTapProcessor {
+final class AVPlayerDenoiseTapProcessor: PlaybackAudioProcessing {
 
     private let stateLock = NSLock()
     private var strength: Float = 1.0

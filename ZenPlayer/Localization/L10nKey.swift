@@ -50,6 +50,18 @@ enum L10nKey: String, CaseIterable {
     case progressCompleted = "progress.completed"
     case progressUnknownDuration = "progress.unknown_duration"
 
+    case queueRestoring = "queue.restoring"
+    case queueUnavailable = "queue.unavailable"
+    case queueComplete = "queue.complete"
+    case queuePartial = "queue.partial"
+    case queueOffline = "queue.offline"
+    case queueFallbackAudio = "queue.fallback_audio"
+    case queueFallbackVideo = "queue.fallback_video"
+    case queuePrevious = "queue.previous"
+    case queueNext = "queue.next"
+    case queueAutoAdvance = "queue.auto_advance"
+    case queueSaveFailed = "queue.save_failed"
+
     case sessionStopped = "session.stopped"
     case sessionPreparing = "session.preparing"
     case sessionPlaying = "session.playing"

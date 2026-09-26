@@ -32,6 +32,13 @@ nonisolated struct PlaybackSessionState {
         return true
     }
 
+    mutating func associateSeries(_ reference: PlaybackSeriesReference, for context: PlaybackContext) {
+        guard let current = self.context,
+              RecentPlaybackRecord.recordID(for: current) == RecentPlaybackRecord.recordID(for: context) else { return }
+        self.context = PlaybackContext(episode: current.episode, serverUrl: current.serverUrl,
+                                       preferredMediaType: current.preferredMediaType, series: reference)
+    }
+
     mutating func ready(request: UUID, now: Double) {
         guard self.request == request, phase == .preparing else { return }
         phase = wantsPlayback ? .buffering : .paused

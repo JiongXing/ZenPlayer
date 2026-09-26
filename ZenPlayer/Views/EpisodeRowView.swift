@@ -18,6 +18,7 @@ struct EpisodeRowView: View {
 
     /// 下载管理器（由父视图传入）
     var downloadManager: DownloadManager
+    var queueSnapshot: QueueSnapshot? = nil
 
     @State private var isHovered = false
     #if os(iOS)
@@ -45,7 +46,7 @@ struct EpisodeRowView: View {
     }
 
     var body: some View {
-        NavigationLink(value: PlaybackContext(episode: episode, serverUrl: serverUrl)) {
+        NavigationLink(value: playbackContext) {
             Group {
                 if isCompact {
                     compactBody
@@ -71,6 +72,12 @@ struct EpisodeRowView: View {
         }
         .help(L10n.string(.episodePlay))
 #endif
+    }
+
+    private var playbackContext: PlaybackContext {
+        let basic = PlaybackContext(episode: episode, serverUrl: serverUrl)
+        guard let snapshot = queueSnapshot, let index = snapshot.index(of: basic) else { return basic }
+        return PlaybackContext(episode: episode, serverUrl: serverUrl, series: snapshot.context(at: index)?.series)
     }
 
     // MARK: - iPhone 紧凑布局（两行）

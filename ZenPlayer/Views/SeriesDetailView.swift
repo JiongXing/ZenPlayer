@@ -13,6 +13,7 @@ struct SeriesDetailView: View {
     let series: SeriesItem
 
     @State private var viewModel = SeriesDetailViewModel()
+    @Environment(PlayerViewModel.self) private var playbackSession
     @State private var downloadManager = DownloadManager.shared
     @Environment(\.horizontalSizeClass) private var sizeClass
 
@@ -26,11 +27,14 @@ struct SeriesDetailView: View {
                 loadingView
             }
         }
+        .onChange(of: viewModel.queueSnapshot) { _, snapshot in
+            if let snapshot { playbackSession.queueStore.cache(snapshot) }
+        }
         .navigationTitle(series.title)
         .animation(.easeInOut(duration: 0.3), value: viewModel.speechDetail != nil)
         .task {
             if viewModel.speechDetail == nil {
-                await viewModel.loadSpeechDetail(url: series.url)
+                await viewModel.loadSpeechDetail(url: series.url, series: series)
             }
         }
     }
@@ -56,7 +60,8 @@ struct SeriesDetailView: View {
                             episode: episode,
                             serverUrl: detail.serverUrl,
                             seriesType: detail.type,
-                            downloadManager: downloadManager
+                            downloadManager: downloadManager,
+                            queueSnapshot: viewModel.queueSnapshot
                         )
                         .padding(.horizontal, 6)
                     }
@@ -257,7 +262,7 @@ struct SeriesDetailView: View {
 
             Button {
                 Task {
-                    await viewModel.loadSpeechDetail(url: series.url)
+                    await viewModel.loadSpeechDetail(url: series.url, series: series)
                 }
             } label: {
                 Label(L10n.text(.homeRetry), systemImage: "arrow.clockwise")

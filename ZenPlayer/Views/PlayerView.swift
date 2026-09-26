@@ -48,6 +48,7 @@ struct PlayerView: View {
                         .frame(maxWidth: .infinity, minHeight: 220)
                 }
 
+                if viewModel.hasSession { PlaybackQueueControls() }
                 ProgressSaveNotice(store: viewModel.progressStore)
 
                 if viewModel.canSwitchMediaType {

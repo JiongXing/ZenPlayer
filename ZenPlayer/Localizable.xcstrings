@@ -1055,6 +1055,116 @@
           }
         }
       }
+    },
+    "queue.restoring": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在還原系列清單"
+          }
+        }
+      }
+    },
+    "queue.unavailable": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暫無系列清單，僅播放本集"
+          }
+        }
+      }
+    },
+    "queue.complete": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系列清單：%lld 集"
+          }
+        }
+      }
+    },
+    "queue.partial": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "僅播放已載入的 %lld 集"
+          }
+        }
+      }
+    },
+    "queue.offline": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目前離線且本集沒有可用下載，請連線後重試"
+          }
+        }
+      }
+    },
+    "queue.fallback_audio": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已改用可播放的音訊"
+          }
+        }
+      }
+    },
+    "queue.fallback_video": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已改用可播放的影片"
+          }
+        }
+      }
+    },
+    "queue.previous": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上一集"
+          }
+        }
+      }
+    },
+    "queue.next": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一集"
+          }
+        }
+      }
+    },
+    "queue.auto_advance": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "播完自動播放下一集"
+          }
+        }
+      }
+    },
+    "queue.save_failed": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系列清單未儲存，下次可能僅播放本集"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

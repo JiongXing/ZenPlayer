@@ -45,8 +45,8 @@ PRD 来源：用户附件 `/Users/jxing/Desktop/ZenPlayer_PRD_v1.0.md`，原样�
 - 不包含：搜索结果作为队列、静默跳过坏集、猜测缺集、复杂自定义队列或下载重构。
 - 依赖：M1 会话、M0 进度；M3 入口继续传递上下文，M4 搜索不改变快照。
 - PRD：F1-05～F1-07、D-01／D-02、Q-01／Q-02／Q-04；验收 AT-07～AT-10、AT-12 自动切集；AT-09 搜索整合在 M4 重验，AT-15 下一集候选在 M3 整合。
-- 状态：**Planned**；规划：待创建。阻塞：等待 M1 和阶段批准；队列样本顺序／完整性需验证。
-- 变更：待创建；验证证据：暂无。
+- 状态：**In Verification**；代码、review 修复和两端 58 项测试通过，5/6 项完成；真实连播／锁屏／PiP、UI 与 M4 搜索整合待验。M0／M1 设备验收缺口保留。
+- 变更：[play-series-in-order](openspec/changes/play-series-in-order/proposal.md)；[验证记录](openspec/changes/play-series-in-order/verification.md)。
 
 ## 后续 · M3 首页与系列续听
 

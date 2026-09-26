@@ -75,7 +75,15 @@ final class PlaybackProgressStore {
         let previous = record
         record.update(position: position, mediaDuration: duration, event: event, now: now())
         guard record != previous else { return }
-        record.context = context
+        record.context = PlaybackContext(episode: context.episode, serverUrl: context.serverUrl,
+                                         preferredMediaType: context.preferredMediaType,
+                                         series: context.series ?? previous.context.series)
+        if let series = record.context.series {
+            record.seriesId = String(series.seriesID)
+            record.seriesTitle = series.title
+            record.seriesDetailURL = series.detailURL
+            record.snapshotReference = series.snapshotID
+        }
         records[key] = record
         dirty.insert(key)
     }

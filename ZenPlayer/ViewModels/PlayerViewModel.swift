@@ -83,7 +83,7 @@ final class PlayerViewModel {
     /// 降噪强度档位（播放中可动态生效）
     var denoiseLevel: DenoiseLevel = .original {
         didSet {
-            UserDefaults.standard.set(denoiseLevel.rawValue, forKey: StorageKeys.denoiseLevel)
+            defaults.set(denoiseLevel.rawValue, forKey: StorageKeys.denoiseLevel)
             denoiseTapProcessor?.setEnabled(denoiseLevel.isEnabled)
             denoiseTapProcessor?.updateStrength(denoiseLevel.strength)
         }
@@ -101,9 +101,26 @@ final class PlayerViewModel {
         }
     }
 
-    private let downloadManager = DownloadManager.shared
+    private let defaults: UserDefaults
+    private let localFile: (Int, PlaybackMediaType) -> URL?
+    private let makeAudioProcessor: (Float, Bool) -> any PlaybackAudioProcessing
     let progressStore: PlaybackProgressStore
-    private var denoiseTapProcessor: AVPlayerDenoiseTapProcessor?
+    let queueStore: QueueSnapshotStore
+    private let isOffline: () -> Bool
+    private(set) var queue = PlaybackQueueState()
+    private(set) var isRestoringQueue = false
+    private(set) var mediaSelectionNotice: String?
+    @ObservationIgnored private var queueRestoreTask: Task<Void, Never>?
+    private var queueSelection = UUID()
+    var canPlayPrevious: Bool { queue.context(offset: -1, preferred: selectedMediaType) != nil }
+    var canPlayNext: Bool { queue.context(offset: 1, preferred: selectedMediaType) != nil }
+    var queueStatus: String {
+        if isRestoringQueue { return L10n.string(.queueRestoring) }
+        guard let snapshot = queue.snapshot else { return L10n.string(.queueUnavailable) }
+        return L10n.string(snapshot.isComplete ? .queueComplete : .queuePartial, Int64(snapshot.episodes.count))
+    }
+
+    private var denoiseTapProcessor: (any PlaybackAudioProcessing)?
     private var currentEpisode: EpisodeItem?
     private var currentServerURL: String?
     private var activePlaybackContext: PlaybackContext?
@@ -141,11 +158,19 @@ final class PlayerViewModel {
     @ObservationIgnored private var terminationObserver: NSObjectProtocol?
 #endif
 
-    init(progressStore: PlaybackProgressStore? = nil,
+    init(progressStore: PlaybackProgressStore, queueStore: QueueSnapshotStore, defaults: UserDefaults,
+         localFile: @escaping (Int, PlaybackMediaType) -> URL?,
+         makeAudioProcessor: @escaping (Float, Bool) -> any PlaybackAudioProcessing,
+         isOffline: @escaping () -> Bool,
          uptime: @escaping () -> Double = { ProcessInfo.processInfo.systemUptime }) {
-        self.progressStore = progressStore ?? .shared
+        self.progressStore = progressStore
+        self.queueStore = queueStore
+        self.defaults = defaults
+        self.localFile = localFile
+        self.makeAudioProcessor = makeAudioProcessor
+        self.isOffline = isOffline
         self.uptime = uptime
-        if let stored = UserDefaults.standard.object(forKey: StorageKeys.denoiseLevel) as? Int,
+        if let stored = defaults.object(forKey: StorageKeys.denoiseLevel) as? Int,
            let level = DenoiseLevel(rawValue: stored) {
             denoiseLevel = level
         }
@@ -175,26 +200,73 @@ final class PlayerViewModel {
 #endif
 
     /// 统一准备播放：先解析 URL，再构建带降噪回退能力的 AVPlayer
-    func selectPlayback(_ context: PlaybackContext, force: Bool = false, wantsPlayback: Bool = true) {
+    func selectPlayback(_ incoming: PlaybackContext, force: Bool = false, wantsPlayback: Bool = true,
+                        snapshot suppliedSnapshot: QueueSnapshot? = nil) {
+        let context = PlaybackContext(episode: incoming.episode, serverUrl: incoming.serverUrl,
+                                      preferredMediaType: incoming.preferredMediaType,
+                                      series: incoming.series ?? progressStore.record(for: incoming)?.context.series)
         guard session.select(context, now: uptime(), force: force, wantsPlayback: wantsPlayback) else { return }
+        let snapshot = suppliedSnapshot ?? queueStore.cached(for: context)
+        queue.select(context, snapshot: snapshot)
+        queueSelection = UUID()
+        queueRestoreTask?.cancel()
+        isRestoringQueue = snapshot == nil
+        mediaSelectionNotice = nil
+        if let snapshot { queueStore.register(snapshot) }
+        else { restoreQueue(for: context, selection: queueSelection) }
         preparationTask?.cancel()
         releasePlayback()
         currentEpisode = context.episode
         currentServerURL = context.serverUrl
         currentPosition = progressStore.record(for: context)?.resumePosition ?? 0
         availableMediaTypes = supportedMediaTypes(for: context.episode)
+        isPreparingPlayback = true
         restoreError = false
-        guard let mediaType = initialMediaType(preferred: context.preferredMediaType) else {
-            failPlayback(message: L10n.string(.errorNoPlayableAddress))
+        let local = localMediaTypes(for: context.episode)
+        guard let mediaType = QueueMediaPolicy.select(preferred: context.preferredMediaType,
+                                                     supported: availableMediaTypes, local: local, offline: isOffline()) else {
+            failPlayback(message: L10n.string(isOffline() ? .queueOffline : .errorNoPlayableAddress))
             return
         }
         selectedMediaType = mediaType
+        if let preferred = context.preferredMediaType, preferred != mediaType {
+            mediaSelectionNotice = L10n.string(mediaType == .audio ? .queueFallbackAudio : .queueFallbackVideo)
+        }
         let request = session.request
         startMonitoring()
         preparationTask = Task { [weak self] in
             guard let self, self.session.request == request else { return }
             await self.reloadCurrentPlayback()
         }
+    }
+
+    private func restoreQueue(for context: PlaybackContext, selection: UUID) {
+        queueRestoreTask = Task { [weak self] in
+            guard let self else { return }
+            let snapshot = await self.queueStore.restore(for: context)
+            guard !Task.isCancelled, self.queueSelection == selection, self.session.hasSession else { return }
+            self.isRestoringQueue = false
+            guard let snapshot, self.queue.attach(snapshot, to: context),
+                  let reference = self.queue.context(offset: 0, preferred: self.selectedMediaType)?.series else { return }
+            self.session.associateSeries(reference, for: context)
+            if let active = self.activePlaybackContext {
+                self.activePlaybackContext = PlaybackContext(episode: active.episode, serverUrl: active.serverUrl,
+                                                             preferredMediaType: active.preferredMediaType, series: reference)
+            }
+            self.queueStore.register(snapshot)
+        }
+    }
+
+    func playAdjacent(_ offset: Int) {
+        guard offset == -1 || offset == 1, let context = queue.context(offset: offset, preferred: selectedMediaType) else { return }
+        selectPlayback(context, force: true, snapshot: queue.snapshot)
+    }
+
+    private func localMediaTypes(for episode: EpisodeItem) -> [PlaybackMediaType] {
+        var types: [PlaybackMediaType] = []
+        if verifiedLocalURL(for: episode.id, type: .audio) != nil { types.append(.audio) }
+        if verifiedLocalURL(for: episode.id, type: .video) != nil { types.append(.video) }
+        return types
     }
 
     func preparePlayback(context: PlaybackContext) async {
@@ -217,7 +289,7 @@ final class PlayerViewModel {
             return
         }
         if session.phase == .ended {
-            if let context = currentContext { selectPlayback(context, force: true) }
+            if let context = currentContext { selectPlayback(context, force: true, snapshot: queue.snapshot) }
             return
         }
         session.play(now: uptime())
@@ -243,10 +315,21 @@ final class PlayerViewModel {
         }
     }
 
-    private func failPlayback(message: String) {
+    private func failPlayback(message: String, offline: Bool = false) {
+        if (offline || isOffline()), let context = currentContext,
+           !localMediaTypes(for: context.episode).contains(selectedMediaType),
+           let alternate = QueueMediaPolicy.select(preferred: selectedMediaType, supported: availableMediaTypes,
+                                                   local: localMediaTypes(for: context.episode), offline: true) {
+            let fallback = PlaybackContext(episode: context.episode, serverUrl: context.serverUrl,
+                                           preferredMediaType: alternate, series: context.series)
+            selectPlayback(fallback, force: true, wantsPlayback: session.wantsPlayback, snapshot: queue.snapshot)
+            mediaSelectionNotice = L10n.string(alternate == .audio ? .queueFallbackAudio : .queueFallbackVideo)
+            return
+        }
         session.fail(request: session.request)
         releasePlayback()
-        errorMessage = message
+        errorMessage = offline ? L10n.string(.queueOffline) : message
+        preparationTask?.cancel()
         monitoringTask?.cancel()
         showsLoading = false
     }
@@ -261,7 +344,7 @@ final class PlayerViewModel {
 
     private func reloadCurrentPlayback() async {
         guard let episode = currentEpisode, let serverUrl = currentServerURL else { return }
-        let context = PlaybackContext(episode: episode, serverUrl: serverUrl, preferredMediaType: selectedMediaType)
+        let context = PlaybackContext(episode: episode, serverUrl: serverUrl, preferredMediaType: selectedMediaType, series: currentContext?.series)
         // 切源先抓当前媒体即时位置和播放意图；stop 后才读取最新仓库值。
         let switching = activePlaybackContext.map { RecentPlaybackRecord.recordID(for: $0) == RecentPlaybackRecord.recordID(for: context) } ?? false
         let immediate = switching ? player?.currentTime().seconds : nil
@@ -279,6 +362,7 @@ final class PlayerViewModel {
         session.select(context, now: uptime(), force: true, wantsPlayback: wasPlaying)
         startMonitoring()
         let token = progressGate.begin(position: pendingResumePosition, uptime: uptime())
+        queue.bindMedia(token)
         isPreparingPlayback = true
         restoreAttempted = false
         restoreError = false
@@ -291,7 +375,8 @@ final class PlayerViewModel {
 #endif
         await buildPlayer(for: url, episode: episode, token: token)
         guard progressGate.token == token, player != nil else { return }
-        activePlaybackContext = context
+        activePlaybackContext = PlaybackContext(episode: context.episode, serverUrl: context.serverUrl,
+                                                preferredMediaType: context.preferredMediaType, series: currentContext?.series)
         setupPlaybackObservation()
     }
 
@@ -303,6 +388,12 @@ final class PlayerViewModel {
         monitoringTask = nil
         releasePlayback()
         session.stop()
+        queue = PlaybackQueueState()
+        queueSelection = UUID()
+        queueRestoreTask?.cancel()
+        queueRestoreTask = nil
+        isRestoringQueue = false
+        mediaSelectionNotice = nil
         errorMessage = nil
         restoreError = false
         currentEpisode = nil
@@ -355,19 +446,6 @@ final class PlayerViewModel {
         }
     }
 
-    private func initialMediaType(preferred: PlaybackMediaType?) -> PlaybackMediaType? {
-        if let preferred, availableMediaTypes.contains(preferred) {
-            return preferred
-        }
-        if availableMediaTypes.contains(.audio) {
-            return .audio
-        }
-        if availableMediaTypes.contains(.video) {
-            return .video
-        }
-        return nil
-    }
-
     private func supportedMediaTypes(for episode: EpisodeItem) -> [PlaybackMediaType] {
         var mediaTypes: [PlaybackMediaType] = []
         if hasAudioSource(for: episode) {
@@ -380,7 +458,7 @@ final class PlayerViewModel {
     }
 
     private func hasAudioSource(for episode: EpisodeItem) -> Bool {
-        if verifiedLocalURL(for: episode.id, type: .mp3) != nil {
+        if verifiedLocalURL(for: episode.id, type: .audio) != nil {
             return true
         }
         if let mp3URL = episode.mp3Url, !mp3URL.isEmpty {
@@ -393,7 +471,7 @@ final class PlayerViewModel {
     }
 
     private func hasVideoSource(for episode: EpisodeItem) -> Bool {
-        if verifiedLocalURL(for: episode.id, type: .mp4) != nil {
+        if verifiedLocalURL(for: episode.id, type: .video) != nil {
             return true
         }
         if !episode.mp4Url.isEmpty, !looksLikeAudioPath(episode.mp4Url) {
@@ -406,7 +484,7 @@ final class PlayerViewModel {
     }
 
     private func resolveAudioPlaybackURL(for episode: EpisodeItem, serverUrl: String) -> URL? {
-        if let localURL = verifiedLocalURL(for: episode.id, type: .mp3) {
+        if let localURL = verifiedLocalURL(for: episode.id, type: .audio) {
             return localURL
         }
         if let mp3 = episode.mp3Url, !mp3.isEmpty {
@@ -419,7 +497,7 @@ final class PlayerViewModel {
     }
 
     private func resolveVideoPlaybackURL(for episode: EpisodeItem, serverUrl: String) -> URL? {
-        if let localURL = verifiedLocalURL(for: episode.id, type: .mp4) {
+        if let localURL = verifiedLocalURL(for: episode.id, type: .video) {
             return localURL
         }
         if !episode.mp4Url.isEmpty {
@@ -457,18 +535,15 @@ final class PlayerViewModel {
     }
 
     /// 二次校验本地文件存在，避免映射残留导致播放失败。
-    private func verifiedLocalURL(for episodeId: Int, type: DownloadType) -> URL? {
-        guard let localURL = downloadManager.completedFileURL(for: episodeId, type: type) else { return nil }
+    private func verifiedLocalURL(for episodeId: Int, type: PlaybackMediaType) -> URL? {
+        guard let localURL = localFile(episodeId, type) else { return nil }
         guard FileManager.default.fileExists(atPath: localURL.path) else { return nil }
         return localURL
     }
 
     private func buildPlayer(for url: URL, episode: EpisodeItem, token: UUID) async {
         let item = AVPlayerItem(url: url)
-        let tap = AVPlayerDenoiseTapProcessor(
-            strength: denoiseLevel.strength,
-            enabled: denoiseLevel.isEnabled
-        )
+        let tap = makeAudioProcessor(denoiseLevel.strength, denoiseLevel.isEnabled)
         do {
             try await tap.attach(to: item)
             guard progressGate.token == token, !Task.isCancelled else { return }
@@ -542,7 +617,7 @@ final class PlayerViewModel {
         playbackFailureObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemFailedToPlayToEndTime, object: item, queue: .main) { [weak self, weak player, weak item] _ in
             Task { @MainActor [weak self, weak player, weak item] in
                 guard let self, let player, let item, self.isCurrent(player, item: item, token: token) else { return }
-                self.failPlayback(message: item.error?.localizedDescription ?? L10n.string(.playerCannotPlay))
+                self.failPlayback(message: item.error?.localizedDescription ?? L10n.string(.playerCannotPlay), offline: Self.isOfflineError(item.error))
             }
         }
         rateObservation = player.observe(\.rate, options: [.old, .new]) { [weak self, weak player, weak item] _, change in
@@ -561,7 +636,7 @@ final class PlayerViewModel {
             Task { @MainActor [weak self, weak player, weak item] in
                 guard let self, let player, let item, self.isCurrent(player, item: item, token: token) else { return }
                 if item.status == .failed {
-                    self.failPlayback(message: item.error?.localizedDescription ?? L10n.string(.playerCannotPlay))
+                    self.failPlayback(message: item.error?.localizedDescription ?? L10n.string(.playerCannotPlay), offline: Self.isOfflineError(item.error))
                 } else if item.status == .readyToPlay, !self.restoreAttempted {
                     self.restoreAttempted = true
                     await self.restorePlaybackPositionIfNeeded(to: self.pendingResumePosition, player: player, item: item, token: token)
@@ -578,15 +653,25 @@ final class PlayerViewModel {
             }
         }
         playbackCompletionObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main) { [weak self, weak player, weak item] _ in
-            Task { @MainActor [weak self, weak player, weak item] in
-                guard let self, let player, let item, self.isCurrent(player, item: item, token: token), self.progressGate.ready,
-                      let context = self.activePlaybackContext else { return }
-                let current = player.currentTime().seconds
-                let position = current.isFinite && current >= 0 ? current : self.progressStore.record(for: context)?.positionSeconds ?? 0
-                self.session.ended(request: self.session.request)
-                self.progressGate.ended(token: token)
-                self.progressStore.update(context, position: position, duration: self.mediaDuration, event: .ended)
-                self.progressStore.requestFlush()
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                let eventQueueRevision = self.queue.revision
+                Task { @MainActor [weak self, weak player, weak item] in
+                    guard let self, let player, let item, self.isCurrent(player, item: item, token: token), self.progressGate.ready,
+                          let context = self.activePlaybackContext,
+                          self.queue.consumeEnd(media: token, revision: self.queue.revision) else { return }
+                    let current = player.currentTime().seconds
+                    let position = current.isFinite && current >= 0 ? current : self.progressStore.record(for: context)?.positionSeconds ?? 0
+                    self.session.ended(request: self.session.request)
+                    self.progressGate.ended(token: token)
+                    self.progressStore.update(context, position: position, duration: self.mediaDuration, event: .ended)
+                    self.progressStore.requestFlush()
+                    // 快照迟到不丢弃本集 completed，但不能事后触发自动开播。
+                    if self.queue.revision == eventQueueRevision, self.queueStore.autoAdvance,
+                       let next = self.queue.context(offset: 1, preferred: self.selectedMediaType) {
+                        self.selectPlayback(next, force: true, snapshot: self.queue.snapshot)
+                    }
+                }
             }
         }
 #if os(macOS)
@@ -656,7 +741,7 @@ final class PlayerViewModel {
 
     func retryPlayback() {
         guard let context = currentContext else { return }
-        selectPlayback(context, force: true, wantsPlayback: session.retryWantsPlayback)
+        selectPlayback(context, force: true, wantsPlayback: session.retryWantsPlayback, snapshot: queue.snapshot)
     }
 
     func seek(to position: Double) async {
@@ -940,6 +1025,16 @@ final class PlayerViewModel {
         case 5.0: return "5x"
         default: return String(format: "%.2fx", value)
         }
+    }
+
+    private static func isOfflineError(_ error: Error?) -> Bool {
+        var current = error as NSError?
+        for _ in 0..<5 {
+            guard let error = current else { return false }
+            if error.domain == NSURLErrorDomain && error.code == NSURLErrorNotConnectedToInternet { return true }
+            current = error.userInfo[NSUnderlyingErrorKey] as? NSError
+        }
+        return false
     }
 
     private static func clampAmplification(_ value: Double) -> Double {
