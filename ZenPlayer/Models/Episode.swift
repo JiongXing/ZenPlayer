@@ -27,7 +27,7 @@ struct SpeechDetailData: Codable {
 }
 
 /// 单集条目
-struct EpisodeItem: Codable, Identifiable, Hashable {
+nonisolated struct EpisodeItem: Codable, Identifiable, Hashable {
     let id: Int
     let num: String
     let title: String
@@ -65,7 +65,9 @@ struct EpisodeItem: Codable, Identifiable, Hashable {
     }
 
     static func formatPlaybackDuration(seconds: Double) -> String {
-        let totalSeconds = max(0, Int(seconds.rounded(.down)))
+        // 旧记录允许保留任意有限非负秒数，显示转换不能因此触发 Int 溢出。
+        let finiteSeconds = seconds.isFinite ? max(0, seconds.rounded(.down)) : 0
+        let totalSeconds = finiteSeconds >= Double(Int.max) ? Int.max : Int(finiteSeconds)
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
         let seconds = totalSeconds % 60

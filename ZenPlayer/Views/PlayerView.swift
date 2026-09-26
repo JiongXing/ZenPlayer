@@ -30,6 +30,15 @@ struct PlayerView: View {
                     .frame(maxWidth: .infinity, minHeight: 220)
             }
 
+            ProgressSaveNotice(store: viewModel.progressStore)
+            if viewModel.restoreError {
+                HStack {
+                    Text(L10n.text(.progressRestoreFailed))
+                    Button(L10n.text(.progressRetry)) { Task { await viewModel.retryRestore() } }
+                }
+                .font(.footnote)
+            }
+
             if viewModel.canSwitchMediaType {
                 mediaTypeSwitcher
             }
@@ -50,6 +59,7 @@ struct PlayerView: View {
         .onChange(of: scenePhase) { _, newPhase in
             // 仅在前台活跃态下页面离开才停止播放，避免 PiP 过渡阶段被误停。
             shouldStopOnDisappear = newPhase == .active
+            viewModel.saveForLifecycleChange()
         }
         .onDisappear {
             if shouldStopOnDisappear {
@@ -308,7 +318,7 @@ final class PlayerContainerViewController: UIViewController {
         playerVC.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         playerVC.didMove(toParent: self)
 
-        player.play()
+        // 播放意图由模型在恢复成功后执行。
     }
 
     func configure(player: AVPlayer) {
@@ -319,7 +329,7 @@ final class PlayerContainerViewController: UIViewController {
         if self.player !== player {
             self.player = player
             playerVC.player = player
-            player.play()
+            // 播放意图由模型在恢复成功后执行。
         }
     }
 

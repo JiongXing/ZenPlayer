@@ -1,0 +1,316 @@
+[
+  {
+    "context": {
+      "episode": {
+        "id": 7388,
+        "num": "13-009-0001",
+        "title": "念佛的功德-第1集",
+        "episode": "1",
+        "mp4Url": "mp4/13/13-009/13-009-0001.mp4",
+        "vodUrl": "https://video.cibei.org/360p/13/13-009/13-009-0001/13-009-0001.m3u8",
+        "mp3Url": "https://video.cibei.org/mp3/13/13-009/13-009-0001.mp3",
+        "coverUrl": "https://video.cibei.org/image/13/13-009/13-009-0001.jpg",
+        "textUrl": "https://i.jingzong.org/amtbtv/docs/13-009-0001/txt/zh_TW",
+        "filesize": 235681659,
+        "duration": 5146540
+      },
+      "serverUrl": "https://video.cibei.org/"
+    },
+    "playedAt": 100,
+    "resumePositionSeconds": 120
+  },
+  {
+    "context": {
+      "episode": {
+        "id": 7389,
+        "num": "13-009-0002",
+        "title": "念佛的功德-第2集",
+        "episode": "2",
+        "mp4Url": "mp4/13/13-009/13-009-0002.mp4",
+        "vodUrl": "https://video.cibei.org/360p/13/13-009/13-009-0002/13-009-0002.m3u8",
+        "mp3Url": "https://video.cibei.org/mp3/13/13-009/13-009-0002.mp3",
+        "coverUrl": "https://video.cibei.org/image/13/13-009/13-009-0002.jpg",
+        "textUrl": "https://i.jingzong.org/amtbtv/docs/13-009-0002/txt/zh_TW",
+        "filesize": 265476853,
+        "duration": 5289520
+      },
+      "serverUrl": "https://video.cibei.org/"
+    },
+    "playedAt": 101,
+    "resumePositionSeconds": 121
+  },
+  {
+    "context": {
+      "episode": {
+        "id": 7390,
+        "num": "13-009-0003a",
+        "title": "念佛的功德-第3a集",
+        "episode": "3a",
+        "mp4Url": "mp4/13/13-009/13-009-0003a.mp4",
+        "vodUrl": "https://video.cibei.org/360p/13/13-009/13-009-0003a/13-009-0003a.m3u8",
+        "mp3Url": "https://video.cibei.org/mp3/13/13-009/13-009-0003a.mp3",
+        "coverUrl": "https://video.cibei.org/image/13/13-009/13-009-0003a.jpg",
+        "textUrl": "https://i.jingzong.org/amtbtv/docs/13-009-0003a/txt/zh_TW",
+        "filesize": 130241080,
+        "duration": 2811440
+      },
+      "serverUrl": "https://video.cibei.org/"
+    },
+    "playedAt": 102,
+    "resumePositionSeconds": 122
+  },
+  {
+    "context": {
+      "episode": {
+        "id": 7391,
+        "num": "13-009-0003b",
+        "title": "念佛的功德-第3b集",
+        "episode": "3b",
+        "mp4Url": "mp4/13/13-009/13-009-0003b.mp4",
+        "vodUrl": "https://video.cibei.org/360p/13/13-009/13-009-0003b/13-009-0003b.m3u8",
+        "mp3Url": "https://video.cibei.org/mp3/13/13-009/13-009-0003b.mp3",
+        "coverUrl": "https://video.cibei.org/image/13/13-009/13-009-0003b.jpg",
+        "textUrl": "https://i.jingzong.org/amtbtv/docs/13-009-0003b/txt/zh_TW",
+        "filesize": 137776873,
+        "duration": 2890620
+      },
+      "serverUrl": "https://video.cibei.org/"
+    },
+    "playedAt": 103,
+    "resumePositionSeconds": 123
+  },
+  {
+    "context": {
+      "episode": {
+        "id": 7392,
+        "num": "13-009-0004",
+        "title": "念佛的功德-第4集",
+        "episode": "4",
+        "mp4Url": "mp4/13/13-009/13-009-0004.mp4",
+        "vodUrl": "https://video.cibei.org/360p/13/13-009/13-009-0004/13-009-0004.m3u8",
+        "mp3Url": "https://video.cibei.org/mp3/13/13-009/13-009-0004.mp3",
+        "coverUrl": "https://video.cibei.org/image/13/13-009/13-009-0004.jpg",
+        "textUrl": "https://i.jingzong.org/amtbtv/docs/13-009-0004/txt/zh_TW",
+        "filesize": 287466617,
+        "duration": 5532060
+      },
+      "serverUrl": "https://video.cibei.org/"
+    },
+    "playedAt": 104,
+    "resumePositionSeconds": 124
+  },
+  {
+    "context": {
+      "episode": {
+        "id": 20831,
+        "num": "13-001-0001a",
+        "title": "如何了脫生死─當生成就之佛道-第1a集",
+        "episode": "1a",
+        "mp4Url": "mp3/13/13-001/13-001-0001a.mp3",
+        "vodUrl": "https://video.cibei.org/mp3/13/13-001/13-001-0001a.mp3",
+        "coverUrl": "https://video.cibei.org/image/13/13-001/13-001-0001a.mp3",
+        "textUrl": "https://i.jingzong.org/amtbtv/docs/13-001-0001a/txt/zh_TW",
+        "filesize": 58117473,
+        "duration": 3632330
+      },
+      "serverUrl": "https://video.cibei.org/"
+    },
+    "playedAt": 105,
+    "resumePositionSeconds": 125
+  },
+  {
+    "context": {
+      "episode": {
+        "id": 20832,
+        "num": "13-001-0001b",
+        "title": "如何了脫生死─當生成就之佛道-第1b集",
+        "episode": "1b",
+        "mp4Url": "mp3/13/13-001/13-001-0001b.mp3",
+        "vodUrl": "https://video.cibei.org/mp3/13/13-001/13-001-0001b.mp3",
+        "coverUrl": "https://video.cibei.org/image/13/13-001/13-001-0001b.mp3",
+        "textUrl": "https://i.jingzong.org/amtbtv/docs/13-001-0001b/txt/zh_TW",
+        "filesize": 51264195,
+        "duration": 3204000
+      },
+      "serverUrl": "https://video.cibei.org/"
+    },
+    "playedAt": 106,
+    "resumePositionSeconds": 126
+  },
+  {
+    "context": {
+      "episode": {
+        "id": 20833,
+        "num": "13-001-0002a",
+        "title": "如何了脫生死─當生成就之佛道-第2a集",
+        "episode": "2a",
+        "mp4Url": "mp3/13/13-001/13-001-0002a.mp3",
+        "vodUrl": "https://video.cibei.org/mp3/13/13-001/13-001-0002a.mp3",
+        "coverUrl": "https://video.cibei.org/image/13/13-001/13-001-0002a.mp3",
+        "textUrl": "https://i.jingzong.org/amtbtv/docs/13-001-0002a/txt/zh_TW",
+        "filesize": 58642012,
+        "duration": 3665120
+      },
+      "serverUrl": "https://video.cibei.org/"
+    },
+    "playedAt": 107,
+    "resumePositionSeconds": 127
+  },
+  {
+    "context": {
+      "episode": {
+        "id": 20834,
+        "num": "13-001-0002b",
+        "title": "如何了脫生死─當生成就之佛道-第2b集",
+        "episode": "2b",
+        "mp4Url": "mp3/13/13-001/13-001-0002b.mp3",
+        "vodUrl": "https://video.cibei.org/mp3/13/13-001/13-001-0002b.mp3",
+        "coverUrl": "https://video.cibei.org/image/13/13-001/13-001-0002b.mp3",
+        "textUrl": "https://i.jingzong.org/amtbtv/docs/13-001-0002b/txt/zh_TW",
+        "filesize": 50916454,
+        "duration": 3182270
+      },
+      "serverUrl": "https://video.cibei.org/"
+    },
+    "playedAt": 108,
+    "resumePositionSeconds": 128
+  },
+  {
+    "context": {
+      "episode": {
+        "id": 20835,
+        "num": "13-001-0003a",
+        "title": "如何了脫生死─當生成就之佛道-第3a集",
+        "episode": "3a",
+        "mp4Url": "mp3/13/13-001/13-001-0003a.mp3",
+        "vodUrl": "https://video.cibei.org/mp3/13/13-001/13-001-0003a.mp3",
+        "coverUrl": "https://video.cibei.org/image/13/13-001/13-001-0003a.mp3",
+        "textUrl": "https://i.jingzong.org/amtbtv/docs/13-001-0003a/txt/zh_TW",
+        "filesize": 58368665,
+        "duration": 3648030
+      },
+      "serverUrl": "https://video.cibei.org/"
+    },
+    "playedAt": 109,
+    "resumePositionSeconds": 129
+  },
+  {
+    "context": {
+      "episode": {
+        "id": 20836,
+        "num": "13-001-0003b",
+        "title": "如何了脫生死─當生成就之佛道-第3b集",
+        "episode": "3b",
+        "mp4Url": "mp3/13/13-001/13-001-0003b.mp3",
+        "vodUrl": "https://video.cibei.org/mp3/13/13-001/13-001-0003b.mp3",
+        "coverUrl": "https://video.cibei.org/image/13/13-001/13-001-0003b.mp3",
+        "textUrl": "https://i.jingzong.org/amtbtv/docs/13-001-0003b/txt/zh_TW",
+        "filesize": 51028885,
+        "duration": 3189300
+      },
+      "serverUrl": "https://video.cibei.org/"
+    },
+    "playedAt": 110,
+    "resumePositionSeconds": 130
+  },
+  {
+    "context": {
+      "episode": {
+        "id": 7666,
+        "num": "17-013-0001",
+        "title": "認識佛教-第1集",
+        "episode": "1",
+        "mp4Url": "mp4/17/17-013/17-013-0001.mp4",
+        "vodUrl": "https://video.cibei.org/360p/17/17-013/17-013-0001/17-013-0001.m3u8",
+        "mp3Url": "https://video.cibei.org/mp3/17/17-013/17-013-0001.mp3",
+        "coverUrl": "https://video.cibei.org/image/17/17-013/17-013-0001.jpg",
+        "textUrl": "https://i.jingzong.org/amtbtv/docs/17-013-0001/txt/zh_TW",
+        "filesize": 179608598,
+        "duration": 5379140
+      },
+      "serverUrl": "https://video.cibei.org/"
+    },
+    "playedAt": 111,
+    "resumePositionSeconds": 131
+  },
+  {
+    "context": {
+      "episode": {
+        "id": 7667,
+        "num": "17-013-0002",
+        "title": "認識佛教-第2集",
+        "episode": "2",
+        "mp4Url": "mp4/17/17-013/17-013-0002.mp4",
+        "vodUrl": "https://video.cibei.org/360p/17/17-013/17-013-0002/17-013-0002.m3u8",
+        "mp3Url": "https://video.cibei.org/mp3/17/17-013/17-013-0002.mp3",
+        "coverUrl": "https://video.cibei.org/image/17/17-013/17-013-0002.jpg",
+        "textUrl": "https://i.jingzong.org/amtbtv/docs/17-013-0002/txt/zh_TW",
+        "filesize": 180847089,
+        "duration": 5446430
+      },
+      "serverUrl": "https://video.cibei.org/"
+    },
+    "playedAt": 112,
+    "resumePositionSeconds": 132
+  },
+  {
+    "context": {
+      "episode": {
+        "id": 7668,
+        "num": "17-013-0003",
+        "title": "認識佛教-第3集",
+        "episode": "3",
+        "mp4Url": "mp4/17/17-013/17-013-0003.mp4",
+        "vodUrl": "https://video.cibei.org/360p/17/17-013/17-013-0003/17-013-0003.m3u8",
+        "mp3Url": "https://video.cibei.org/mp3/17/17-013/17-013-0003.mp3",
+        "coverUrl": "https://video.cibei.org/image/17/17-013/17-013-0003.jpg",
+        "textUrl": "https://i.jingzong.org/amtbtv/docs/17-013-0003/txt/zh_TW",
+        "filesize": 178542304,
+        "duration": 5325540
+      },
+      "serverUrl": "https://video.cibei.org/"
+    },
+    "playedAt": 113,
+    "resumePositionSeconds": 133
+  },
+  {
+    "context": {
+      "episode": {
+        "id": 7669,
+        "num": "17-013-0004",
+        "title": "認識佛教-第4集",
+        "episode": "4",
+        "mp4Url": "mp4/17/17-013/17-013-0004.mp4",
+        "vodUrl": "https://video.cibei.org/360p/17/17-013/17-013-0004/17-013-0004.m3u8",
+        "mp3Url": "https://video.cibei.org/mp3/17/17-013/17-013-0004.mp3",
+        "coverUrl": "https://video.cibei.org/image/17/17-013/17-013-0004.jpg",
+        "textUrl": "https://i.jingzong.org/amtbtv/docs/17-013-0004/txt/zh_TW",
+        "filesize": 188265922,
+        "duration": 5524710
+      },
+      "serverUrl": "https://video.cibei.org/"
+    },
+    "playedAt": 114,
+    "resumePositionSeconds": 134
+  },
+  {
+    "context": {
+      "episode": {
+        "id": 7670,
+        "num": "17-013-0005",
+        "title": "認識佛教-第5集",
+        "episode": "5",
+        "mp4Url": "mp4/17/17-013/17-013-0005.mp4",
+        "vodUrl": "https://video.cibei.org/360p/17/17-013/17-013-0005/17-013-0005.m3u8",
+        "mp3Url": "https://video.cibei.org/mp3/17/17-013/17-013-0005.mp3",
+        "coverUrl": "https://video.cibei.org/image/17/17-013/17-013-0005.jpg",
+        "textUrl": "https://i.jingzong.org/amtbtv/docs/17-013-0005/txt/zh_TW",
+        "filesize": 115399905,
+        "duration": 3452020
+      },
+      "serverUrl": "https://video.cibei.org/"
+    },
+    "playedAt": 115,
+    "resumePositionSeconds": 135
+  }
+]

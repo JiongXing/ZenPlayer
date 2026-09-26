@@ -1,14 +1,14 @@
 ## Context
 
-状态：推荐方案／待评审；没有实现代码或执行迁移。动机和现状证据见 [proposal.md](proposal.md)，行为合同见 [playback-progress/spec.md](specs/playback-progress/spec.md)。当前 App target 为 Swift 5、iOS 17／macOS 14，MVVM，UI 状态在主 actor；没有 XCTest target。
+状态：已批准／验证中；执行证据见 verification.md。动机和现状证据见 [proposal.md](proposal.md)，行为合同见 [playback-progress/spec.md](specs/playback-progress/spec.md)。当前 App target 为 Swift 5、iOS 17／macOS 14，MVVM，UI 状态在主 actor；已加入独立 XCTest target。
 
-当前 `RecentPlaybackStore` 是私有初始化的主 actor 单例，以 `UserDefaults` 的一段 JSON 数组保存最近和进度；`PlayerViewModel` 直接依赖该单例。播放器已有时间观察、恢复 seek 与停止保存，优先围绕这些接口修正。`PlaybackContext` 目前定义于 `PlayerViewModel.swift`，含单集、原始服务器地址及可选媒体类型，没有系列快照。`RecentPlaybackListView` 直接读取 `records`；下载和历史入口各自创建播放页。
+规划时基线：`RecentPlaybackStore` 是私有初始化的主 actor 单例，以 `UserDefaults` 的一段 JSON 数组保存最近和进度；`PlayerViewModel` 直接依赖该单例。播放器已有时间观察、恢复 seek 与停止保存，优先围绕这些接口修正。`PlaybackContext` 规划时定义于 `PlayerViewModel.swift`（实施后原样移至 `Models/PlaybackContext.swift`），含单集、原始服务器地址及可选媒体类型，没有系列快照。`RecentPlaybackListView` 直接读取 `records`；下载和历史入口各自创建播放页。
 
 ## Goals / Non-Goals
 
 **Goals:** 用少量独立职责完成可测试的长期存储、兼容迁移和最小播放器适配；故障必须可观测、可重试、不能通过清空数据“恢复”。保存成功与内存更新明确区分。
 
-**Non-Goals:** 不在 M0 移动播放器所有权、统一全部播放路由或建立队列。只增加保护进度必需的媒体请求身份检查，不预建 M1 的完整状态机。新文件、字段、接口名均为拟定，不表示已存在。
+**Non-Goals:** 不在 M0 移动播放器所有权、统一全部播放路由或建立队列。只增加保护进度必需的媒体请求身份检查，不预建 M1 的完整状态机。已实现文件与验证边界见 verification.md。
 
 ## Decisions
 
@@ -18,7 +18,7 @@
 
 理由：目前只需按键查询、更新一个单集及排序最近时间。逐条文件天然隔离单条损坏，每 5 秒只改当前记录，不重写全部历史或队列。继续扩大 UserDefaults 数组无法提供可靠的写入失败反馈；单个 Codable 文件仍可能因一条损坏全量解码失败；数据库可以提供事务，但目前不值得增加迁移和集成面。启动枚举会随历史增长，先以大样本测量，不用自动淘汰解决规模问题。
 
-| 拟定字段 | 规则 |
+| 记录字段 | 规则 |
 | --- | --- |
 | `schemaVersion`, `legacyKey` | 版本化解码；旧键严格等于 `episode.id + "|" + serverUrl`，不改 URL |
 | `context` | 保存现有 `EpisodeItem` 和原始 serverUrl；可选媒体偏好沿用原 Codable 兼容性 |
@@ -66,11 +66,11 @@
 
 ### 4. 模块边界与后续兼容
 
-| 现有／拟定模块 | M0 接入与限制 |
+| 模块 | M0 接入与限制 |
 | --- | --- |
 | `ZenPlayer/Models/RecentPlaybackRecord.swift` | 保留旧解码和 ID 规则用于迁移；展示适配新状态及未知时长，不能继续靠比例判断完成 |
 | `ZenPlayer/Services/RecentPlaybackStore.swift` | 替换为长期仓库查询适配；移除生产调用链中旧 load 异常删键行为 |
-| 拟定 `Models/PlaybackProgress.swift`、`Services/PlaybackProgressStore.swift`、存储／迁移组件 | 单集模型、纯映射、可注入 I/O、独立单元测试；文件拆分以职责为准，不扩成框架 |
+| `Models/PlaybackProgress.swift`、`Services/PlaybackProgressStore.swift`、存储／迁移组件 | 单集模型、纯映射、可注入 I/O、独立单元测试；文件拆分以职责为准，不扩成框架 |
 | `ZenPlayer/ViewModels/PlayerViewModel.swift` | 注入、门控、时钟、当前媒体身份、动作保存；后续 M1 可继续调用同样的查／存／完成接口 |
 | `ZenPlayer/Views/PlayerView.swift`、`RecentPlaybackListView.swift` | 转交生命周期、原生控件事件和非阻断失败提示；不新增迷你条／首页卡 |
 | `ZenPlayer/Localization/`、`Localizable.xcstrings` | 获批后只加必要的繁体保存／恢复反馈 |
@@ -79,7 +79,7 @@
 
 ### 5. 自动化与测试注入
 
-获批后新增最小 `ZenPlayerTests/` XCTest target，并关联 `ZenPlayer` scheme 的 Test action，覆盖 iOS Simulator 与 macOS。共享纯 Swift 测试数据；如 app-hosted 环境有隔离成本，仅将模型和持久化组件作为独立测试编译源，不复制实现、不引入另一工作流。本轮不更改 pbxproj 或创建测试代码。
+已新增最小 `ZenPlayerTests/` XCTest target，并关联 `ZenPlayer` scheme 的 Test action，覆盖 iOS Simulator 与 macOS。共享纯 Swift 测试数据；如 app-hosted 环境有隔离成本，仅将模型和持久化组件作为独立测试编译源，不复制实现、不引入另一工作流。已配置独立无 App host 的测试 bundle，直接编译生产模型／存储／门控源文件，测试数据目录完全隔离。
 
 注入临时根目录、专用 `UserDefaults(suiteName:)`、可控时钟、故障文件适配器和播放器事件输入。用实际临时文件验证原子写／重启重读，用故障注入覆盖备份／替换／读回／标记失败，用事件序列验证恢复门控、完成重听、过期回调和暂停切源；不以镜像实现的测试替代行为断言。测试永不访问真实 App 数据容器。
 

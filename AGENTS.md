@@ -67,6 +67,6 @@ xcodebuild -project ZenPlayer.xcodeproj -scheme ZenPlayer -destination 'platform
 
 目的地不可用时用 `xcodebuild -showdestinations -project ZenPlayer.xcodeproj -scheme ZenPlayer` 选择现有兼容模拟器并记录实际目的地，不为验证修改部署版本。仅需查工程结构时用 `xcodebuild -list -project ZenPlayer.xcodeproj`；SPM 解析／查询不是编译证据。
 
-当前基线未提交 XCTest target；测试增补按任务风险决定，优先 `ZenPlayerTests/`、按行为命名（如 `testPlayerFallsBackToRemoteURL()`），不为每次小修搭测试框架。已有测试不适用或未运行须说明原因。内容、基线和相关依赖未变时复用本轮证据，修复后只重跑受影响检查及必需门槛。
+已配置 `ZenPlayerTests` 独立 XCTest target（无 App host），由 ZenPlayer scheme Test action 运行；测试增补按任务风险决定，按行为命名（如 `testPlayerFallsBackToRemoteURL()`），不为每次小修搭测试框架。已有测试不适用或未运行须说明原因。内容、基线和相关依赖未变时复用本轮证据，修复后只重跑受影响检查及必需门槛。
 
 收尾审查 `git diff --check`、暂存／未暂存差异及新增文件内容（`git diff` 不含未跟踪内容）。报告改了什么、实际检查结果、未运行项、剩余风险和下一步；明确区分规格校验、编译、自动化、真机、提交和推送。满足当前授权范围后结束，不机械进入下一阶段。

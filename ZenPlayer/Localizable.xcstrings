@@ -905,6 +905,66 @@
           }
         }
       }
+    },
+    "progress.completed": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已聽完"
+          }
+        }
+      }
+    },
+    "progress.unknown_duration": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已收聽 %@ · 總時長未知"
+          }
+        }
+      }
+    },
+    "progress.save_failed": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "進度暫未儲存，請檢查可用空間"
+          }
+        }
+      }
+    },
+    "progress.recovery_issue": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "部分收聽記錄尚待修復，原始資料已保留"
+          }
+        }
+      }
+    },
+    "progress.restore_failed": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未能恢復收聽位置，原進度已保留"
+          }
+        }
+      }
+    },
+    "progress.retry": {
+      "localizations": {
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重試"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

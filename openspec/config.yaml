@@ -8,7 +8,7 @@ context: |
   旧存储键 recentPlayback.records，身份为 episode.id + "|" + 原始 serverUrl；迁移保留旧数据及身份关系。
   文档正文简体中文；新增 App 文案繁体中文；保留 Requirement/Scenario/SHALL/WHEN/THEN 语法。
   理解应用代码先使用已有 CodeGraph 索引；配置和文档可直接读取，图谱不替代编译或运行验证。
-  基线尚无 XCTest target，涉及行为／迁移的变更须规划可执行验证；测试设施随获准任务建立，不为纯文档任务构建 App。
+  已有 ZenPlayerTests 独立 XCTest target，直接编译生产模型／持久化／门控源文件；使用隔离目录和 UserDefaults，不启动真实 App 或修改用户数据。
   构建及交付门槛见 AGENTS.md，运行前核实 target、scheme、测试和可用目的地。
   主规格只在实施、验证及批准后同步；提案齐全或严格校验通过不等于业务完成。
 rules:

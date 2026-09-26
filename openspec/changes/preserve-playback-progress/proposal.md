@@ -2,7 +2,7 @@
 
 现有断点续播与最近 10 条展示共用一份数据，第 11 条起可能挤掉旧进度；解码或编码异常还会删除整个旧键。M0 先保护长期收听记录，供后续全局会话和首页续听复用，不等待 F1 重构。
 
-状态：**Planned · 待评审**。本提案仅规划，尚未实施／验收。产品依据：[PRD](../../../Documents/PRD/prd.md) F2-03～F2-06、D-01／D-02、Q-01／Q-04；阶段入口：[Roadmap](../../../ROADMAP.md)。
+状态：**In Verification · 已批准**。已完成代码接入，验收尚不完整；逐项证据见 verification.md。产品依据：[PRD](../../../Documents/PRD/prd.md) F2-03～F2-06、D-01／D-02、Q-01／Q-04；阶段入口：[Roadmap](../../../ROADMAP.md)。
 
 ## What Changes
 
@@ -10,7 +10,7 @@
 - 保留 `recentPlayback.records` 和 `episode.id + "|" + serverUrl` 原始识别关系；逐条容错、可重入迁移、校验后标记完成，保留旧数据备份。
 - 对单条损坏、空间不足、保存失败提供隔离、保留原文件、非阻断提示和重试；不承诺找回旧版已经淘汰或无法解析的历史。
 - 复用当前恢复链路，补齐动作保存、准备／恢复失败防零覆盖、独立完成状态、实际重听后更新、媒体切换抓取即时位置。
-- 最小适配播放器与历史列表，保留媒体偏好及可选系列关联；增加独立测试入口和迁移／故障／恢复测试（仅在后续获批实施）。
+- 最小适配播放器与历史列表，保留媒体偏好及可选系列关联；增加独立测试入口和迁移／故障／恢复测试（已获批准，实施证据见 verification.md）。
 
 ### 当前证据与非目标
 
@@ -38,8 +38,8 @@
 
 ## Impact
 
-主要涉及 `RecentPlaybackStore`／`RecentPlaybackRecord`、`PlayerViewModel` 保存恢复、`PlayerView` 的生命周期与现有系统控件事件接入、`RecentPlaybackListView` 的数据适配，以及未来新增 `Models/PlaybackProgress`、`Services/PlaybackProgressStore` 和存储实现（名称是设计建议，文件尚不存在）。失败提示后续涉及 `Localization`／字符串资源；本轮均不改动。
+主要涉及 `RecentPlaybackStore`／`RecentPlaybackRecord`、`PlayerViewModel` 保存恢复、`PlayerView` 的生命周期与现有系统控件事件接入、`RecentPlaybackListView` 的数据适配，以及新增 `Models/PlaybackProgress`、`Services/PlaybackProgressStore` 和存储／迁移实现。`Localization`／字符串资源已接入必要保存／恢复反馈。
 
-计划在获批实施时建立最小 `ZenPlayerTests` target；不引入第三方持久化依赖或后端。原始旧键继续保留，旧 App 降级不自动读取新存储；故障优先前向修复。
+已建立最小 `ZenPlayerTests` target；不引入第三方持久化依赖或后端。原始旧键继续保留，旧 App 降级不自动读取新存储；故障优先前向修复。
 
 验收主线 AT-16／AT-17／AT-18／AT-20／AT-21，加 AT-19 的删除下载子断言。详细追踪和跨阶段边界见 [verification.md](verification.md)，实施唯一清单为 [tasks.md](tasks.md)，推荐方案见 [design.md](design.md)。

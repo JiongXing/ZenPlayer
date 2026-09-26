@@ -17,6 +17,7 @@ struct RecentPlaybackListView: View {
         GeometryReader { proxy in
             ScrollView {
                 VStack(spacing: 20) {
+                    ProgressSaveNotice(store: recentPlaybackStore.progressStore)
                     if recentPlaybackStore.records.isEmpty {
                         emptyStateView(containerHeight: proxy.size.height)
                     } else {

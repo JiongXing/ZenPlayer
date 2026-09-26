@@ -24,9 +24,9 @@ PRD 来源：用户附件 `/Users/jxing/Desktop/ZenPlayer_PRD_v1.0.md`，原样�
 - 依赖：不等待 M1；获批后先建立测试 target，验证旧键身份，再迁移。
 - PRD：F2-03～F2-06、D-01／D-02 进度子集、Q-01／Q-04 相关约束，F1-04 切源保护子集。
 - 验收：AT-16／AT-17／AT-18／AT-20／AT-21；AT-19 仅删除下载；AT-11 切源和 AT-06 保存子断言。其余跨阶段部分见验证追踪表。
-- 状态：**Planned**；规划：**待评审**。阻塞：实施尚未获批；无工具阻塞。身份唯一性和平台控件事件为实施验证门槛。
+- 状态：**In Verification**；规划：**已批准**。代码及测试已接入，6/13 项满足完整完成条件。阻塞：iPhone Developer Mode 未开启；原生控件／后台／PiP、升级和旧能力操作回归待验。
 - 变更：[preserve-playback-progress](openspec/changes/preserve-playback-progress/proposal.md)；[设计](openspec/changes/preserve-playback-progress/design.md)；[规格](openspec/changes/preserve-playback-progress/specs/playback-progress/spec.md)。
-- 验证证据：功能证据暂无；[规划检查和待验计划](openspec/changes/preserve-playback-progress/verification.md)。文档完成不改变阶段状态。
+- 验证证据：两端构建与隔离自动化已通过，实际测试数量及未验项见[验证记录](openspec/changes/preserve-playback-progress/verification.md)。文档完成不改变阶段状态。
 
 ## Next · M1 统一会话
 

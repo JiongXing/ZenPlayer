@@ -7,10 +7,12 @@
 
 import Foundation
 
-struct RecentPlaybackRecord: Codable, Identifiable, Hashable {
+nonisolated struct RecentPlaybackRecord: Codable, Identifiable, Hashable {
     let context: PlaybackContext
     let playedAt: Date
     let resumePositionSeconds: Double
+    var completionState: PlaybackProgress.State?
+    var trustedDurationSeconds: Double?
 
     init(
         context: PlaybackContext,
@@ -27,14 +29,15 @@ struct RecentPlaybackRecord: Codable, Identifiable, Hashable {
     }
 
     var boundedResumePositionSeconds: Double {
-        let totalDuration = context.episode.playbackDurationSeconds
+        let totalDuration = trustedDurationSeconds ?? context.episode.playbackDurationSeconds
         let clamped = max(0, resumePositionSeconds)
         guard totalDuration > 0 else { return clamped }
         return min(clamped, totalDuration)
     }
 
     var restorableResumePositionSeconds: Double {
-        let totalDuration = context.episode.playbackDurationSeconds
+        if let completionState { return completionState == .completed ? 0 : boundedResumePositionSeconds }
+        let totalDuration = trustedDurationSeconds ?? context.episode.playbackDurationSeconds
         guard totalDuration > 0 else { return boundedResumePositionSeconds }
         if boundedResumePositionSeconds >= totalDuration {
             return 0
@@ -43,7 +46,7 @@ struct RecentPlaybackRecord: Codable, Identifiable, Hashable {
     }
 
     var progressFraction: Double {
-        let totalDuration = context.episode.playbackDurationSeconds
+        let totalDuration = trustedDurationSeconds ?? context.episode.playbackDurationSeconds
         guard totalDuration > 0 else { return 0 }
         return boundedResumePositionSeconds / totalDuration
     }
@@ -52,13 +55,23 @@ struct RecentPlaybackRecord: Codable, Identifiable, Hashable {
         Int((progressFraction * 100).rounded())
     }
 
-    var progressSummaryText: String {
-        L10n.string(
+    @MainActor var progressSummaryText: String {
+        if completionState == .completed { return L10n.string(.progressCompleted) }
+        if (trustedDurationSeconds ?? context.episode.playbackDurationSeconds) <= 0 {
+            return L10n.string(.progressUnknownDuration, EpisodeItem.formatPlaybackDuration(seconds: boundedResumePositionSeconds))
+        }
+        return L10n.string(
             .recentPlaybackProgressSummary,
             progressPercentage,
             EpisodeItem.formatPlaybackDuration(seconds: boundedResumePositionSeconds),
-            context.episode.formattedDuration
+            EpisodeItem.formatPlaybackDuration(seconds: trustedDurationSeconds ?? context.episode.playbackDurationSeconds)
         )
+    }
+
+    init(progress: PlaybackProgress) {
+        self.init(context: progress.context, playedAt: progress.lastListenedAt ?? progress.updatedAt, resumePositionSeconds: progress.positionSeconds)
+        completionState = progress.state
+        trustedDurationSeconds = progress.durationSeconds
     }
 
     static func recordID(for context: PlaybackContext) -> String {

@@ -43,6 +43,13 @@ enum L10nKey: String, CaseIterable {
     case episodeResumeDownload = "episode.resume_download"
     case episodeCancelDownload = "episode.cancel_download"
 
+    case progressSaveFailed = "progress.save_failed"
+    case progressRecoveryIssue = "progress.recovery_issue"
+    case progressRestoreFailed = "progress.restore_failed"
+    case progressRetry = "progress.retry"
+    case progressCompleted = "progress.completed"
+    case progressUnknownDuration = "progress.unknown_duration"
+
     case playerLoading = "player.loading"
     case playerCannotPlay = "player.cannot_play"
     case playerVoiceDenoise = "player.voice_denoise"

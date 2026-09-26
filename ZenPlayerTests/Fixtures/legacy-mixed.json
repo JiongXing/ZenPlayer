@@ -1,0 +1,85 @@
+[
+  {
+    "context": {
+      "episode": {
+        "id": 7388,
+        "num": "13-009-0001",
+        "title": "念佛的功德-第1集",
+        "episode": "1",
+        "mp4Url": "mp4/13/13-009/13-009-0001.mp4",
+        "vodUrl": "https://video.cibei.org/360p/13/13-009/13-009-0001/13-009-0001.m3u8",
+        "mp3Url": "https://video.cibei.org/mp3/13/13-009/13-009-0001.mp3",
+        "coverUrl": "https://video.cibei.org/image/13/13-009/13-009-0001.jpg",
+        "textUrl": "https://i.jingzong.org/amtbtv/docs/13-009-0001/txt/zh_TW",
+        "filesize": 235681659,
+        "duration": 5146540
+      },
+      "serverUrl": "https://video.cibei.org/"
+    },
+    "playedAt": 100,
+    "resumePositionSeconds": 120
+  },
+  {
+    "context": {
+      "episode": {
+        "id": 7389,
+        "num": "13-009-0002",
+        "title": "念佛的功德-第2集",
+        "episode": "2",
+        "mp4Url": "mp4/13/13-009/13-009-0002.mp4",
+        "vodUrl": "https://video.cibei.org/360p/13/13-009/13-009-0002/13-009-0002.m3u8",
+        "mp3Url": "https://video.cibei.org/mp3/13/13-009/13-009-0002.mp3",
+        "coverUrl": "https://video.cibei.org/image/13/13-009/13-009-0002.jpg",
+        "textUrl": "https://i.jingzong.org/amtbtv/docs/13-009-0002/txt/zh_TW",
+        "filesize": 265476853,
+        "duration": 5289520
+      },
+      "serverUrl": "https://video.cibei.org/"
+    },
+    "playedAt": 101
+  },
+  {
+    "context": {
+      "episode": {
+        "id": 7388,
+        "num": "13-009-0001",
+        "title": "念佛的功德-第1集",
+        "episode": "1",
+        "mp4Url": "mp4/13/13-009/13-009-0001.mp4",
+        "vodUrl": "https://video.cibei.org/360p/13/13-009/13-009-0001/13-009-0001.m3u8",
+        "mp3Url": "https://video.cibei.org/mp3/13/13-009/13-009-0001.mp3",
+        "coverUrl": "https://video.cibei.org/image/13/13-009/13-009-0001.jpg",
+        "textUrl": "https://i.jingzong.org/amtbtv/docs/13-009-0001/txt/zh_TW",
+        "filesize": 235681659,
+        "duration": 5146540
+      },
+      "serverUrl": "https://video.cibei.org/"
+    },
+    "playedAt": 200,
+    "resumePositionSeconds": 155
+  },
+  {
+    "context": {},
+    "playedAt": 0
+  },
+  {
+    "context": {
+      "episode": {
+        "id": 7390,
+        "num": "13-009-0003a",
+        "title": "念佛的功德-第3a集",
+        "episode": "3a",
+        "mp4Url": "mp4/13/13-009/13-009-0003a.mp4",
+        "vodUrl": "https://video.cibei.org/360p/13/13-009/13-009-0003a/13-009-0003a.m3u8",
+        "mp3Url": "https://video.cibei.org/mp3/13/13-009/13-009-0003a.mp3",
+        "coverUrl": "https://video.cibei.org/image/13/13-009/13-009-0003a.jpg",
+        "textUrl": "https://i.jingzong.org/amtbtv/docs/13-009-0003a/txt/zh_TW",
+        "filesize": 130241080,
+        "duration": 0
+      },
+      "serverUrl": "https://video.cibei.org/"
+    },
+    "playedAt": 102,
+    "resumePositionSeconds": 122
+  }
+]

@@ -53,14 +53,14 @@ ZenPlayer/
 - `Category`: top-level classification
 - `Series`: lecture series under a category
 - `Episode`: playable item with media URLs
-- `PlaybackContext`: `EpisodeItem + serverUrl + preferredMediaType?`, currently defined in `ViewModels/PlayerViewModel.swift`. Its navigation `id` is not the legacy progress key.
+- `PlaybackContext`: `EpisodeItem + serverUrl + preferredMediaType?`, defined in `Models/PlaybackContext.swift`. Its navigation `id` is not the legacy progress key.
 
 ## Playback and data boundaries
 
 - Useful CodeGraph queries: `reloadCurrentPlayback restorePlaybackPositionIfNeeded persistPlaybackProgress`, `RecentPlaybackStore RecentPlaybackRecord`, `completedFileURL removeCompletedDownload`.
 - Playback currently belongs to `PlayerView`'s model. History and completed-download views also construct a player page directly; root value routes are not the only entry points. A future global session must account for those paths.
 - Legacy progress uses UserDefaults `recentPlayback.records`; `RecentPlaybackRecord.recordID` is `episode.id + "|" + raw serverUrl`. Do not normalize that URL, use title/episode number as identity, or confuse the progress key with download keys (`episodeId_mp3` / `episodeId_mp4`).
-- Existing progress and recent display share a ten-record store. Long-term storage, explicit completion, migration protection and a global queue are planned capabilities, not established implementation. Read the active change before touching this boundary.
+- M0 now uses `PlaybackProgressStore` with per-record atomic files and backups, explicit completion, and legacy migration; `RecentPlaybackStore` only adapts its queries to the existing pages. Recent display is limited to ten, long-term records are not evicted. Device and UI acceptance remain tracked in the active change; a global queue is still outside M0.
 - Media resolution: audio is local mp3 then remote mp3 (including existing audio-in-video-field fallback); video is local mp4 then remote mp4/vod. Audio Tap failure falls back to raw AVPlayer. Keep these fallbacks when changing resume or switching behavior.
 - Observe the captured media/request identity across async prepare, seek, tick and completion callbacks. Releasing observers or using weak self alone does not invalidate already queued work.
 - Download deletion and invalid-file cleanup own download artifacts, not listening progress. iOS background downloads and macOS save-panel/security-scoped access have different lifecycles; test the affected platform paths.
