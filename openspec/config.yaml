@@ -1,0 +1,34 @@
+schema: spec-driven
+context: |
+  ZenPlayer：Swift 5、SwiftUI、AVFoundation/AVKit，MVVM + Services，UI 状态 @MainActor/@Observable。
+  App target 最低 iOS 17 / macOS 14；保留值路由和本地媒体优先、远端回退、RNNoise 失败回退原声。
+  产品唯一基线 Documents/PRD/prd.md；阶段入口 ROADMAP.md；执行规则 AGENTS.md。
+  工具流程按需读取 Documents/Development/agent-workflow.md；具体阶段、范围与授权以 Roadmap、当前 change 和用户指令为准。
+  产品优先级 F1 → F2 → F3；工程里程碑 M0 → M1 → M2 → M3 → M4，不等于 App 发布版本。
+  旧存储键 recentPlayback.records，身份为 episode.id + "|" + 原始 serverUrl；迁移保留旧数据及身份关系。
+  文档正文简体中文；新增 App 文案繁体中文；保留 Requirement/Scenario/SHALL/WHEN/THEN 语法。
+  理解应用代码先使用已有 CodeGraph 索引；配置和文档可直接读取，图谱不替代编译或运行验证。
+  基线尚无 XCTest target，涉及行为／迁移的变更须规划可执行验证；测试设施随获准任务建立，不为纯文档任务构建 App。
+  构建及交付门槛见 AGENTS.md，运行前核实 target、scheme、测试和可用目的地。
+  主规格只在实施、验证及批准后同步；提案齐全或严格校验通过不等于业务完成。
+rules:
+  proposal:
+    - 关联 PRD 条目及当前代码符号；分清发现实现、目标与待验证假设，明确非目标。
+  specs:
+    - 只描述可观察行为；首次能力使用 ADDED，修改已有需求使用完整 MODIFIED；SHALL/WHEN/THEN 和四级 Scenario 标题遵循 schema。
+    - 只覆盖本变更范围；涉及进度／迁移时明确旧键保留、幂等、损坏隔离、失败保护和防零覆盖；同步时主规格使用主规格格式。
+  design:
+    - 按风险展开最小必要方案和替代方案；涉及数据／异步时说明原子性、迁移恢复、所有权、请求身份和测试注入。
+    - 对跨阶段验收拆分子断言，保留后续阶段责任，不静默缩减 PRD。
+  tasks:
+    - 当前 change 只有本文件作为实施清单；稳定编号、完成条件、需求和验收关联、验证方法。
+    - 未实施任务全部保持未勾选；实际证据写 verification.md，状态变化才更新 ROADMAP.md。
+operations:
+  apply:
+    guidance:
+      - 按当前任务查询 CodeGraph 源码及影响范围，复用未变化的证据，避免反复全仓扫描。
+      - 完成条件与实际验证对应后更新任务；检查失败先定位并修复授权范围内问题，不以缩减需求换取通过。
+      - 实际命令、结果、未运行原因和下一步记录在当前 change 的 verification.md；规格校验与功能验收分开。
+  archive:
+    guidance:
+      - 核对当前用户授权与对应范围验证证据；产物齐全或任务全勾选不能替代验收，也不自动授权提交或推送。
