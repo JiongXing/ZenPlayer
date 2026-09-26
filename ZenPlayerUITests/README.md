@@ -98,3 +98,12 @@ python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-native-new --n
 ```
 
 输出目录须不存在，可加 `--package-cache` 复用现有 SourcePackages；Mac GUI 测试应串行运行。本轮同一批量输入测试重复 5 次、原生对照及实际 Unicode 跳集各 1 次均通过，不等同真实输入法组合输入、长时间可靠性或端到端性能验收。
+
+## Mac 首页候选边界
+
+`MacResumeFixture.swift` 仅复制进临时 App。显式 `--stage-resume-case` 配合 `--stage-resume-run <UUID>` 将共享进度与队列仓库切换到独立验证容器内的 `StageValidation/resume-<UUID>/`；关闭此模式时沿用原共享路径和原迁移来源。临时源文件替换必须精确命中现有初始化表达式，否则脚本停止。首页、历史等仍使用同一真实共享仓库；不清空其他验证数据，不修改生产容器。每次播种要求 UUID 目录不存在，样本保留供调查。
+
+- `testEmptyHistoryHidesResumeCard`：空历史首次启动和冷启动，分类错误已显示后观察两秒，续听卡／下一集按钮保持隐藏，不自动播放。
+- `testCompletedImmediateNextIsNotSkipped`：三个独立目录场景均首次启动和冷启动。`next` 正对照为最近完成第 1 集、紧邻第 2 集未完成，首页显示“繼續下一集”和第 2 集自身 7 秒；`blocked` 把紧邻第 2 集也设为已完成，虽第 3 集未听也不得跳过推荐，无其他记录则隐藏卡片；`fallback` 增加较早的另一条未完成记录，首页显示其 42 秒和“總時長未知”，不显示下一集按钮。
+
+测试不播放媒体；完成状态只是固定起点，真实自然完成另由现有队列测试验证。共享仓库从真实文件读入，候选计算和 UI 未替换。`--stage-verify-resume` 冷启动只读比较播种时的所有进度／快照字节与进度条数，不能重新播种掩盖变更。窗口树供结果核对；两秒无卡片断言是该观察窗口的证据，不等同异步任意时序、真实输入法或可访问性验收。

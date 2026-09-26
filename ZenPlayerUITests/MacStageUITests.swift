@@ -6,6 +6,58 @@ final class StageUITests: XCTestCase {
         XCUIApplication().terminate()
     }
 
+    func testEmptyHistoryHidesResumeCard() throws {
+        try verifyHomeResumeCase("empty")
+    }
+
+    func testCompletedImmediateNextIsNotSkipped() throws {
+        // next 为正对照：同一持久化快照能被真实 HomeResumeViewModel 恢复。
+        for scenario in ["next", "blocked", "fallback"] {
+            try verifyHomeResumeCase(scenario)
+        }
+    }
+
+    private func verifyHomeResumeCase(_ scenario: String) throws {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        let arguments = ["--stage-resume-case", scenario, "--stage-resume-run", UUID().uuidString,
+                         "--stage-primary-window", "--stage-category-failure"]
+        for coldRead in [false, true] {
+            app.launchArguments = arguments + (coldRead ? ["--stage-verify-resume"] : [])
+            app.launch()
+            let window = app.windows.firstMatch
+            let error = window.staticTexts.matching(NSPredicate(format: "value CONTAINS %@", "Mac 分類請求失敗驗證")).firstMatch
+            XCTAssertTrue(error.waitForExistence(timeout: 15))
+            if scenario == "next" {
+                XCTAssertTrue(window.buttons["繼續下一集"].waitForExistence(timeout: 10))
+                XCTAssertTrue(window.staticTexts["Mac 候選驗證-2"].exists)
+                XCTAssertTrue(window.staticTexts["已聽 0:07 / 2:00"].exists)
+            } else if scenario == "fallback" {
+                XCTAssertTrue(window.buttons["繼續收聽"].waitForExistence(timeout: 10))
+                XCTAssertTrue(window.staticTexts["Mac 其他未完成驗證"].exists)
+                capture(app, name: "mac-resume-fallback-before-progress-assertion")
+                XCTAssertTrue(window.staticTexts["已收聽 0:42 · 總時長未知"].exists, "未知时长不伪造百分比")
+                XCTAssertFalse(window.buttons["繼續下一集"].exists)
+            } else {
+                let unexpectedCard = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+                    window.staticTexts["繼續收聽"].exists || window.buttons["繼續收聽"].exists
+                        || window.buttons["繼續下一集"].exists
+                }, object: nil)
+                unexpectedCard.isInverted = true
+                XCTAssertEqual(XCTWaiter.wait(for: [unexpectedCard], timeout: 2), .completed,
+                               "首页就绪后的观察窗口内应持续隐藏卡片")
+                XCTAssertFalse(window.staticTexts["繼續收聽"].exists)
+                XCTAssertFalse(window.buttons["繼續收聽"].exists)
+                XCTAssertFalse(window.buttons["繼續下一集"].exists)
+            }
+            XCTAssertFalse(window.staticTexts["Mac 候選驗證-3"].exists, "不能跨过已完成紧邻项推荐第三集")
+            XCTAssertFalse(window.buttons["pause.fill"].exists)
+            capture(app, name: "mac-resume-\(scenario)-cold-\(coldRead)")
+            app.typeKey("q", modifierFlags: .command)
+            XCTAssertTrue(wait { app.state == .notRunning })
+        }
+    }
+
     func testBatchSearchInputRetainsExactText() throws {
         continueAfterFailure = false
         let app = XCUIApplication()

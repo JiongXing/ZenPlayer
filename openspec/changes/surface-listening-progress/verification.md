@@ -88,3 +88,45 @@ Review：没有发现本轮需要修改生产实现的缺陷，修正集中于�
 未运行／限制：不是 VoiceOver 朗读或截图目视验收，未断言“目前定位”的约 2 秒持续时间；未验 Reduce Motion、旧于最近 10 条的实际 UI 定位、其他历史行入口和参考机性能。无候选隐藏／紧邻已完成下一集、真实断网下载内容、iPhone 生命周期／锁屏／PiP、真实音效／分享／下载传输和迁移过程仍按既有矩阵待验。本轮未刷新设备状态。3.2 保持未勾选，M3 仍 5/6／In Verification。
 
 本次本地提交标题：`补充分类失败续听与历史定位隔离回归`；实际身份用 `git log -1 --format='%H%n%B' --grep='^补充分类失败续听与历史定位隔离回归$'` 查询。只提交本轮 Harness／文档，不 push／PR／sync／archive／发布。
+
+## 2026-09-26 首页候选边界与未知时长 UI
+
+基线 `main @ 3edc4fac17e1b101494e312744f4df60c4c6bf68`，起始工作区干净。本轮继续 3.2 的 AT-15／M3 S2、S4 子断言：空历史隐藏、紧邻完成项不跳过、其他未完成候选回退及未知时长展示。生产 App／工程未变。
+
+新增 MacResumeFixture，临时工程仅将两处共享仓库根目录和旧迁移来源接到显式参数控制的隔离入口。每个用例使用全新 UUID 目录，禁止覆盖已有目录；默认运行仍使用原验证 bundle 的共享路径。未删除现有验证记录，未接触生产 App 容器。这样首页与使用共享仓库的历史页不会因只给播放器注入空 store 而异源。记录／快照均为真实文件，使用原加载、候选、SwiftUI 实现；冷启动逐字节核对原样本，且核实 0／2／3 条记录与无恢复异常。
+
+### 失败、修正与定向证据
+
+- `/tmp/ZenPlayer-mac-resume-empty-r1/build.xcresult`：**构建失败**，exit 65；新夹具把可抛错的 Data 读取放进非抛错 precondition autoclosure。改为先读取再断言；UI 未运行。
+- `/tmp/ZenPlayer-mac-resume-empty-r2/tests.xcresult`：**1 项通过、0 失败／跳过，6.350 秒**，覆盖空历史首次及只读冷启动。随后加强两秒持续隐藏断言，最终版本以完整回归为准。
+- Review 核实 `.ended` 不会凭空生成实际收听时间，完成样本先 `.advance` 再 `.ended`，并断言 lastListenedAt／isValid；避免把没有实际收听时间的样本错误用于“最近完成集”测试。
+- `/tmp/ZenPlayer-mac-resume-candidates-r1/tests.xcresult`：**1 项失败、0 通过／跳过，23.220 秒**。下一集正对照、紧邻已完成时隐藏及各自冷启动已执行；回退场景找到了正确标题和续听按钮，但测试错误地预期普通“已聽 0:42”。改为现有本地化的“已收聽 0:42 · 總時長未知”，并提前捕获窗口树。不能把这个失败轮次算整项通过。
+
+### 验收边界
+
+本次不把固定 completed 样本当作真实播放结束证据，也不把两秒无卡片观察扩展到任意异步时序。iPhone 复查 `/tmp/ZenPlayer-device-resume-details.json` 仍为已配对、Developer Mode Disabled，工具返回信息不完整警告；未安装或改设备。真实 iPhone 生命周期／锁屏／PiP、VoiceOver／Reduce Motion、参考机性能、真实下载／分享／音效、长历史 UI 和升级迁移缺口继续保留。3.2 未完成，阶段不标 Done。
+
+### 最终完整回归与交付
+
+`/tmp/ZenPlayer-mac-resume-final/tests.xcresult`：**13 项通过、0 失败、0 跳过，446.486 秒**。新增空历史用例 10.441 秒、候选边界用例 27.575 秒；后者包含 next／blocked／fallback 三种场景，不计为三项独立 XCTest。全部四种场景各有首次启动及只读冷启动断言。其余十一项（含上轮批量输入）同轮通过。临时 App／UI target 构建、签名／sandbox 检查和 test-without-building 均 exit 0。
+
+```sh
+python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-mac-resume-final --package-cache /tmp/ZenPlayer-M0-mac/SourcePackages
+```
+
+复跑使用不存在的新 output；可添加 `--only-testing testEmptyHistoryHidesResumeCard` 或 `--only-testing testCompletedImmediateNextIsNotSkipped`。原生 Unicode 对照是独立诊断，不在此 13 项中，历史间歇输入问题未因此关闭。
+
+已导出并复核窗口树：
+
+| 场景／子断言 | 证据 |
+| --- | --- |
+| 空历史冷启动隐藏卡片 | `/tmp/ZenPlayer-mac-resume-final-empty/73B1FBAE-02C0-42CB-BCE7-9A722AE95DF8.txt`；首页错误已就绪，续听标题／按钮和下一集按钮均不存在；自动化持续观察两秒 |
+| 紧邻第 2 集 completed，不越过推荐未听第 3 集 | `/tmp/ZenPlayer-mac-resume-final-candidates/D756557A-5064-41E1-9961-285FAC3A7381.txt`；冷启动无卡片，记录／快照字节一致 |
+| 正对照：第 2 集未完成使用自身位置 | `/tmp/ZenPlayer-mac-resume-final-candidates/974295A3-94AA-4D79-8D1A-0D6D682EF5F4.txt`；“Mac 候選驗證-2”“已聽 0:07 / 2:00”及“繼續下一集” |
+| 紧邻已完成，回退其他历史／未知时长 | `/tmp/ZenPlayer-mac-resume-final-candidates/1BB00332-3C26-4740-8AF5-B7DE0EBFF6DB.txt`；“Mac 其他未完成驗證”“已收聽 0:42 · 總時長未知”和“繼續收聽”，无下一集按钮 |
+
+AT-15 对应的上述 Mac UI 子断言通过；未知时长仅为记录展示，未证明真实未知时长媒体播放。Review 修正均为测试夹具／断言，未发现需要修改生产实现的新缺陷。116 个生产文件和工程 hash 与上轮一致；最终构建的所有 Swift／Python 输入及工程与当前文件一致，构建后只补文档。两端各 86 项生产自动化／构建**复用、未重跑**。结果包含三条内部 QoS 警告，不是实测的性能结论。
+
+M3／M4 strict 校验、Python AST／help／无效方法参数拒绝、Git diff 与新增文件审查通过。3.2 仍未勾选，M3 5/6、M4 5/6；阶段状态不变。下一步为长历史实际定位／旧集续听及其余矩阵门槛，不能把本轮通过扩展成阶段 Done。
+
+本地提交标题：`补充首页候选边界与未知时长 UI 回归`；身份以 `git log -1 --format='%H%n%B' --grep='^补充首页候选边界与未知时长 UI 回归$'` 查询。只提交本轮 Harness／文档，不 push／PR／sync／archive／发布。

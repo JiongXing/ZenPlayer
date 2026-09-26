@@ -69,6 +69,26 @@ def main():
     shutil.copy2(repo / "ZenPlayerUITests/MacCatalogFixture.swift", work / "ZenPlayer/MacCatalogFixture.swift")
     shutil.copy2(repo / "ZenPlayerUITests/MacCatalogURLProtocol.swift", work / "ZenPlayer/MacCatalogURLProtocol.swift")
     shutil.copy2(repo / "ZenPlayerUITests/MacNativeInputProbe.swift", work / "ZenPlayer/MacNativeInputProbe.swift")
+    shutil.copy2(repo / "ZenPlayerUITests/MacResumeFixture.swift", work / "ZenPlayer/MacResumeFixture.swift")
+    # 空历史测试不能清空其他验证记录；统一共享仓库的临时根目录，保持各 UI 入口同源。
+    for source, replacements in {
+        "Services/PlaybackProgressStore.swift": {
+            'URL.applicationSupportDirectory.appendingPathComponent("PlaybackProgress/v1")':
+                'MacResumeFixture.storageRoot("PlaybackProgress/v1")',
+            'UserDefaults.standard.data(forKey: "recentPlayback.records")': 'MacResumeFixture.legacySource()'
+        },
+        "Services/QueueSnapshotStore.swift": {
+            'URL.applicationSupportDirectory.appendingPathComponent("PlaybackQueue/v1")':
+                'MacResumeFixture.storageRoot("PlaybackQueue/v1")'
+        }
+    }.items():
+        fixture_source = work / "ZenPlayer" / source
+        fixture_text = fixture_source.read_text()
+        for marker, replacement in replacements.items():
+            if fixture_text.count(marker) != 1:
+                raise RuntimeError(f"{source} 存储初始化结构变化，拒绝猜测隔离位置")
+            fixture_text = fixture_text.replace(marker, replacement)
+        fixture_source.write_text(fixture_text)
     scheme_path = work / "ZenPlayer.xcodeproj/xcshareddata/xcschemes/ZenPlayer.xcscheme"
     scheme = ET.parse(scheme_path)
     test_action = scheme.getroot().find("TestAction")
@@ -103,6 +123,7 @@ def main():
         "destination": "platform=macOS", "bundleID": BUNDLE_ID,
         "onlyTesting": args.only_testing,
         "nativeInputProbe": args.native_input_probe,
+        "resumeFixture": "explicit resume-case flag uses a unique UUID storage root; default shared paths unchanged",
         "jumpInput": args.jump_input,
         "bootstrap": "temporary App initializer seeds its own sandbox before creating PlayerViewModel",
         "networkFixture": "temporary APIService config adds a URLProtocol limited to explicit fixture flags and URLs",

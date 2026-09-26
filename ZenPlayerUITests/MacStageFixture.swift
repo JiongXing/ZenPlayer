@@ -13,7 +13,8 @@ enum MacStageFixture {
         let queueMode = arguments.contains("--stage-seed-queue") || arguments.contains("--stage-verify-queue")
             || arguments.contains("--stage-verify-queue-off")
         let catalogMode = arguments.contains("--stage-seed-catalog") || arguments.contains("--stage-verify-catalog")
-        guard shouldSeed || shouldVerifyDeletion || queueMode || catalogMode else { return }
+        let resumeMode = arguments.contains("--stage-resume-case")
+        guard shouldSeed || shouldVerifyDeletion || queueMode || catalogMode || resumeMode else { return }
         let bundle = "com.jxing.ZenPlayer.MacStageValidation"
         precondition(Bundle.main.bundleIdentifier == bundle)
         precondition(NSHomeDirectory().contains("/Library/Containers/\(bundle)/Data"))
@@ -41,6 +42,10 @@ enum MacStageFixture {
             }
         }
         do {
+            if resumeMode {
+                try MacResumeFixture.run()
+                return
+            }
             if catalogMode {
                 try MacCatalogFixture.run(arguments: arguments)
                 return
