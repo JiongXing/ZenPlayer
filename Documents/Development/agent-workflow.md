@@ -1,6 +1,6 @@
 # OpenSpec 与 CodeGraph 工作流
 
-本文件是 [AGENTS.md](../../AGENTS.md) 的按需参考：操作 OpenSpec 读第 1～3 节；定位／索引故障读第 4 节；维护工具读第 5 节。普通小修不必全文加载。阶段状态只在 [Roadmap](../../ROADMAP.md) 和对应 change 中维护。
+本文件是 [AGENTS.md](../../AGENTS.md) 的按需参考：操作 OpenSpec 读第 1～3 节；定位／索引故障读第 4 节；维护工具读第 5 节；播放、下载或迁移兼容读第 7 节。普通小修不必全文加载。阶段状态只在 [Roadmap](../../ROADMAP.md) 和对应 change 中维护。
 
 ## 1. 工具分工与最小上下文
 
@@ -100,11 +100,11 @@ codegraph explore 'RecentPlaybackStore RecentPlaybackRecord' --max-files 2
 
 ## 5. 维护 Harness
 
-- 自定义长期规则放 AGENTS、项目技能及 `openspec/config.yaml`；不要手改 OpenSpec 生成技能正文以塞项目规则，后续 CLI 更新会覆盖或产生漂移。
+- 自定义长期规则放 AGENTS，按需参考放本文件，OpenSpec 上下文放 `openspec/config.yaml`；同一规则不重复维护，不手改 OpenSpec 生成技能正文以塞项目规则，后续 CLI 更新会覆盖或产生漂移。
 - 维护工具版本时比较 `openspec --version` 和生成技能的 `generatedBy`；相同无需 update。确需刷新时先看差异并保护自定义文件，使用本机 `openspec update --help`，不默认 `--force`，不改用户级 workflow profile。
 - `context` 只存简明、稳定的项目事实和索引；artifact 规则放 `rules`，apply／archive 偏好放 `operations.<operation>.guidance`。不写“本轮只规划”“永远 M0”等一次性会话约束。
 - 沿用 core 和标准 schema；只有出现真实且重复的 schema 缺口才定制。无需为了 verification 文件增加新框架、额外 agent 角色或固定全套门禁。
-- 更新应用代码导致入口或领域事实变化时，顺带更新项目技能 reference 的对应条目；研究笔记和工具版本快照放本节，不污染根指令的每次上下文。
+- 当前入口和所有权通过 CodeGraph 查询；兼容性约束变化时维护对应规格及本文件相关条目，不另存容易过期的架构快照。研究笔记和工具版本快照放第 6 节，不污染根指令的每次上下文。
 - Harness 自身修改执行链接／技能格式／配置注入／CLI smoke／差异范围检查，并用代表性请求走读路由。结构通过不能冒充模型行为评测，未实测不声称节省多少 token 或工时。
 
 ## 6. 研究依据与接入验证（2026-09-26 快照）
@@ -129,7 +129,7 @@ OpenAI 的 AGENTS／skills 官方页面本次请求返回 HTTP 403，未取得�
 
 ### 实际检查
 
-- `quick_validate.py .codex/skills/zenplayer-project`：通过技能 frontmatter／格式检查。
+- 当时的 `quick_validate.py .codex/skills/zenplayer-project`：通过技能 frontmatter／格式检查。该技能现已移除，独有兼容性提示合并至第 7 节；此项仅保留历史证据，不再执行。
 - `openspec list --json`／`context --json`：根均为本仓库；唯一现有 change 为 preserve-playback-progress，0/13 完成。list 报 in-progress，status 报规划齐全，而 Roadmap 为 Planned／待评审，三者含义已在规则中明确区分。
 - `openspec instructions <artifact> --change preserve-playback-progress --json`：分别查询 proposal／specs／design／tasks／apply／archive，全部退出 0，无 stderr 警告；四类 artifact 的 context／rules 和两类 operation 的 context／guidance 均按新配置注入。apply 指引显示 ready、13 remaining，未执行实施或归档动作。
 - `openspec validate preserve-playback-progress --strict --no-interactive`：通过。以上 OpenSpec 命令均设置 `OPENSPEC_TELEMETRY=0`。
@@ -154,3 +154,12 @@ OpenAI 的 AGENTS／skills 官方页面本次请求返回 HTTP 403，未取得�
 | “验收后同步规格”，没有归档／推送授权 | 只执行获准 sync，核对内容；不顺带 archive／push | 根规则与操作指导一致，不从工具 nextSteps 推导权限 |
 
 未运行 App 构建、XCTest 或真机验收，因为本轮没有业务实现；未运行独立 Agent 效率基准，因此不承诺 token／耗时收益。后续应以真实任务的重复读取、返工和证据完整性观察效果，再做针对性调整。
+
+## 7. 播放、下载与迁移兼容性速查
+
+本节保留容易遗漏的兼容性提示，不维护阶段状态或完整架构快照。进度与迁移行为见 [PRD](../PRD/prd.md) 和 [进度变更规格](../../openspec/changes/preserve-playback-progress/specs/playback-progress/spec.md)；实施与验收状态查对应 change。当前代码仍需按任务范围核实。
+
+- 进度身份由 `RecentPlaybackRecord.recordID` 生成，为 `episode.id + "|" + 原始 serverUrl`；不能规范化该身份中的 URL，或按标题／集数合并。下载键由 `DownloadManager.downloadKey` 生成，为 `episodeId_mp3`／`episodeId_mp4`，不能与进度身份互换。
+- 旧数据来自 UserDefaults 的 `recentPlayback.records`；迁移保留旧数据及身份关系。隔离测试不能证明可恢复早已淘汰或无法读取的历史记录。
+- 同一媒体类型的解析保持本地文件优先：音频回退至远端 `mp3Url`，兼容 `mp4Url`／`vodUrl` 中实际为 mp3 的地址；视频回退至远端 mp4／vod。可从 `resolveAudioPlaybackURL`、`resolveVideoPlaybackURL` 和 `resolveFallbackAudioPlaybackURL` 查询当前实现；不要把媒体地址拼接规则用于改写进度身份。
+- 下载删除与失效文件清理只处理下载文件及清单，不应删除收听进度。涉及生命周期时分别核对 iOS 后台下载和 macOS 保存面板／安全作用域访问，避免把一端的验证当成另一端的证据。

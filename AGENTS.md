@@ -15,7 +15,7 @@ If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is 
 
 1. 检查 `git status --short`、当前分支和 HEAD，保留已有暂存、未暂存和未跟踪文件；按本次请求确定范围，不把工作区全部改动视作本次工作。
 2. 根据下表选择路径。只有产品迭代才读 [ROADMAP.md](ROADMAP.md) 的当前阶段、[PRD](Documents/PRD/prd.md) 的相关章节和相关 change；不要每轮全读 PRD、所有历史规格或全部技能。
-3. 涉及应用代码时使用 [zenplayer-project](.codex/skills/zenplayer-project/SKILL.md)。需要 OpenSpec 操作／工具故障处理时，按需读 [工作流](Documents/Development/agent-workflow.md) 对应章节及实际生成的技能。
+3. 需要 OpenSpec 操作／工具故障处理时，按需读 [工作流](Documents/Development/agent-workflow.md) 对应章节及实际生成的技能；涉及播放、下载或迁移兼容时，按需读该文档第 7 节。
 
 | 请求 | 执行路径 |
 | --- | --- |

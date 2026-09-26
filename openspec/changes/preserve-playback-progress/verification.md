@@ -6,7 +6,7 @@
 
 - 日期：2026-09-26；根目录 `/Users/jxing/Desktop/my_projects/ZenPlayer`；分支 `main`；HEAD `a86d74a4b35d7aea330be48480727d8652210914`；初始 `git status --short` 无输出。没有已有未提交工作需要合并，后续仍不清理用户文件。
 - 完整读取用户指定 `/Users/jxing/Desktop/ZenPlayer_PRD_v1.0.md` 和 `/Users/jxing/Desktop/ZenPlayer_Codex_OpenSpec_Bootstrap.md`；[PRD 仓库唯一版本](../../../Documents/PRD/prd.md) 原样保存。当前源码与 PRD 历史提交一致。
-- 已读根 [AGENTS.md](../../../AGENTS.md)、[项目技能](../../../.codex/skills/zenplayer-project/SKILL.md) 及其 reference；在相关目录和父目录未发现适用 override。旧 reference 的宽屏 SplitView 说明与当前 `ContentView` 不符，规划采用实际 NavigationStack，不改旧 reference。
+- 当时已读根 [AGENTS.md](../../../AGENTS.md)、项目技能 `zenplayer-project` 及其 reference；在相关目录和父目录未发现适用 override。旧 reference 的宽屏 SplitView 说明与当时 `ContentView` 不符，规划采用实际 NavigationStack，当时未改旧 reference。后续 Harness 精简已移除该技能，兼容性提示见[工作流第 7 节](../../../Documents/Development/agent-workflow.md)；本条保留规划时的历史证据。
 - 存储、播放器关键事实见 [proposal.md](proposal.md) 的证据表；均为发现实现、未验收。`RecentPlaybackRecord` 可兼容缺少位置字段，但不是完整迁移机制；`PlayerViewModel.restorePlaybackPositionIfNeeded` 忽略 seek 成功值，`reloadCurrentPlayback` 在实际收听前更新最近。
 - `ZenPlayer/ContentView.swift` 和 `ZenPlayerApp.swift` 无共享播放会话注入；`PlayerView` 持有模型；`RecentPlaybackListView`／`CompletedDownloadListView` 直接构造播放页。`SeriesDetailViewModel.loadSpeechDetail` 使用 `data.rows`，`EpisodeRowView` 仅传单集和 serverUrl；没有完整系列快照。`HomeView` 仅分类加载分支。
 - `DownloadManager.removeCompletedDownload`／`completedFileURL` 只管理下载文件与清单，没有进度删除调用；需回归验证，不凭源码标记 AT-19 通过。
