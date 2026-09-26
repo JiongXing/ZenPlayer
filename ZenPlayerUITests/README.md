@@ -27,4 +27,20 @@ xcrun xcresulttool export attachments \
   --output-path /tmp/ZenPlayer-stage-ui-images --filter '*.png'
 ```
 
-这套测试不替代 `ZenPlayerTests` 的两平台自动化，也不覆盖真实 iPhone 后台／锁屏／PiP、macOS 多窗口／退出、VoiceOver、所有字体／窗口尺寸组合、真实媒体听感或端到端性能。每次实际结果和剩余验收记录在相应 change 的唯一 `verification.md`；不能凭 UI target 通过标记整个阶段 Done。
+这套测试不替代 `ZenPlayerTests` 的两平台自动化，也不覆盖真实 iPhone 后台／锁屏／PiP、VoiceOver、所有字体／窗口尺寸组合、真实媒体听感或端到端性能。每次实际结果和剩余验收记录在相应 change 的唯一 `verification.md`；不能凭 UI target 通过标记整个阶段 Done。
+
+## macOS 窗口与正常退出
+
+```sh
+python3 Scripts/run-mac-stage-ui-tests.py \
+  --output /tmp/ZenPlayer-mac-stage-new-run \
+  --package-cache /tmp/ZenPlayer-M0-mac/SourcePackages
+```
+
+脚本仍复制工程，改为独立 `com.jxing.ZenPlayer.MacStageValidation` bundle，包括清除原工程 macOS 条件 bundle 覆盖；保持 App sandbox、验证签名和 entitlement 后才启动。生产工程／源码不修改，不需要从终端读取受 macOS 隐私保护的容器元数据。
+
+`MacStageFixture.swift` 只复制进临时 App，并在临时 App 初始化播放器前加入播种调用；该文件不编入生产 target。只有 `--stage-seed` 启动时才创建自己的 180 秒静音 WAV 和单条 30 秒进度，且先断言 bundle 与 sandbox home。样本以本容器内 file URL 作为媒体地址，因此验证真实 AVPlayer 及进度链路，不证明下载索引或远端媒体。冷启动检查移除播种参数，读取上次实际保存的进度。
+
+`MacStageUITests.swift` 使用实际窗口、快捷键和控件，核对两窗口暂停同步、关闭其中一个窗口保持会话、隐藏／失焦后媒体进度增加、Command-Q 退出、重开不自动播放并从已保存位置恢复。显式附件只记录本 App 各窗口的可访问性树，避免输出系统菜单中的无关最近项目。本机外接屏上窗口截图失败，App 截图只返回另一屏桌面，所以脚本不将截图作为窗口验收证据。它会临时将验证 App 带到前台，结束时终止验证 App；保留独立容器和 `/tmp` 构建／测试证据。
+
+本项仍不证明真实媒体听感、PiP／全屏、耳机／中断、最后一个窗口关闭后的行为、异常强杀数据安全或所有 macOS 版本／窗口尺寸。完整矩阵以 change 的 verification.md 为准。

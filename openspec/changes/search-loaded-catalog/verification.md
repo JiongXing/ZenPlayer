@@ -69,7 +69,7 @@ M4 新增 15 项：6 个检索／解析、7 个页面模型、1 个完整队列�
 | 09 | **M4 联调通过**：过滤第 2 集，真实 AVPlayer 结束进入完整快照第 5 集 | 实际搜索输入／点击到连播 UI |
 | 10 | 类型／离线策略、坏媒体失败保留目标、手动重试恢复位置 | 实际网络断开、下载文件与远端失败路径 |
 | 11 | 暂停切源保存即时位置、失败不覆零 | 原生手势／不同真实音视频时间轴和切换失败 |
-| 12 | 编译／所有权／回调门控检查 | iPhone 后台／锁屏／PiP／全屏、Mac 窗口失焦／退出 |
+| 12 | 编译／所有权／回调门控；实际 macOS 双窗口暂停同步、关闭其中一个窗口、隐藏后位置推进、正常退出保存和冷启动恢复（静音样本） | iPhone 后台／锁屏／PiP／全屏；Mac 原生全屏／真实媒体听感、最后一个窗口关闭及更广导航路径 |
 | 13 | 本地候选／真实 continue；模拟器首页一次点击启动 30 秒历史样本，无中间页面 | 真机位置精度和更多历史样本 |
 | 14 | 本地卡在分类错误分支外；注入离线本地媒体可播 | 分类失败实景、实际下载内容离线点击 |
 | 15 | 紧邻未完成下一集自身进度、无候选隐藏规则 | 首页画面随实际完成状态变化 |
@@ -186,3 +186,11 @@ python3 Scripts/run-stage-ui-tests.py --destination 'platform=iOS Simulator,id=F
 两端命令沿用当前 scheme／目的地和 `/tmp/ZenPlayer-M0-{mac,ios}` derived data，resultBundlePath 为上表路径；iOS 测试关闭并发。所有真实设备和更广辅助功能缺口继续保留。部署版本、签名／依赖、生产工程、主规格和 Roadmap 状态不变。
 
 本地提交标题：`修复辅助字体下单集信息布局并补充 UI 验收`；实际身份用 `git log -1 --format='%H%n%B' --grep='^修复辅助字体下单集信息布局并补充 UI 验收$'` 查询。只本地提交，不 push／PR／sync／archive／发布。
+
+## 2026-09-26 macOS 生命周期验收补充
+
+在 `de77e31` 之后补充独立 macOS 验证 App，新增 `Scripts/run-mac-stage-ui-tests.py`、`ZenPlayerUITests/MacStageFixture.swift`、`MacStageUITests.swift`。生产代码、工程与配置未变。实际窗口／Command-H／Command-Q、两窗口同步暂停、冷启动保留 50 秒并恢复播放已通过；`/tmp/ZenPlayer-mac-lifecycle-r7/tests.xcresult` **1 项、0 失败，35.926 秒**，构建及签名／sandbox 检查通过。
+
+原失败尝试、样本安全边界、输入 hash、复现命令及剩余项详见 [M1 实际窗口记录](../unify-playback-session/verification.md#2026-09-26-macos-实际窗口与退出补充)。外接屏上的截图和自动 hit point 有工具限制；最终用窗口树与实际控件中心点击后的状态／位置断言验证生命周期，未声称可访问性或布局截图验收通过。
+
+复核并复用未变化源码的两平台各 86 项 XCTest 和 iOS 深色最大字体 3 项 UI 证据；本次新增 Mac 测试不替代 iPhone 真机、全屏、真实媒体听感、下载／分享、VoiceOver／Reduce Motion、端到端性能与升级迁移的剩余门槛。3.2 继续未完成，M0～M4 状态不变。交付标题 `补充 macOS 多窗口与退出续听隔离回归`；仅本地提交。

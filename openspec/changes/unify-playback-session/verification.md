@@ -93,3 +93,46 @@ git log -1 --format='%H%n%B' --grep='^实现 M1 统一播放会话并修复阶�
 ### 2026-09-26 长标题／最大辅助字体补充
 
 M4 的 [动态字体验收记录](../search-loaded-catalog/verification.md#2026-09-26-动态字体与末行验收补充) 增加 iPhone 17／iOS 27 模拟器最大辅助字体＋深色外观下的长标题完整可访问名、迷你条／Tab 几何隔离、历史／下载往返暂停保持和系列末集可滚到迷你条上方的证据。`/tmp/ZenPlayer-ui-accessibility-fixed/tests.xcresult`，3 项、0 失败。2.2 的该字号子断言通过，但 VoiceOver、Reduce Motion、其他设备／窗口组合及 macOS 仍无证据，不据此关闭整个任务。
+
+## 2026-09-26 macOS 实际窗口与退出补充
+
+基线 `de77e31c0d240ae9398d15001ee666f9dc5f7d1f`，开始时工作区干净。复核最新大字体修复、共享会话注入、迷你条值路由以及 `willTerminateNotification → persistCurrentPlaybackProgress → flushSynchronously` 链路；未发现本轮需改生产源码的新缺陷。新增独立 Mac UI 脚本／样本／测试，并更新现有任务和证据；生产工程、签名、源代码及真实容器均未修改。
+
+### 通过
+
+实际环境：MacBook Pro／macOS 27.0 (26A428)、Xcode 27。`/tmp/ZenPlayer-mac-lifecycle-r7/build.xcresult` 与 `tests.xcresult` 均成功，`test.log`：**1 项 UI 测试、0 失败、0 跳过，35.926 秒**。不是纯状态模型测试或编译检查。
+
+```sh
+python3 Scripts/run-mac-stage-ui-tests.py --output /tmp/ZenPlayer-mac-lifecycle-r7 --package-cache /tmp/ZenPlayer-M0-mac/SourcePackages
+```
+
+重跑须改为不存在的输出目录。运行脚本、测试源码及隔离方式见 [UI 测试说明](../../../ZenPlayerUITests/README.md#macos-窗口与正常退出)。`context.json` 保存实际输入 SHA-256，77 个 Swift／Python／本地化文件与审查时工作区一致；bundle 为 `com.jxing.ZenPlayer.MacStageValidation`，签名和 sandbox entitlement 检查通过。样本在验证 App 自己的沙盒内生成，未通过终端绕过 macOS 容器隐私保护。临时 App 仅在播放器创建前添加播种入口，冷启动移除播种参数。
+
+- 首页从 30 秒启动真实 AVPlayer，位置实际推进；Command-N 创建第二窗口，两个窗口均显示 35 秒及正在收听。
+- 点击第二窗口迷你条暂停，两窗口均显示 36 秒及已暂停；关闭第二窗口后原窗口仍暂停、位置一致。
+- 原窗口恢复播放，Command-H 隐藏后保持 4 秒，再激活时进度增加；附件显示 50 秒及正在收听。
+- Command-Q 正常退出，断言进程不运行；无播种冷启动显示保留的 50 秒续听卡、没有活动迷你条；点击续听后从保存位置继续推进。测试清理终止验证 App。
+
+六份窗口树附件在 xcresult 中，已导出至 `/tmp/ZenPlayer-mac-lifecycle-r7-attachments/` 核对。生产源码未变，复用且重新读取本轮两端 `/tmp/ZenPlayer-accessibility-final-{mac,ios}.xcresult`：各 86 项、0 失败，包含 App 编译；iOS 最大字体 UI `/tmp/ZenPlayer-ui-accessibility-fixed/tests.xcresult` 3 项通过。没有为新增 Mac 测试重复运行无变动的 iOS 业务测试。
+
+### 失败尝试与工具限制
+
+`/tmp/ZenPlayer-mac-lifecycle-r1`～`r6` 的测试均失败，保留各自 build/test 日志和 xcresult，不将后续通过覆盖历史结果：
+
+| 运行 | 原因与处理 |
+| --- | --- |
+| r1 | XCTest 窗口标识简写查询最多 128 字符；改用显式 identifier predicate。 |
+| r2 | 测试误用“播放中”，实际繁体状态为“正在收聽”；按已有产品文案修正断言。 |
+| r3／r4 | 暂停控件自动点击失败；改为按唯一窗口身份查询，并补录窗口树。 |
+| r5 | 窗口位于外接屏负坐标，XCTest window screenshot 报 Image creation failed；App screenshot 只返回另一屏桌面，不能作布局证据。改为保留窗口树。 |
+| r6 | 唯一窗口查询正确后，外接屏控件自动 hit point 仍失败。r7 核实按钮 frame 在目标窗口内，点击其中心坐标，随后两窗口暂停断言通过；不把该结果当成 VoiceOver／自动 hit point 通过。 |
+
+更早 `/tmp/ZenPlayer-mac-ui-probe/test.xcresult` 的启动 smoke 1 项通过；终端读取验证容器 metadata 被系统拒绝后未重试绕过，最终采用 App 自己初始化其沙盒样本。所有失败发生在隔离 App／测试层，没有为让测试过关改动产品行为。
+
+### 未运行与交付边界
+
+1.2 的 macOS 多窗口子断言和 3.2 的窗口失焦／正常退出子断言已通过，但 macOS 三类单集入口／完整页往返、最后窗口关闭、全屏、真实音视频／无重复音轨听感、VoiceOver／键盘焦点仍未完成。静音 WAV 使用本容器 file URL，不能证明真实下载绑定、下载传输、RNNoise／增强听感或远端失败。iPhone 后台／锁屏／PiP／中断、安装升级和异常强杀等原缺口继续保留；阶段仍为 In Verification。
+
+本地提交标题：`补充 macOS 多窗口与退出续听隔离回归`，提交身份用 `git log -1 --format='%H%n%B' --grep='^补充 macOS 多窗口与退出续听隔离回归$'` 查询。不 push、PR、主规格同步、归档或发布。
+
+提交前检查通过：5 个 change 的 OpenSpec strict 校验；新增 Python 脚本 AST／help／拒绝仓库内输出与缺失依赖缓存的 smoke；7 个 Markdown 文件链接；Git 范围与空白检查（包含新增文件审查）。未发现新增需改动生产代码的 review 问题。未完成的验收保留为未完成，不将本地提交视为阶段 Done。
